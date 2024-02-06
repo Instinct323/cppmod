@@ -1,5 +1,7 @@
-#include "utils.h"
 #include <thread>
+
+#include "utils.h"
+
 
 int main(int argc, char **argv) {
   Logger logger(argv);
