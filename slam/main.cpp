@@ -1,9 +1,10 @@
 #include "utils.h"
 #include <thread>
 
-int main() {
-  Timer timer;
+int main(int argc, char **argv) {
+  Logger logger(argv);
 
+  Timer timer;
   this_thread::sleep_for(chrono::duration<double>(1));
-  cout << timer << endl;
+  LOG(INFO) << timer;
 }
