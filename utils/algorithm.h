@@ -8,8 +8,8 @@ using namespace std;
 
 
 /**
- *  @brief manacher 算法求最长回文串
- *  @var p - 以对应字符为中心 最长回文串的半径
+ * @brief manacher 算法求最长回文串
+ * @var p - 以对应字符为中心 最长回文串的半径
  */
 class Manacher {
 public:

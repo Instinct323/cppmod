@@ -65,7 +65,12 @@ public:
 };
 
 
-/** @brief 基于 SVD 的线性三角剖分 */
+/**
+ * @brief 基于 SVD 的线性三角剖分
+ * @param poses - 相机位姿 (相对于机器人坐标系)
+ * @param p_c - 相机坐标系下的关键点
+ * @param p_w - 世界坐标系下的关键点
+ */
 bool triangulation(const std::vector<SE3> &poses,
                    const std::vector<Vec3> &p_c,
                    Vec3 &p_w) {
@@ -81,7 +86,7 @@ bool triangulation(const std::vector<SE3> &poses,
   // 由于特征向量最后一个值最小, 故 AV 的最后一列趋近于零, 即 V 的最后一列为解
   auto svd = equ_set.bdcSvd(Eigen::ComputeThinV);
   p_w = svd.matrixV().col(3).head(3) / svd.matrixV()(3, 3);
-  return svd.singularValues()[3] / svd.singularValues()[2] < 1e-2;
+  return (p_w[2] > 0 && svd.singularValues()[3] / svd.singularValues()[2] < 1e-2);
 }
 
 
