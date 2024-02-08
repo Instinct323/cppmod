@@ -4,7 +4,7 @@
 #include <opencv2/opencv.hpp>
 #include <sophus/se3.hpp>
 
-#include "utils.h"
+using namespace std;
 
 typedef Sophus::SE3d SE3;
 typedef Eigen::Matrix3d Mat33;
@@ -69,24 +69,26 @@ public:
  * @brief 基于 SVD 的线性三角剖分
  * @param poses - 相机位姿 (相对于机器人坐标系)
  * @param p_c - 相机坐标系下的关键点
- * @param p_w - 世界坐标系下的关键点
+ * @param p_r - 机器人坐标系下的关键点
+ * @param z_floor - 地面高度
  */
-bool triangulation(const std::vector<SE3> &poses,
-                   const std::vector<Vec3> &p_c,
-                   Vec3 &p_w) {
+bool triangulation(const vector<SE3> &poses,
+                   const vector<Vec3> &p_c,
+                   Vec3 &p_r,
+                   double z_floor = 0.) {
   Eigen::MatrixXd equ_set(2 * p_c.size(), 4);
   for (int i = 0; i < p_c.size(); ++i) {
-    // Ti * p_w = di * p_ci 等价:
-    // 1. (Ti[0] - p_ci[0] * Ti[2]) * p_w = 0
-    // 2. (Ti[1] - p_ci[1] * Ti[2]) * p_w = 0
+    // Ti * p_r = di * p_ci 等价:
+    // 1. (Ti[0] - p_ci[0] * Ti[2]) * p_r = 0
+    // 2. (Ti[1] - p_ci[1] * Ti[2]) * p_r = 0
     Eigen::Matrix<double, 3, 4> Ti = poses[i].matrix3x4();
     equ_set.block<2, 4>(2 * i, 0) = Ti.block<2, 4>(0, 0) - p_c[i].head(2) * Ti.row(2);
   }
   // A = USV^T, AV = US
   // 由于特征向量最后一个值最小, 故 AV 的最后一列趋近于零, 即 V 的最后一列为解
   auto svd = equ_set.bdcSvd(Eigen::ComputeThinV);
-  p_w = svd.matrixV().col(3).head(3) / svd.matrixV()(3, 3);
-  return (p_w[2] > 0 && svd.singularValues()[3] / svd.singularValues()[2] < 1e-2);
+  p_r = svd.matrixV().col(3).head(3) / svd.matrixV()(3, 3);
+  return (p_r[2] > z_floor && svd.singularValues()[3] / svd.singularValues()[2] < 1e-2);
 }
 
 
@@ -98,8 +100,8 @@ public:
     ImgPair(cv::Mat &img1, cv::Mat &img2) : img1(img1), img2(img2) {}
 
     /** @brief LK 光流匹配关键点 */
-    void match_keypoint(std::vector<cv::Point2f> &kp1,
-                        std::vector<cv::Point2f> &kp2,
+    void match_keypoint(vector<cv::Point2f> &kp1,
+                        vector<cv::Point2f> &kp2,
                         cv::Mat &status) const {
       cv::calcOpticalFlowPyrLK(
           img1, img2, kp1, kp2.empty() ? kp1 : kp2,
