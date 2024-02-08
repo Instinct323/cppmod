@@ -7,7 +7,7 @@
 using namespace std;
 
 
-/** @brief 日志类 */
+/** @brief 日志 */
 class Logger {
 public:
     explicit Logger(char **argv) {
