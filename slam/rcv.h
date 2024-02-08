@@ -4,8 +4,6 @@
 #include <opencv2/opencv.hpp>
 #include <sophus/se3.hpp>
 
-using namespace std;
-
 typedef Sophus::SE3d SE3;
 typedef Eigen::Matrix3d Mat33;
 typedef Eigen::Vector3d Vec3;
@@ -17,6 +15,7 @@ class Camera {
 
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    typedef std::shared_ptr<Camera> Ptr;
 
     double fx = 1, fy = 1, cx = 0, cy = 0;
     SE3 pose, pose_inv;    // pcenter -> camera
@@ -72,8 +71,8 @@ public:
  * @param p_r - 机器人坐标系下的关键点
  * @param z_floor - 地面高度
  */
-bool triangulation(const vector<SE3> &poses,
-                   const vector<Vec3> &p_c,
+bool triangulation(const std::vector<SE3> &poses,
+                   const std::vector<Vec3> &p_c,
                    Vec3 &p_r,
                    double z_floor = 0.) {
   Eigen::MatrixXd equ_set(2 * p_c.size(), 4);
@@ -100,8 +99,8 @@ public:
     ImgPair(cv::Mat &img1, cv::Mat &img2) : img1(img1), img2(img2) {}
 
     /** @brief LK 光流匹配关键点 */
-    void match_keypoint(vector<cv::Point2f> &kp1,
-                        vector<cv::Point2f> &kp2,
+    void match_keypoint(std::vector<cv::Point2f> &kp1,
+                        std::vector<cv::Point2f> &kp2,
                         cv::Mat &status) const {
       cv::calcOpticalFlowPyrLK(
           img1, img2, kp1, kp2.empty() ? kp1 : kp2,

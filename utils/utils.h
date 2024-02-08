@@ -3,8 +3,6 @@
 #include <iostream>
 #include <fstream>
 
-using namespace std;
-
 
 /**
  * @brief 切换 Windows 命令行编码为 UTF-8
@@ -24,11 +22,11 @@ class BinFile {
 
 public:
     /** @param file - 要与 BinFile 对象关联的文件路径 */
-    BinFile(const string file) : file(file) {}
+    BinFile(const std::string file) : file(file) {}
 
     /** @brief 序列化函数, 用于将对象序列化并写入文件 */
     void dump(const dType &obj) {
-      fstream f = this->open(ios::out);
+      std::fstream f = this->open(std::ios::out);
       if (f) {
         f << (const char *) &obj;
         f.close();
@@ -37,7 +35,7 @@ public:
 
     /** @brief 反序列化函数, 用于从文件中读取对象 */
     void load(dType &obj) {
-      fstream f = this->open(ios::in);
+      std::fstream f = this->open(std::ios::in);
       if (f) {
         f.read(reinterpret_cast<char *>(&obj), sizeof(obj));
         f.close();
@@ -45,17 +43,17 @@ public:
     }
 
 protected:
-    string file;
+    std::string file;
 
-    fstream open(ios::openmode mode) {
-      fstream f(this->file, mode | ios::binary);
+    std::fstream open(std::ios::openmode mode) {
+      std::fstream f(this->file, mode | std::ios::binary);
       // 检查文件打开状态
       if (!f)
-        cerr << "Failed to open file." << endl;
+        std::cerr << "Failed to open file." << std::endl;
       return f;
     }
 
-    friend ostream &operator<<(ostream &os, const BinFile &obj) {
+    friend std::ostream &operator<<(std::ostream &os, const BinFile &obj) {
       os << "BinFile<" << obj.file << ">";
       return os;
     }

@@ -8,7 +8,7 @@
 
 int main(int argc, char **argv) {
 
-  condition_variable cond;
+  std::condition_variable cond;
 
 
   Logger logger(argv);

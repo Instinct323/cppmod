@@ -1,12 +1,13 @@
 #include "rcv.h"
 
-using namespace std;
 
 class Frame : public ImgPair {
 
 public:
+    typedef std::shared_ptr<Frame> Ptr;
+
     int id, id_keyframe;
     SE3 Tcw;
-    vector<cv::Point2f> feat1, feat2;
+    std::vector<cv::Point2f> feat1, feat2;
 
 };

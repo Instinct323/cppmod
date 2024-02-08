@@ -4,8 +4,6 @@
 #include <glog/logging.h>
 #include <iostream>
 
-using namespace std;
-
 
 /** @brief 日志 */
 class Logger {
@@ -24,18 +22,18 @@ public:
 class Timer {
 
 public:
-    typedef chrono::steady_clock Clock;
+    typedef std::chrono::steady_clock Clock;
     typedef Clock::time_point Timepoint;
-    typedef chrono::duration<double> Duration;
+    typedef std::chrono::duration<double> Duration;
 
     Timepoint t0;
 
     Timer() { t0 = Clock::now(); }
 
 protected:
-    friend ostream &operator<<(ostream &os, const Timer &timer) {
+    friend std::ostream &operator<<(std::ostream &os, const Timer &timer) {
       Timepoint t1 = Clock::now();
-      Duration time_used = chrono::duration_cast<Duration>(t1 - timer.t0);
+      Duration time_used = std::chrono::duration_cast<Duration>(t1 - timer.t0);
       return (os << time_used.count());
     }
 };
