@@ -14,13 +14,18 @@ find_package(G2O REQUIRED)
 find_package(Glog REQUIRED)
 find_package(OpenCV REQUIRED)
 
-add_executable(main main.cpp)
-target_link_libraries(main
-        fmt::fmt
-        glog::glog
-        ${OpenCV_LIBS}
-
+set(G2O_LIBS
         ${G2O_CORE_LIBRARY}
         ${G2O_STUFF_LIBRARY}
         ${G2O_TYPES_SLAM3D}
+        ${G2O_SOLVER_CSPARSE}
+        ${G2O_SOLVER_CSPARSE_EXTENSION}
+)
+
+add_executable(main main.cpp)
+target_link_libraries(main
+        fmt::fmt
+        ${G2O_LIBS}
+        glog::glog
+        ${OpenCV_LIBS}
 )

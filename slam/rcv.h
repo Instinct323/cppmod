@@ -4,6 +4,18 @@
 #include <opencv2/opencv.hpp>
 #include <sophus/se3.hpp>
 
+#include <g2o/core/base_binary_edge.h>
+#include <g2o/core/base_unary_edge.h>
+#include <g2o/core/base_vertex.h>
+#include <g2o/core/block_solver.h>
+#include <g2o/core/optimization_algorithm_levenberg.h>
+#include <g2o/core/sparse_optimizer.h>
+#include <g2o/solvers/dense/linear_solver_dense.h>
+
+#define G2O_EMPTY_SERIALIZE \
+  virtual bool read(std::istream &in) override { return true; } \
+  virtual bool write(std::ostream &out) const override { return true; }
+
 typedef Sophus::SE3d SE3;
 typedef Eigen::Matrix3d Mat33;
 typedef Eigen::Vector3d Vec3;
@@ -18,18 +30,7 @@ public:
     typedef std::shared_ptr<Camera> Ptr;
 
     double fx = 1, fy = 1, cx = 0, cy = 0;
-    SE3 pose, pose_inv;    // pcenter -> camera
-    SE3 Tcw, Tcw_inv;   // camera -> world
-
-    void set_pose(const SE3 &p) {
-      pose = p;
-      pose_inv = p.inverse();
-    }
-
-    void set_Tcw(const SE3 &T) {
-      Tcw = T;
-      Tcw_inv = T.inverse();
-    }
+    SE3 Tcr, Trc, Trw, Twr, Tcw, Twc;   // camera, robot, world
 
     // 返回内参
     Mat33 K() const {
@@ -38,15 +39,25 @@ public:
       return k;
     }
 
-    // 坐标变换: world, camera, pixel
-    Vec3 world2camera(const Vec3 &p_w) const {
-      return pose * Tcw * p_w;
+    // 变换矩阵
+    void set_Tcr(const SE3 &T) {
+      Tcr = T;
+      Trc = T.inverse();
+      update_Tcw();
     }
 
-    Vec3 camera2world(const Vec3 &p_c) const {
-      return Tcw_inv * pose_inv * p_c;
+    void set_Trw(const SE3 &T) {
+      Trw = T;
+      Twr = T.inverse();
+      update_Tcw();
     }
 
+    void update_Tcw() {
+      Tcw = Tcr * Trw;
+      Twc = Tcw.inverse();
+    }
+
+    // 坐标变换
     Vec2 camera2pixel(const Vec3 &p_c) const {
       return {fx * p_c(0) / p_c(2) + cx,
               fy * p_c(1) / p_c(2) + cy};
@@ -58,54 +69,71 @@ public:
               depth};
     }
 
+    Vec3 world2camera(const Vec3 &p_w) const { return Tcw * p_w; }
+
+    Vec3 camera2world(const Vec3 &p_c) const { return Twc * p_c; }
+
     Vec2 world2pixel(const Vec3 &p_w) const { return camera2pixel(world2camera(p_w)); }
 
     Vec3 pixel2world(const Vec2 &p_p, double depth) const { return camera2world(pixel2camera(p_p, depth)); }
 };
 
 
-/**
- * @brief 基于 SVD 的线性三角剖分
- * @param poses - 相机位姿 (相对于机器人坐标系)
- * @param p_c - 相机坐标系下的关键点
- * @param p_r - 机器人坐标系下的关键点
- * @param z_floor - 地面高度
- */
-bool triangulation(const std::vector<SE3> &poses,
-                   const std::vector<Vec3> &p_c,
-                   Vec3 &p_r,
-                   double z_floor = 0.) {
-  Eigen::MatrixXd equ_set(2 * p_c.size(), 4);
-  for (int i = 0; i < p_c.size(); ++i) {
-    // Ti * p_r = di * p_ci 等价:
-    // 1. (Ti[0] - p_ci[0] * Ti[2]) * p_r = 0
-    // 2. (Ti[1] - p_ci[1] * Ti[2]) * p_r = 0
-    Eigen::Matrix<double, 3, 4> Ti = poses[i].matrix3x4();
-    equ_set.block<2, 4>(2 * i, 0) = Ti.block<2, 4>(0, 0) - p_c[i].head(2) * Ti.row(2);
-  }
-  // A = USV^T, AV = US
-  // 由于特征向量最后一个值最小, 故 AV 的最后一列趋近于零, 即 V 的最后一列为解
-  auto svd = equ_set.bdcSvd(Eigen::ComputeThinV);
-  p_r = svd.matrixV().col(3).head(3) / svd.matrixV()(3, 3);
-  return (p_r[2] > z_floor && svd.singularValues()[3] / svd.singularValues()[2] < 1e-2);
-}
-
-
-/** @brief 图像对 */
-class ImgPair {
+/** @brief 位姿顶点 */
+class VertexPose : public g2o::BaseVertex<6, SE3> {
 public:
-    cv::Mat img1, img2;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
-    ImgPair(cv::Mat &img1, cv::Mat &img2) : img1(img1), img2(img2) {}
+    G2O_EMPTY_SERIALIZE;
 
-    /** @brief LK 光流匹配关键点 */
-    void match_keypoint(std::vector<cv::Point2f> &kp1,
-                        std::vector<cv::Point2f> &kp2,
-                        cv::Mat &status) const {
-      cv::calcOpticalFlowPyrLK(
-          img1, img2, kp1, kp2.empty() ? kp1 : kp2,
-          status, cv::Mat(), cv::Size(11, 11), 3,
-          cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 30, 0.01),
-          cv::OPTFLOW_USE_INITIAL_FLOW);
+    void setToOriginImpl() override { _estimate = SE3(); }
+
+    void oplusImpl(const double *update) override {
+      Eigen::Matrix<double, 6, 1> update_eigen(update);
+      _estimate = SE3::exp(update_eigen) * _estimate;
+    }
+};
+
+
+/**
+ * @brief 估计位姿的一元边
+ * @param p_w 世界坐标系坐标
+ * @var _measurement 像素坐标系坐标
+ */
+class EdgePose : public g2o::BaseUnaryEdge<2, Vec2, VertexPose> {
+
+public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+
+    G2O_EMPTY_SERIALIZE;
+
+    Vec3 *p_w;
+    Camera::Ptr camera;
+
+    EdgePose(Vec3 *p_w, Camera::Ptr camera) : p_w(p_w), camera(camera) {}
+
+    void computeError() override {
+      const VertexPose *v = static_cast<VertexPose *>(_vertices[0]);
+      SE3 Tcw = v->estimate();
+      Vec2 p_p = camera->camera2pixel(Tcw * *p_w);
+      _error = _measurement - p_p;
+    }
+};
+
+
+/** @brief g2o 优化器 */
+template<int p, int l,
+    template<typename> class LinearSolverTp = g2o::LinearSolverDense,
+    typename AlgorithmT = g2o::OptimizationAlgorithmLevenberg>
+
+class Optimizer : public g2o::SparseOptimizer {
+public:
+    typedef g2o::BlockSolverPL<p, l> BlockSolverType;
+    typedef LinearSolverTp<typename BlockSolverType::PoseMatrixType> LinearSolverType;
+
+    Optimizer() {
+      setAlgorithm(new AlgorithmT(
+          g2o::make_unique<BlockSolverType>(
+              g2o::make_unique<LinearSolverType>())));
     }
 };
