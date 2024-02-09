@@ -1,9 +1,16 @@
 #pragma once
 
 #include <chrono>
+#include <Eigen/Core>
 #include <glog/logging.h>
 #include <iostream>
 #include <opencv2/opencv.hpp>
+#include <sophus/se3.hpp>
+
+typedef Sophus::SE3d SE3;
+typedef Eigen::Matrix3d Mat33;
+typedef Eigen::Vector3d Vec3;
+typedef Eigen::Vector2d Vec2;
 
 
 /** @brief 日志 */
@@ -65,23 +72,3 @@ bool triangulation(const std::vector<SE3> &poses,
   p_r = svd.matrixV().col(3).head(3) / svd.matrixV()(3, 3);
   return (p_r[2] > z_floor && svd.singularValues()[3] / svd.singularValues()[2] < 1e-2);
 }
-
-
-/** @brief 图像对 */
-class ImgPair {
-public:
-    cv::Mat img1, img2;
-
-    ImgPair(cv::Mat &img1, cv::Mat &img2) : img1(img1), img2(img2) {}
-
-    /** @brief LK 光流匹配关键点 */
-    void match_keypoint(std::vector<cv::Point2f> &kp1,
-                        std::vector<cv::Point2f> &kp2,
-                        cv::Mat &status) const {
-      cv::calcOpticalFlowPyrLK(
-          img1, img2, kp1, kp2.empty() ? kp1 : kp2,
-          status, cv::Mat(), cv::Size(11, 11), 3,
-          cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 30, 0.01),
-          cv::OPTFLOW_USE_INITIAL_FLOW);
-    }
-};

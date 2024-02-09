@@ -24,8 +24,8 @@ set(G2O_LIBS
 
 add_executable(main main.cpp)
 target_link_libraries(main
+        glog::glog
         fmt::fmt
         ${G2O_LIBS}
-        glog::glog
         ${OpenCV_LIBS}
 )
