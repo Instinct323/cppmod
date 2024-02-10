@@ -67,7 +67,7 @@ public:
     Vec3 *p_w;
     Camera::Ptr camera;
 
-    EdgePose(Vec3 *p_w, Camera::Ptr camera) : p_w(p_w), camera(camera) {}
+    EdgePose(Vec3 *p_w, Camera::Ptr &camera) : p_w(p_w), camera(camera) {}
 
     void computeError() override {
       const VertexPose *v = static_cast<VertexPose *>(_vertices[0]);

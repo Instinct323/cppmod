@@ -1,5 +1,7 @@
 #pragma once
 
+#include <utility>
+
 #include "mappoint.h"
 
 
@@ -24,12 +26,14 @@ public:
     operator cv::Point2f() { return {x, y}; }
 
     // 构造函数
-    Keypoint(cv::Point2f &pt, MappointPtr mp = MappointPtr()) : x(pt.x), y(pt.y), _mappoint(mp) {}
+    explicit Keypoint(cv::Point2f &pt,
+                      MappointPtr mp = MappointPtr()
+    ) : x(pt.x), y(pt.y), _mappoint(std::move(mp)) {}
 
     // 拷贝构造函数
     Keypoint(const cv::Point2f &other) : x(other.x), y(other.y) {}
 
-    Keypoint(const Keypoint &other) : x(other.x), y(other.y), _mappoint(other._mappoint) {}
+    Keypoint(const Keypoint &other) = default;
 
     // 拷贝赋值运算符
     Keypoint &operator=(const Vec2 &other) {
@@ -45,9 +49,11 @@ public:
     }
 
     Keypoint &operator=(const Keypoint &other) {
-      x = other.x;
-      y = other.y;
-      _mappoint = other._mappoint;
+      if (this != &other) {
+        x = other.x;
+        y = other.y;
+        _mappoint = other._mappoint;
+      }
       return *this;
     }
 };

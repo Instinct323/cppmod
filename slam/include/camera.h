@@ -26,18 +26,18 @@ public:
     void set_Tcr(const SE3 &T) {
       Tcr = T;
       Trc = T.inverse();
-      update_Tcw();
+      update_Trw();
     }
 
-    void set_Trw(const SE3 &T) {
-      Trw = T;
-      Twr = T.inverse();
-      update_Tcw();
+    void set_Tcw(const SE3 &T) {
+      Tcw = T;
+      Twc = T.inverse();
+      update_Trw();
     }
 
-    void update_Tcw() {
-      Tcw = Tcr * Trw;
-      Twc = Tcw.inverse();
+    void update_Trw() {
+      Trw = Trc * Tcw;
+      Twr = Trw.inverse();
     }
 
     // 坐标变换
