@@ -14,7 +14,7 @@ enum class TrackStatus {
 class Frame {
 
 public:
-    typedef cv::GFTTDetector FeatDetector;
+    typedef cv::Ptr<cv::Feature2D> DetectorPtr;
     typedef std::shared_ptr<Frame> Ptr;
 
     static int nfeats_max, nfeats_bad, nfeats_good;
@@ -34,7 +34,7 @@ public:
                       const cv::Mat &img,
                       const Ptr &last_frame,
                       const SE3 &T01,
-                      const cv::Ptr<cv::Feature2D> &detector = nullptr) {
+                      const DetectorPtr &detector = nullptr) {
       Ptr p = Ptr(new Frame(camera, img, last_frame, T01, detector));
       p->shared_this = p;
       return p;
@@ -44,7 +44,7 @@ public:
                    const cv::Mat &img,
                    const Ptr &last_frame,
                    const SE3 &T01,   // 相机运动 (lastWorld <- curWorld)
-                   const cv::Ptr<cv::Feature2D> &detector = nullptr);
+                   const DetectorPtr &detector = nullptr);
 
     /** @brief LK 光流匹配关键点 */
     int match_keypoints(const Ptr &last_frame,
@@ -65,6 +65,26 @@ public:
     bool get_pose(std::vector<SE3> &T) const {
       if (has_Tcw) { T.push_back(_Tcw); } else { LOG(WARNING) << "Frame: Tcw is not set!"; }
       return has_Tcw;
+    }
+
+    /** @brief 更新状态, 必要时提取新的特征点 */
+    void switch_status(int nfeats,
+                       const Ptr &last_frame,
+                       const DetectorPtr &detector) {
+      if (nfeats >= nfeats_good) {
+        status = TrackStatus::GOOD;
+      } else {
+        is_init = detector != nullptr && !last_frame->is_init;
+        if (is_init) {
+          kp_status.clear();
+          // 匹配到的特征点不足 (上一帧不是刚初始化的), 检测新特征点
+          std::vector<cv::KeyPoint> org_kps;
+          detector->detect(img, org_kps);
+          for (auto &org_kp: org_kps) { kps.emplace_back(org_kp.pt); }
+          nfeats = kps.size();
+        }
+        status = (nfeats >= nfeats_bad) ? TrackStatus::BAD : TrackStatus::LOST;
+      }
     }
 
     /** @brief 存储整理 (仅在构造方法中运行) */
