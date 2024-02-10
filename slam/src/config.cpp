@@ -1,9 +1,8 @@
-#include "frontend.h"
+#include "frame.h"
 #include "mappoint.h"
 
-int Frontend::nfeats_max = 200;
-int Frontend::nfeats_init = 100;
-int Frontend::nfeats_track_bad = 20;
-int Frontend::nfeats_track_good = 80;
+int Frame::nfeats_max = 200;
+int Frame::nfeats_bad = 20;
+int Frame::nfeats_good = 80;
 
 double Mappoint::z_floor = 0.;

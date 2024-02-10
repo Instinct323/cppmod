@@ -12,7 +12,7 @@ bool Mappoint::triangulation() {
     // 去除失效的关键点
     if (frame == nullptr) {
       kps.erase(it);
-    } else if (frame->get_Tcw(Tcw)) {
+    } else if (frame->get_pose(Tcw)) {
       // 相机坐标系下的关键点
       Vec2 p_p = frame->kps[kps[i].second];
       p_c.push_back(frame->camera->pixel2camera(p_p, 1));
@@ -31,5 +31,5 @@ bool Mappoint::triangulation() {
   // 由于特征向量最后一个值最小, 故 AV 的最后一列趋近于零, 即 V 的最后一列为解
   auto svd = equ_set.bdcSvd(Eigen::ComputeThinV);
   p_w = svd.matrixV().col(3).head(3) / svd.matrixV()(3, 3);
-  is_outlier = p_w[2] > z_floor && svd.singularValues()[3] / svd.singularValues()[2] < 1e-2;
+  is_inlier = p_w[2] > z_floor && svd.singularValues()[3] / svd.singularValues()[2] < 1e-2;
 }

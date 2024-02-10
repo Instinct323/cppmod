@@ -3,10 +3,10 @@
 
 
 Frame::Frame(const Camera::Ptr &camera,
-                      const cv::Mat &img,
-                      const Ptr &last_frame,
-                      const SE3 &T01,   // 相机运动 (lastWorld <- curWorld)
-                      const cv::Ptr<cv::Feature2D> &detector
+             const cv::Mat &img,
+             const Ptr &last_frame,
+             const SE3 &T01,   // 相机运动 (lastWorld <- curWorld)
+             const cv::Ptr<cv::Feature2D> &detector
 ) : camera(camera), img(img) {
 
   std::vector<cv::Point2f> last_kps, cur_kps;
@@ -25,19 +25,34 @@ Frame::Frame(const Camera::Ptr &camera,
   camera->set_Tcw(Tc0);
 
   // 光流匹配关键点
-  is_init = match_keypoints(last_frame, last_kps, cur_kps) < Frontend::nfeats_track_good && detector != nullptr;
-  if (is_init) {
-    // 匹配到的特征点不足, 检测新特征点
-    std::vector<cv::KeyPoint> org_kps;
-    detector->detect(img, org_kps);
-    for (auto &org_kp: org_kps) { kps.emplace_back(org_kp.pt); }
+  int nfeats = match_keypoints(last_frame, last_kps, cur_kps);
+  if (nfeats >= nfeats_good) {
+    status = TrackStatus::GOOD;
+    reduce(last_frame, cur_kps);
   } else {
-    // 转化存储: cur_kps -> kps
-    for (int i = 0; i < cur_kps.size(); i++) {
-      kps.emplace_back(cur_kps[i], last_frame->kps[i]._mappoint);
+    is_init = detector != nullptr && !last_frame->is_init;
+    status = TrackStatus::BAD;
+    if (!is_init) {
+      // 无法进行特征检测
+      reduce(last_frame, cur_kps);
+    } else {
+      // 匹配到的特征点不足 (上一帧不是刚初始化的), 检测新特征点
+      std::vector<cv::KeyPoint> org_kps;
+      detector->detect(img, org_kps);
+      for (auto &org_kp: org_kps) { kps.emplace_back(org_kp.pt); }
+      if (nfeats < nfeats_bad) status = TrackStatus::LOST;
     }
-    // todo: 上一帧是初始化状态, 创建路标点
+  }
+}
 
-    reduce();
+
+void Frame::set_pose(const SE3 *pose) {
+  if (pose != nullptr) {
+    // 给定位姿时, 直接设置
+    _Tcw = *pose;
+    has_Tcw = true;
+  } else {
+    // 未给定位姿时, 通过 g2o 优化位姿
+
   }
 }

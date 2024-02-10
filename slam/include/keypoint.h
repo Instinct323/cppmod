@@ -8,15 +8,11 @@
 class Keypoint {
 
 public:
-    typedef std::weak_ptr<Mappoint> MappointPtr;
-
-    MappointPtr _mappoint;
+    std::weak_ptr<Mappoint> _mappoint;
     float x, y;
 
     // 关联路标点
     bool hasMappoint() const { return !_mappoint.expired(); }
-
-    void setMappoint(const MappointPtr &mp) { _mappoint = mp; }
 
     Mappoint::Ptr getMappoint() const { return _mappoint.lock(); }
 
@@ -27,8 +23,8 @@ public:
 
     // 构造函数
     explicit Keypoint(cv::Point2f &pt,
-                      MappointPtr mp = MappointPtr()
-    ) : x(pt.x), y(pt.y), _mappoint(std::move(mp)) {}
+                      Mappoint::Ptr mp = Mappoint::Ptr()
+    ) : x(pt.x), y(pt.y), _mappoint(mp) {}
 
     // 拷贝构造函数
     Keypoint(const cv::Point2f &other) : x(other.x), y(other.y) {}

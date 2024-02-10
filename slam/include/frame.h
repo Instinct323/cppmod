@@ -4,6 +4,11 @@
 #include "keypoint.h"
 
 
+enum class TrackStatus {
+    LOST, BAD, GOOD
+};
+
+
 /** @brief 帧, 匹配的特征点数量取决于给定帧的特征点 (与路标点无关)
  * 匹配成功的点数量不足时, 将使用特征提取器, 路标点于下一帧中补充 */
 class Frame {
@@ -12,23 +17,27 @@ public:
     typedef cv::GFTTDetector FeatDetector;
     typedef std::shared_ptr<Frame> Ptr;
 
+    static int nfeats_max, nfeats_bad, nfeats_good;
+    Ptr shared_this;
+
     Camera::Ptr camera;
     cv::Mat img;
     std::vector<Keypoint> kps;    // 关键点
-    std::vector<uchar> status;   // 跟踪状态
+    std::vector<uchar> kp_status;   // 跟踪状态
 
-    bool is_init, has_Tcw = false;
+    TrackStatus status = TrackStatus::GOOD;
+    bool is_init = false, has_Tcw = false;
     SE3 _Tcw;
 
-    // 相机位姿 (camera <- world)
-    void setTcw(const SE3 &Tcw) {
-      _Tcw = Tcw;
-      has_Tcw = true;
-    }
-
-    bool get_Tcw(std::vector<SE3> &T) const {
-      if (has_Tcw) { T.push_back(_Tcw); } else { LOG(WARNING) << "Frame: Tcw is not set!"; }
-      return has_Tcw;
+    // 构造方法
+    static Ptr create(const Camera::Ptr &camera,
+                      const cv::Mat &img,
+                      const Ptr &last_frame,
+                      const SE3 &T01,
+                      const cv::Ptr<cv::Feature2D> &detector = nullptr) {
+      Ptr p = Ptr(new Frame(camera, img, last_frame, T01, detector));
+      p->shared_this = p;
+      return p;
     }
 
     explicit Frame(const Camera::Ptr &camera,
@@ -43,29 +52,45 @@ public:
                         std::vector<cv::Point2f> &cur_kps) {
       cv::calcOpticalFlowPyrLK(
           last_frame->img, img, last_kps, cur_kps,
-          status, cv::Mat(), cv::Size(11, 11), 3,
+          kp_status, cv::Mat(), cv::Size(11, 11), 3,
           cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 30, 0.01),
           cv::OPTFLOW_USE_INITIAL_FLOW);
-      return std::count(status.begin(), status.end(), 1);
+      return std::count(kp_status.begin(), kp_status.end(), 1);
     }
 
-    /** @brief 存储整理 (仅运行一次) */
-    void reduce() {
-      if (!is_init) {
-        // 删除匹配失败的关键点, 过期的路标点
-        for (int i = status.size() - 1; i >= 0; i--) {
-          if (status[i] == 0 || kps[i].hasMappoint()) kps.erase(kps.begin() + i);
+    bool is_keyframe() { return is_init && status != TrackStatus::LOST; }
+
+    void set_pose(const SE3 *pose = nullptr);
+
+    bool get_pose(std::vector<SE3> &T) const {
+      if (has_Tcw) { T.push_back(_Tcw); } else { LOG(WARNING) << "Frame: Tcw is not set!"; }
+      return has_Tcw;
+    }
+
+    /** @brief 存储整理 (仅在构造方法中运行) */
+    void reduce(const Ptr &last_frame,
+                std::vector<cv::Point2f> &cur_kps) {
+      for (int i = 0; i < kp_status.size(); i++) {
+        // 转化存储: cur_kps -> kps (删除匹配失败的关键点, 过期的路标点)
+        if (kp_status[i] != 0 && last_frame->kps[i].hasMappoint()) {
+          Mappoint::Ptr mp;
+          // 上一帧是初始化状态, 创建路标点
+          if (last_frame->is_init) {
+            mp = Mappoint::create();
+            mp->add(last_frame, i);
+          } else {
+            mp = last_frame->kps[i].getMappoint();
+          }
+          // 更新路标点的关键点
+          if (mp != nullptr && mp->is_inlier) {
+            mp->add(shared_this, kps.size());
+            mp->triangulation();
+            kps.emplace_back(cur_kps[i], mp);
+          }
         }
       }
-      if (!status.empty()) {
-        // 更新路标点的关键点
-        for (int i = 0; i < kps.size(); i++) {
-          auto mp = kps[i].getMappoint();
-          if (mp != nullptr) mp->add(Ptr(this), i);
-        }
-        // 清空状态
-        status.clear();
-      }
+      // 清空状态
+      kp_status.clear();
       kps.shrink_to_fit();
     }
 };
