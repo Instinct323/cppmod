@@ -15,7 +15,7 @@ public:
     typedef std::weak_ptr<Frame> FrameWeak;
 
     static double z_floor;
-    Ptr shared_this;
+    std::weak_ptr<Mappoint> weak_this;
 
     Vec3 p_w;
     bool is_inlier = true;
@@ -24,12 +24,12 @@ public:
     // 构造方法
     static Ptr create() {
       Ptr p = Ptr(new Mappoint);
-      p->shared_this = p;
+      p->weak_this = p;
       return p;
     }
 
     // 关键点的添加、删除
-    void add(const std::shared_ptr<Frame> &ptr, int kp_id) { kps.emplace_back(ptr, kp_id); }
+    void add(const FrameWeak &ptr, int kp_id) { kps.emplace_back(ptr, kp_id); }
 
     void reduce() {
       for (int i = kps.size() - 1; i >= 0; --i) {
@@ -42,5 +42,5 @@ public:
      * @brief 基于 SVD 的线性三角剖分
      * @param z_floor - 地面高度
      */
-    bool triangulation();
+    void triangulation();
 };

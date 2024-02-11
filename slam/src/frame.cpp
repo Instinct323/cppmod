@@ -2,29 +2,54 @@
 #include "frontend.h"
 
 
-Frame::Frame(const Camera::Ptr &camera,
-             const cv::Mat &img,
-             const Ptr &last_frame,
-             const SE3 &T01,   // 相机运动 (lastWorld <- curWorld)
-             const cv::Ptr<cv::Feature2D> &detector
-) : camera(camera), img(img) {
-  std::vector<cv::Point2f> last_kps, cur_kps;
-  // 暂时修改相机位姿
-  SE3 Tc0 = camera->Tcw;  // camera <- lastWorld
-  camera->set_Tcw(Tc0 * T01);
-  for (auto kp: last_frame->kps) {
-    last_kps.push_back(kp);
-    // 使用 last_kps 初始化 cur_kps
-    auto mp = kp.getMappoint();
-    if (mp != nullptr) kp = camera->world2pixel(mp->p_w);
-    cur_kps.push_back(kp);
+Frame::Ptr Frame::create(const cv::Mat &img, const Camera::Ptr &camera, const Frame::Ptr &last_frame) {
+  if (last_frame == nullptr) {
+    // 初始化第一帧
+    Ptr p_init = Ptr(new Frame(img, camera));
+    p_init->weak_this = p_init;
+    return p_init;
+  } else {
+    // 尝试追踪上一帧
+    Ptr p_track = Ptr(new Frame(img, camera, last_frame));
+    p_track->weak_this = p_track;
+    // 追踪状态差, 重新初始化
+    if (p_track->status != FrameStatus::TRACK_GOOD) {
+      Ptr p_init = Ptr(new Frame(img, camera));
+      p_init->weak_this = p_init;
+      p_init->link = p_track;
+      return p_init;
+    }
+    return p_track;
   }
-  // 还原相机位姿
-  camera->set_Tcw(Tc0);
-  // 光流匹配关键点
-  int nfeats = match_keypoints(last_frame, last_kps, cur_kps);
-  switch_status(nfeats, last_frame, detector);
-  reduce(last_frame, cur_kps);
+}
+
+
+Frame::Frame(const cv::Mat &img,
+             const Camera::Ptr &camera,
+             const Ptr &last_frame
+) : img(img), camera(camera), _Tcw(camera->Tcw) {
+  if (last_frame != nullptr) {
+    // 检测新特征点
+    std::vector<cv::KeyPoint> org_kps;
+    detector->detect(img, org_kps);
+    for (auto &org_kp: org_kps) { kps.emplace_back(org_kp.pt); }
+    // 更新状态
+    kps.shrink_to_fit();
+    status = (kps.size() >= nfeats_good) ? FrameStatus::INIT_SUCCESS : FrameStatus::INIT_FAILED;
+  } else {
+    // 尝试追踪上一帧
+    std::vector<cv::Point2f> last_kps, cur_kps;
+    for (auto kp: last_frame->kps) {
+      last_kps.push_back(kp);
+      cur_kps.push_back(kp);
+    }
+    // 光流匹配, 存储整理, 位姿求解
+    match_keypoints(last_frame, last_kps, cur_kps);
+    int nfeats = reduce(last_frame, cur_kps);
+    // 状态更新
+    status = (nfeats >= nfeats_good) ? FrameStatus::TRACK_GOOD : (
+        (nfeats >= nfeats_bad) ? FrameStatus::TRACK_BAD : FrameStatus::TRACK_LOST);
+  }
 }
 
 
