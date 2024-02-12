@@ -10,6 +10,8 @@
 typedef Sophus::SE3d SE3;
 typedef Eigen::Matrix3d Mat33;
 typedef Eigen::Vector3d Vec3;
+
+typedef Eigen::Matrix2d Mat22;
 typedef Eigen::Vector2d Vec2;
 
 

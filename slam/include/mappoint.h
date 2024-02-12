@@ -18,7 +18,7 @@ public:
     std::weak_ptr<Mappoint> weak_this;
 
     Vec3 p_w;
-    bool is_inlier = true;
+    bool is_inlier = false;
     std::vector<std::pair<FrameWeak, int>> kps;  // 关键点 (frame ptr, kp index)
 
     // 构造方法

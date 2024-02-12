@@ -7,6 +7,7 @@
 #include <g2o/core/base_vertex.h>
 #include <g2o/core/block_solver.h>
 #include <g2o/core/optimization_algorithm_levenberg.h>
+#include <g2o/core/robust_kernel_impl.h>
 #include <g2o/core/sparse_optimizer.h>
 #include <g2o/solvers/dense/linear_solver_dense.h>
 
@@ -64,15 +65,15 @@ public:
 
     G2O_EMPTY_SERIALIZE;
 
-    Vec3 *p_w;
+    Mappoint::Ptr mp;
     Camera::Ptr camera;
 
-    EdgePose(Vec3 *p_w, Camera::Ptr &camera) : p_w(p_w), camera(camera) {}
+    EdgePose(Mappoint::Ptr mp, Camera::Ptr &camera) : mp(mp), camera(camera) {}
 
     void computeError() override {
       const VertexPose *v = static_cast<VertexPose *>(_vertices[0]);
       SE3 Tcw = v->estimate();
-      Vec2 p_p = camera->camera2pixel(Tcw * *p_w);
+      Vec2 p_p = camera->camera2pixel(Tcw * mp->p_w);
       _error = _measurement - p_p;
     }
 };

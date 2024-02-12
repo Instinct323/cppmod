@@ -33,7 +33,7 @@ public:
 
     FrameStatus status;
     bool has_Tcw = false;
-    SE3 _Tcw;
+    SE3 Tcw;
 
     static Ptr create(const cv::Mat &img,
                       const Camera::Ptr &camera,
@@ -55,38 +55,14 @@ public:
           cv::OPTFLOW_USE_INITIAL_FLOW);
     }
 
-    void set_pose(const SE3 *pose = nullptr);
+    void mul_Tcw(const SE3& T, bool optimize = true, double chi2_th = 5.991);
 
-    bool get_pose(std::vector<SE3> &T) const {
-      if (has_Tcw) { T.push_back(_Tcw); } else { LOG(WARNING) << "Frame: Tcw is not set!"; }
+    bool get_Tcw(std::vector<SE3> &T) const {
+      if (has_Tcw) { T.push_back(Tcw); } else { LOG(WARNING) << "Frame: Tcw is not set!"; }
       return has_Tcw;
     }
 
     /** @brief 存储整理 (仅在构造方法中运行) */
     int reduce(const Ptr &last_frame,
-               std::vector<cv::Point2f> &cur_kps) {
-      for (int i = 0; i < kp_status.size(); i++) {
-        // 转化存储: cur_kps -> kps (删除匹配失败的关键点, 过期的路标点)
-        if (kp_status[i] != 0 && last_frame->kps[i].hasMappoint()) {
-          Mappoint::Ptr mp;
-          // 上一帧是初始化状态, 创建路标点
-          if (last_frame->status < 0) {
-            mp = Mappoint::create();
-            mp->add(last_frame, i);
-          } else {
-            mp = last_frame->kps[i].getMappoint();
-          }
-          // 更新路标点的关键点
-          if (mp != nullptr && mp->is_inlier) {
-            mp->add(weak_this, kps.size());
-            mp->triangulation();
-            kps.emplace_back(cur_kps[i], mp);
-          }
-        }
-      }
-      // 清空状态
-      kp_status.clear();
-      kps.shrink_to_fit();
-      return kps.size();
-    }
+               std::vector<cv::Point2f> &cur_kps);
 };
