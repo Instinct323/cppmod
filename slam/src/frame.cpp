@@ -16,15 +16,14 @@ Frame::Frame(const cv::Mat &img,
     status = (kps.size() >= nfeats_min * 2) ? INIT_SUCCESS : INIT_FAILED;
   } else {
     // 尝试追踪上一帧
-    link = (last_frame->link == nullptr) ? last_frame : last_frame->link;
+    link = (last_frame->status == INIT_SUCCESS) ? last_frame : last_frame->link;
     std::vector<cv::Point2f> last_kps, cur_kps;
     for (Keypoint kp: last_frame->kps) {
       last_kps.push_back(kp);
       cur_kps.push_back(kp);
     }
     // 光流匹配, 存储整理
-    match_keypoints(last_frame, last_kps, cur_kps);
-    int nfeats = reduce(last_frame, cur_kps);
+    int nfeats = match_keypoints(last_frame, last_kps, cur_kps);
     // 状态更新
     status = (nfeats >= nfeats_min) ? TRACK_GOOD : TRACK_LOST;
     if (status == TRACK_GOOD) {
@@ -35,8 +34,16 @@ Frame::Frame(const cv::Mat &img,
 }
 
 
-int Frame::reduce(const Ptr &last_frame,
-                  std::vector<cv::Point2f> &cur_kps) {
+int Frame::match_keypoints(const Ptr &last_frame,
+                           std::vector<cv::Point2f> &last_kps,
+                           std::vector<cv::Point2f> &cur_kps) {
+  std::vector<uchar> kp_status;
+  cv::calcOpticalFlowPyrLK(
+      last_frame->img, img, last_kps, cur_kps,
+      kp_status, cv::Mat(), cv::Size(11, 11), 3,
+      cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 30, 0.01),
+      cv::OPTFLOW_USE_INITIAL_FLOW);
+
   for (int i = 0; i < kp_status.size(); i++) {
     // 转化存储: cur_kps -> kps (删除匹配失败的关键点, 过期的路标点)
     Mappoint::Ptr mp = last_frame->kps[i].mp;
@@ -47,15 +54,12 @@ int Frame::reduce(const Ptr &last_frame,
         mp->add(last_frame, i);
       }
       // 更新路标点的关键点
-      if (mp != nullptr && mp->is_inlier) {
+      if (mp != nullptr) {
         mp->add(weak_this, kps.size());
-        mp->triangulation();
         kps.emplace_back(cur_kps[i], mp);
       }
     }
   }
-  // 清空状态
-  kp_status.clear();
   kps.shrink_to_fit();
   return kps.size();
 }
@@ -71,12 +75,13 @@ void Frame::mul_Tcw(const SE3 &motion, bool optimize, double chi2_th) {
 
     auto *vex_pose = new VertexPose;
     vex_pose->setId(0);
+    vex_pose->setEstimate(Tcw);
     optimizer.addVertex(vex_pose);
 
     for (int i = 0; i < kps.size(); i++) {
       Keypoint kp = kps[i];
       Mappoint::Ptr mp = kp.mp;
-      if (mp == nullptr || !mp->is_inlier) continue;
+      if (mp == nullptr) continue;
       // 估计值: 路标点世界坐标经位姿信息, 变换到像素坐标
       auto *edge = new EdgePose(mp, camera);
       edge->setId(i);
@@ -88,22 +93,15 @@ void Frame::mul_Tcw(const SE3 &motion, bool optimize, double chi2_th) {
       optimizer.addEdge(edge);
     }
 
-    for (int i = 0; i < 5; i++) {
-      vex_pose->setEstimate(Tcw);
-      optimizer.setVerbose(true);
-      optimizer.initializeOptimization();
-      optimizer.optimize(10);
+    optimizer.setVerbose(true);
+    optimizer.initializeOptimization();
+    optimizer.optimize(40);
+    Tcw = vex_pose->estimate();
 
-      for (auto &edge: edges) {
-        if (!edge->mp->is_inlier) continue;
-        edge->computeError();
-        // 根据 chi2 阈值设置边、路标点的 inlier 状态
-        edge->mp->is_inlier = edge->chi2() < chi2_th;
-        edge->setLevel(!edge->mp->is_inlier);
-        // if (i == 2) edge->setRobustKernel(nullptr);
-      }
-
-      Tcw = vex_pose->estimate();
+    for (auto &edge: edges) {
+      edge->computeError();
+      // 根据 chi2 阈值设置路标点的 inlier 状态
+      edge->mp->is_inlier = edge->chi2() < chi2_th;
     }
   }
 }

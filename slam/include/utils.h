@@ -1,11 +1,14 @@
 #pragma once
 
+#include <boost/format.hpp>
 #include <chrono>
 #include <Eigen/Core>
 #include <glog/logging.h>
 #include <iostream>
 #include <opencv2/opencv.hpp>
 #include <sophus/se3.hpp>
+
+typedef boost::format format;
 
 typedef Sophus::SE3d SE3;
 typedef Eigen::Matrix3d Mat33;
@@ -38,12 +41,18 @@ public:
 
     Timepoint t0;
 
-    Timer() { t0 = Clock::now(); }
+    Timer() { reset(); }
+
+    void reset() { t0 = Clock::now(); }
+
+    double count() {
+      Timepoint t1 = Clock::now();
+      Duration time_used = std::chrono::duration_cast<Duration>(t1 - t0);
+      return time_used.count();
+    }
 
 protected:
-    friend std::ostream &operator<<(std::ostream &os, const Timer &timer) {
-      Timepoint t1 = Clock::now();
-      Duration time_used = std::chrono::duration_cast<Duration>(t1 - timer.t0);
-      return (os << time_used.count());
+    friend std::ostream &operator<<(std::ostream &os, Timer &timer) {
+      return os << timer.count();
     }
 };

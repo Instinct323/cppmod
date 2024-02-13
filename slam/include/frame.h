@@ -10,8 +10,7 @@ enum FrameStatus {
 };
 
 
-/** @brief 帧, 匹配的特征点数量取决于给定帧的特征点 (与路标点无关)
- * 匹配成功的点数量不足时, 将使用特征提取器, 路标点于下一帧中补充 */
+/** @brief 帧, 匹配的特征点数量不多于给定帧 (与路标点无关) */
 class Frame {
 
 public:
@@ -27,11 +26,10 @@ public:
     cv::Mat img;
     Camera::Ptr camera;
     std::vector<Keypoint> kps;    // 关键点
-    std::vector<uchar> kp_status;   // 关键点跟踪状态
 
     FrameStatus status;
-    bool has_Tcw = false;
     SE3 Tcw;
+    bool has_Tcw = false;
 
     static Ptr create(const cv::Mat &img,
                       const Camera::Ptr &camera,
@@ -43,34 +41,23 @@ public:
 
     void mul_Tcw(const SE3 &motion, bool optimize = true, double chi2_th = 5.991);
 
-    bool get_Tcw(std::vector<SE3> &T) const {
-      if (has_Tcw) { T.push_back(Tcw); } else { LOG(WARNING) << "Frame: Tcw is not set!"; }
-      return has_Tcw;
-    }
-
-    bool get_Tcw(SE3 &T) const {
-      if (has_Tcw) { T = Tcw; } else { LOG(WARNING) << "Frame: Tcw is not set!"; }
-      return has_Tcw;
+    inline SE3 get_Tcw() const {
+      if (!has_Tcw) { LOG(WARNING) << *this << ": Tcw is not set!"; }
+      return Tcw;
     }
 
 protected:
     // 追踪上一帧
-    Frame(const cv::Mat &img,
+    explicit Frame(const cv::Mat &img,
           const Camera::Ptr &camera,
           const Ptr &last_frame = nullptr);
 
     /** @brief LK 光流匹配关键点 */
-    void match_keypoints(const Ptr &last_frame,
+    int match_keypoints(const Ptr &last_frame,
                          std::vector<cv::Point2f> &last_kps,
-                         std::vector<cv::Point2f> &cur_kps) {
-      cv::calcOpticalFlowPyrLK(
-          last_frame->img, img, last_kps, cur_kps,
-          kp_status, cv::Mat(), cv::Size(11, 11), 3,
-          cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 30, 0.01),
-          cv::OPTFLOW_USE_INITIAL_FLOW);
-    }
+                         std::vector<cv::Point2f> &cur_kps);
 
-    /** @brief 存储整理 (仅在构造方法中运行) */
-    int reduce(const Ptr &last_frame,
-               std::vector<cv::Point2f> &cur_kps);
+    friend std::ostream &operator<<(std::ostream &os, const Frame &frame) {
+      return os << "Frame(" << frame.kps.size() << ")";
+    }
 };

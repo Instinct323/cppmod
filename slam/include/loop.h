@@ -16,7 +16,7 @@ public:
     std::vector<Frame::Ptr> keyframes;
 
     // 加载视频文件
-    Monocular(std::string file) : video(file) {
+    explicit Monocular(const std::string& file) : video(file) {
       if (!video.isOpened()) {
         LOG(FATAL) << "Failed to open video file: " << file;
       }
@@ -40,15 +40,8 @@ public:
         }
         // 求解位姿信息
         cur_frame->mul_Tcw(motion);
-        motion = cur_frame->Tcw * Tcw.inverse();
-        cur_frame->get_Tcw(Tcw);
+        motion = cur_frame->get_Tcw() * Tcw.inverse();
+        Tcw = cur_frame->get_Tcw();
       }
     }
-};
-
-
-class Stereo {
-
-public:
-    // Frame::Ptr cur_frame = nullptr, last_frame = nullptr;
 };

@@ -68,7 +68,7 @@ public:
     Mappoint::Ptr mp;
     Camera::Ptr camera;
 
-    EdgePose(Mappoint::Ptr mp, Camera::Ptr &camera) : mp(mp), camera(camera) {}
+    EdgePose(Mappoint::Ptr &mp, Camera::Ptr &camera) : mp(mp), camera(camera) {}
 
     void computeError() override {
       const VertexPose *v = static_cast<VertexPose *>(_vertices[0]);

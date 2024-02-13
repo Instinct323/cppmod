@@ -9,11 +9,12 @@ void Mappoint::triangulation() {
   for (int i = kps.size() - 1; i >= 0; i--) {
     auto it = kps.begin() + i;
     Frame::Ptr frame = kps[i].first.lock();
-    // 去除失效的关键点
     if (frame == nullptr) {
+      // 去除失效的关键点
       kps.erase(it);
-    } else if (frame->get_Tcw(Tcw)) {
+    } else if (frame->has_Tcw) {
       // 相机坐标系下的关键点
+      Tcw.push_back(frame->get_Tcw());
       Vec2 p_p = frame->kps[kps[i].second];
       p_c.push_back(frame->camera->pixel2camera(p_p, 1));
     }

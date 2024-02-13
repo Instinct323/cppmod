@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "utils.h"
 
 
@@ -22,7 +24,7 @@ public:
     std::vector<std::pair<FrameWeak, int>> kps;  // 关键点 (frame ptr, kp index)
 
     static Ptr create() {
-      Ptr p = Ptr(new Mappoint);
+      Ptr p = std::make_shared<Mappoint>();
       map.push_back(p);
       return p;
     }
@@ -42,4 +44,16 @@ public:
      * @param z_floor - 地面高度
      */
     void triangulation();
+
+protected:
+    friend std::ostream &operator<<(std::ostream &os, const Mappoint &mp) {
+      format fmt;
+      if (mp.is_inlier) {
+        fmt = format("Mappoint(%.2f, %.2f, %.2f, n_kps=%d)");
+        fmt % mp.p_w[0] % mp.p_w[1] % mp.p_w[2];
+      } else {
+        fmt = format("Mappoint(n_kps=%d)");
+      }
+      return os << (fmt % mp.kps.size());
+    }
 };
