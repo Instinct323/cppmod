@@ -3,8 +3,8 @@
 #include "mappoint.h"
 
 int Frame::nfeats_max = 200;
-int Frame::nfeats_bad = 20;
-int Frame::nfeats_good = 50;
+int Frame::nfeats_min = 20;
+float Frame::nfeats_decay = 0.8;
 
 cv::Ptr<cv::GFTTDetector> Frame::detector = cv::GFTTDetector::create(Frame::nfeats_max, 0.01, 20);
 

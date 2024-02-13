@@ -14,17 +14,16 @@ public:
     typedef std::shared_ptr<Mappoint> Ptr;
     typedef std::weak_ptr<Frame> FrameWeak;
 
+    static std::vector<std::weak_ptr<Mappoint>> map;
     static double z_floor;
-    std::weak_ptr<Mappoint> weak_this;
 
     Vec3 p_w;
     bool is_inlier = false;
     std::vector<std::pair<FrameWeak, int>> kps;  // 关键点 (frame ptr, kp index)
 
-    // 构造方法
     static Ptr create() {
       Ptr p = Ptr(new Mappoint);
-      p->weak_this = p;
+      map.push_back(p);
       return p;
     }
 
@@ -32,7 +31,7 @@ public:
     void add(const FrameWeak &ptr, int kp_id) { kps.emplace_back(ptr, kp_id); }
 
     void reduce() {
-      for (int i = kps.size() - 1; i >= 0; --i) {
+      for (int i = kps.size() - 1; i >= 0; i--) {
         auto it = kps.begin() + i;
         if (it->first.expired()) kps.erase(it);
       }

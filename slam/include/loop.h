@@ -7,11 +7,13 @@
 class Monocular {
 
 public:
+    cv::VideoCapture video;
+    Camera::Ptr camera;
+
     Frame::Ptr cur_frame = nullptr, last_frame = nullptr;
     SE3 Tcw, motion;
 
-    cv::VideoCapture video;
-    Camera::Ptr camera;
+    std::vector<Frame::Ptr> keyframes;
 
     // 加载视频文件
     Monocular(std::string file) : video(file) {
@@ -26,12 +28,20 @@ public:
         cv::Mat img;
         video >> img;
         cur_frame = Frame::create(img, camera, last_frame);
-
-        // 当前帧初始化失败 / 追踪失败, 迷失
-
-        // 当前帧初始化成功, 关键帧
-
-        // 当前帧正常追踪, 非关键帧
+        // cur: TRACK_BAD 关键帧, 保存并重新初始化
+        if (cur_frame->status == TRACK_BAD) {
+          keyframes.push_back(cur_frame);
+          cur_frame = Frame::create(img, camera, nullptr);
+        }
+        // cur: INIT_FAILED / TRACK_LOST 迷失
+        if (cur_frame->status == INIT_FAILED || cur_frame->status == TRACK_LOST) {
+          LOG(ERROR) << "Trace failed.";
+          break;
+        }
+        // 求解位姿信息
+        cur_frame->mul_Tcw(motion);
+        motion = cur_frame->Tcw * Tcw.inverse();
+        cur_frame->get_Tcw(Tcw);
       }
     }
 };

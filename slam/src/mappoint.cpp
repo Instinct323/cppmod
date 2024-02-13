@@ -8,7 +8,7 @@ void Mappoint::triangulation() {
 
   for (int i = kps.size() - 1; i >= 0; i--) {
     auto it = kps.begin() + i;
-    auto frame = kps[i].first.lock();
+    Frame::Ptr frame = kps[i].first.lock();
     // 去除失效的关键点
     if (frame == nullptr) {
       kps.erase(it);

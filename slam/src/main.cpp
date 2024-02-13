@@ -1,11 +1,6 @@
 #include "utils.h"
 
-#include "keypoint.h"
-
-#include "g2o_types.h"
-#include "stereo.h"
-#include "frame.h"
-#include "frontend.h"
+#include "loop.h"
 
 #include <condition_variable>
 
