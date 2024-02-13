@@ -39,10 +39,7 @@ public:
       }
     }
 
-    /**
-     * @brief 基于 SVD 的线性三角剖分
-     * @param z_floor - 地面高度
-     */
+    // 基于 SVD 的线性三角剖分
     void triangulation();
 
 protected:

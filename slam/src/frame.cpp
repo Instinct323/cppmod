@@ -28,7 +28,7 @@ Frame::Frame(const cv::Mat &img,
     status = (nfeats >= nfeats_min) ? TRACK_GOOD : TRACK_LOST;
     if (status == TRACK_GOOD) {
       float nfeats_thresh = nfeats_decay * static_cast<float>(link->kps.size());
-      if (nfeats < nfeats_thresh) status = TRACK_BAD;
+      if (float(nfeats) < nfeats_thresh) status = TRACK_BAD;
     }
   }
 }
@@ -82,6 +82,8 @@ void Frame::mul_Tcw(const SE3 &motion, bool optimize, double chi2_th) {
       Keypoint kp = kps[i];
       Mappoint::Ptr mp = kp.mp;
       if (mp == nullptr) continue;
+      mp->triangulation();
+      if (!mp->is_inlier) continue;
       // 估计值: 路标点世界坐标经位姿信息, 变换到像素坐标
       auto *edge = new EdgePose(mp, camera);
       edge->setId(i);

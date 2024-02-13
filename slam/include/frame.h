@@ -16,7 +16,7 @@ class Frame {
 public:
     typedef std::shared_ptr<Frame> Ptr;
 
-    static int nfeats_max, nfeats_min;
+    static int nfeats_min;
     static float nfeats_decay;
     static cv::Ptr<cv::GFTTDetector> detector;   // 特征提取器
 

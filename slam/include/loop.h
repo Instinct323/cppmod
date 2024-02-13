@@ -20,6 +20,7 @@ public:
       if (!video.isOpened()) {
         LOG(FATAL) << "Failed to open video file: " << file;
       }
+      camera->set_Tcr(SE3());
     }
 
     void frontend_loop() {
@@ -42,6 +43,7 @@ public:
         cur_frame->mul_Tcw(motion);
         motion = cur_frame->get_Tcw() * Tcw.inverse();
         Tcw = cur_frame->get_Tcw();
+        camera->set_Tcw(Tcw);
       }
     }
 };
