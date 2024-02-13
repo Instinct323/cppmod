@@ -99,6 +99,7 @@ void Frame::mul_Tcw(const SE3 &motion, bool optimize, double chi2_th) {
     optimizer.initializeOptimization();
     optimizer.optimize(40);
     Tcw = vex_pose->estimate();
+    camera->set_Tcw(Tcw);
 
     for (auto &edge: edges) {
       edge->computeError();

@@ -43,7 +43,6 @@ public:
         cur_frame->mul_Tcw(motion);
         motion = cur_frame->get_Tcw() * Tcw.inverse();
         Tcw = cur_frame->get_Tcw();
-        camera->set_Tcw(Tcw);
       }
     }
 };

@@ -45,7 +45,7 @@ public:
 
     void reset() { t0 = Clock::now(); }
 
-    double count() {
+    double count() const {
       Timepoint t1 = Clock::now();
       Duration time_used = std::chrono::duration_cast<Duration>(t1 - t0);
       return time_used.count();

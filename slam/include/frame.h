@@ -52,7 +52,7 @@ protected:
           const Camera::Ptr &camera,
           const Ptr &last_frame = nullptr);
 
-    /** @brief LK 光流匹配关键点 */
+    // LK 光流匹配关键点
     int match_keypoints(const Ptr &last_frame,
                          std::vector<cv::Point2f> &last_kps,
                          std::vector<cv::Point2f> &cur_kps);

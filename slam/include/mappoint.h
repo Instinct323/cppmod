@@ -29,15 +29,8 @@ public:
       return p;
     }
 
-    // 关键点的添加、删除
+    // 关键点的添加
     void add(const FrameWeak &ptr, int kp_id) { kps.emplace_back(ptr, kp_id); }
-
-    void reduce() {
-      for (int i = kps.size() - 1; i >= 0; i--) {
-        auto it = kps.begin() + i;
-        if (it->first.expired()) kps.erase(it);
-      }
-    }
 
     // 基于 SVD 的线性三角剖分
     void triangulation();
