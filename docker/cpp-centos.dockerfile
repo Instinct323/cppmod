@@ -1,5 +1,5 @@
-# docker build -f cpp-centos.dockerfile -t cpp-base .
-# docker run -p 22:22 cpp-base
+# docker build -f cpp-centos.dockerfile -t cpp .
+# docker run -p 22:22 cpp
 # docker exec -it <ctn> bash
 
 FROM centos:7

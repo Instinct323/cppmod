@@ -16,7 +16,6 @@ public:
     typedef std::shared_ptr<Mappoint> Ptr;
     typedef std::weak_ptr<Frame> FrameWeak;
 
-    static std::vector<std::weak_ptr<Mappoint>> map;
     static double z_floor;
 
     Vec3 p_w;
@@ -24,9 +23,7 @@ public:
     std::vector<std::pair<FrameWeak, int>> kps;  // 关键点 (frame ptr, kp index)
 
     static Ptr create() {
-      Ptr p = std::make_shared<Mappoint>();
-      map.push_back(p);
-      return p;
+      return std::make_shared<Mappoint>();
     }
 
     // 关键点的添加

@@ -50,9 +50,4 @@ public:
       Duration time_used = std::chrono::duration_cast<Duration>(t1 - t0);
       return time_used.count();
     }
-
-protected:
-    friend std::ostream &operator<<(std::ostream &os, Timer &timer) {
-      return os << timer.count();
-    }
 };

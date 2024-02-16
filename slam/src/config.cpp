@@ -3,8 +3,6 @@
 #include "frame.h"
 #include "mappoint.h"
 
-std::vector<std::weak_ptr<Mappoint>> Mappoint::map;
-
 int Frame::nfeats_min = 20;
 float Frame::nfeats_decay = 0.8;
 

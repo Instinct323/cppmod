@@ -57,5 +57,4 @@ protected:
       os << "BinFile<" << obj.file << ">";
       return os;
     }
-
 };
