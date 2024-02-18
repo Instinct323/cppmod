@@ -8,8 +8,10 @@ ARG USER=tongzj
 ARG PASSWD='20010323'
 ARG EMAIL='1400721986@qq.com'
 
-# windows: VcXsrv
 ENV DISPLAY='host.docker.internal:0'
+ENV DEBIAN_FRONTEND=noninteractive
+
+# windows: VcXsrv
 RUN useradd -m $USER && \
     echo $USER:$PASSWD | chpasswd
 
@@ -23,7 +25,7 @@ RUN apt install -y git && \
     git config --global user.email $EMAIL
 
 # OpenSSH
-RUN DEBIAN_FRONTEND=noninteractive apt install -y openssh-server && \
+RUN apt install -y openssh-server && \
     mkdir /var/run/sshd && \
     sed -ri 's/^PermitRootLogin\s+.*/PermitRootLogin yes/' /etc/ssh/sshd_config && \
     sed -ri 's/UsePAM yes/#UsePAM yes/g' /etc/ssh/sshd_config
