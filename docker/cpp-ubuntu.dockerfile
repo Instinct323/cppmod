@@ -1,5 +1,5 @@
 # docker build -f cpp-ubuntu.dockerfile -t cpp .
-# docker run -p 22:22 cpp
+# docker run -p 22:22 -v D:\Workbench:/home/workbench cpp
 # docker exec -it <ctn> bash
 
 FROM ubuntu:22.04
@@ -8,16 +8,18 @@ ARG USER=tongzj
 ARG PASSWD='20010323'
 ARG EMAIL='1400721986@qq.com'
 
+# windows: VcXsrv
 ENV DISPLAY='host.docker.internal:0'
 ENV DEBIAN_FRONTEND=noninteractive
 
-# windows: VcXsrv
 RUN useradd -m $USER && \
-    echo $USER:$PASSWD | chpasswd
+    echo $USER:$PASSWD | chpasswd && \
+    echo root:$PASSWD | chpasswd && \
+    usermod -aG sudo $USER
 
 # apt
 RUN apt update && \
-    apt install -y tree unzip wget
+    apt install -y tree unzip wget sudo
 
 # Git
 RUN apt install -y git && \
@@ -35,7 +37,8 @@ ARG BIN=/usr/local/bin
 COPY cpp-bin/*.bash $BIN/
 COPY cpp-bin/ros.key /usr/share/keyrings/ros-archive-keyring.gpg
 RUN chmod +x $BIN/*.bash && \
-    apt install -y build-essential cmake gdb
+    apt install -y build-essential cmake gdb && \
+    apt clean
 
 WORKDIR /home/$USER
 CMD /usr/sbin/sshd -D
