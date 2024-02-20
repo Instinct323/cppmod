@@ -9,9 +9,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 
 # ROS 2 header
 file(GLOB ROS2_HEADER /opt/ros/humble/include/*)
-include_directories(
-        ${ROS2_HEADER}
-)
+include_directories(${ROS2_HEADER})
 
 # cmake module, header
 list(APPEND CMAKE_MODULE_PATH
@@ -20,7 +18,7 @@ list(APPEND CMAKE_MODULE_PATH
 include_directories(slam/include)
 
 # source
-file(GLOB SRC_FILES ${PROJECT_SOURCE_DIR}/*.cpp)
+file(GLOB SRC_FILES *.cpp)
 message(STATUS "${PROJECT_NAME} SRC_FILES: ${SRC_FILES}")
 
 # package
@@ -38,6 +36,7 @@ set(G2O_LIBS
         ${G2O_SOLVER_CSPARSE_EXTENSION}
 )
 
+# executable
 add_executable(main ${SRC_FILES})
 target_link_libraries(main
         glog::glog

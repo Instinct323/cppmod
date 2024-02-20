@@ -10,10 +10,10 @@ find_package(ament_cmake REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
-rosidl_generate_interfaces(${PROJECT_NAME}
-        "msg/Demo.msg"
-        DEPENDENCIES
-)
+# *.msg
+file(GLOB MSG_FILES msg/*.msg)
+message(STATUS "${PROJECT_NAME} MSG_FILES: ${MSG_FILES}")
+rosidl_generate_interfaces(${PROJECT_NAME} ${MSG_FILES} DEPENDENCIES)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
