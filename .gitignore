@@ -1,5 +1,10 @@
 ~$*.*
 
+# ROS2
+*build*
+log
+install
+
 # Prerequisites
 *.d
 
@@ -33,7 +38,5 @@
 *.out
 *.app
 
-*cmake-build-*
 *.idea
-**build**
 
