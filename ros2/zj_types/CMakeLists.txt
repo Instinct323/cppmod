@@ -7,13 +7,14 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(action_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
-# *.msg, *.srv
+# *.msg, *.srv, *.action
 rosidl_generate_interfaces(${PROJECT_NAME}
-        srv/Demo.srv
-        DEPENDENCIES
+        cfg/Demo.action
+        DEPENDENCIES unique_identifier_msgs builtin_interfaces action_msgs
 )
 
 if(BUILD_TESTING)

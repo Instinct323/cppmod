@@ -22,7 +22,7 @@ class BinFile {
 
 public:
     /** @param file - 要与 BinFile 对象关联的文件路径 */
-    BinFile(const std::string file) : file(file) {}
+    BinFile(const std::string file) : file_(file) {}
 
     /** @brief 序列化函数, 用于将对象序列化并写入文件 */
     void dump(const dType &obj) {
@@ -43,10 +43,10 @@ public:
     }
 
 protected:
-    std::string file;
+    std::string file_;
 
     std::fstream open(std::ios::openmode mode) {
-      std::fstream f(this->file, mode | std::ios::binary);
+      std::fstream f(file_, mode | std::ios::binary);
       // 检查文件打开状态
       if (!f)
         std::cerr << "Failed to open file." << std::endl;
@@ -54,7 +54,7 @@ protected:
     }
 
     friend std::ostream &operator<<(std::ostream &os, const BinFile &obj) {
-      os << "BinFile<" << obj.file << ">";
+      os << "BinFile<" << obj.file_ << ">";
       return os;
     }
 };

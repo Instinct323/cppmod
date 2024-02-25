@@ -1,0 +1,9 @@
+# Demo.action
+# Goal definition
+int32 count
+---
+# Result definition
+int32 total
+---
+# Feedback definition
+int32 progress
