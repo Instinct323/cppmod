@@ -19,7 +19,7 @@ RUN useradd -m $USER && \
 
 # apt
 RUN apt update && \
-    apt install -y tree unzip wget sudo
+    apt install -y tree unzip wget sudo python3-pip
 
 # Git
 RUN apt install -y git && \

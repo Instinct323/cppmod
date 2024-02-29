@@ -5,3 +5,6 @@ echo "deb [arch=amd64 signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] htt
 apt update
 apt upgrade
 apt install -y libegl-mesa0 ros-humble-desktop python3-colcon-common-extensions
+
+# Python
+# pip install rosdepc
