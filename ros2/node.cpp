@@ -7,10 +7,10 @@ public:
     typedef std::shared_ptr<NodeBase> SharedPtr;
 
     // 构造方法
-    NodeBase(const std::string &name) : rclcpp::Node(name) {}
+    NodeBase(const std::string &name = "demo") : rclcpp::Node(name) {}
 
-    static SharedPtr create(const std::string &name = "demo") {
-      auto node = std::make_shared<NodeBase>(name);
+    static SharedPtr create() {
+      auto node = std::make_shared<NodeBase>();
       RCLCPP_INFO(node->get_logger(), "Successful initialization.");
       return node;
     }
