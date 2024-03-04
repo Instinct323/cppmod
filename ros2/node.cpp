@@ -17,6 +17,7 @@ public:
 };
 
 
+// ros2 pkg create zjros2 --dependencies rclcpp
 int main(int argc, char **argv) {
   rclcpp::init(argc, argv);
   rclcpp::spin(NodeBase::create());

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef ZJ__UTILS__ALGORITHM_H
+#define ZJ__UTILS__ALGORITHM_H
 
 #include <algorithm>
 #include <string>
@@ -45,3 +46,5 @@ public:
     }
   }
 };
+
+#endif

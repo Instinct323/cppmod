@@ -6,6 +6,7 @@ from rclpy.node import Node
 
 class NodeBase(Node):
 
+    # ros2 pkg create zjros2 --build-type ament_python --dependencies rclpy
     @classmethod
     def main(cls):
         rclpy.init(args=sys.argv)
