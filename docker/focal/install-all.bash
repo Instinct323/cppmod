@@ -2,7 +2,7 @@
 
 install-eigen.bash
 install-pcl.bash
-# install-ros-humble.bash
+install-ros-humble.bash
 install-ros-noetic.bash
 
 install-glog.bash   # cmake 3.22

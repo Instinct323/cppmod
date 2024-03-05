@@ -41,9 +41,8 @@ RUN apt install -y build-essential cmake gdb && \
 
 ARG BIN=/usr/local/bin
 COPY cpp-bin/*.bash $BIN/
-COPY focal/*.bash $BIN/
-COPY focal/ros.key /usr/share/keyrings/ros-archive-keyring.gpg
-COPY focal/ros.* /tmp/
+COPY cpp-bin/ros.key /usr/share/keyrings/ros-archive-keyring.gpg
+COPY cpp-bin/ros.* /tmp/
 RUN chmod +x $BIN/*.bash
 
 WORKDIR /home/$USER
