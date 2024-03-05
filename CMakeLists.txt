@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 
-# ROS 2 header
+# ROS-humble header
 file(GLOB ROS2_HEADER /opt/ros/humble/include/*)
 include_directories(${ROS2_HEADER})
 
@@ -15,7 +15,7 @@ include_directories(${ROS2_HEADER})
 list(APPEND CMAKE_MODULE_PATH
         /usr/local/share/g2o/cmake
 )
-include_directories(slam/include)
+include_directories(utils)
 
 # source
 file(GLOB SRC_FILES *.cpp)

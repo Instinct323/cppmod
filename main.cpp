@@ -10,7 +10,5 @@ int main(int argc, char **argv) {
   setenv("DISPLAY", "host.docker.internal:0", 1);
   Logger logger(argv);
 
-  RCLCPP__WAIT_SET_POLICIES__SEQUENTIAL_SYNCHRONIZATION_HPP_
-
   return 0;
 }
