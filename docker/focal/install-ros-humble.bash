@@ -17,7 +17,9 @@ rosdepc update
 rosdep install --from-paths src --ignore-src -y --skip-keys "fastcdr rti-connext-dds-6.0.1 urdfdom_headers"
 colcon build
 
+rm -rf $TMP/build   # 10 G
 rm -rf $TMP/log
+rm -rf $TMP/src   # 565 M
 
 mkdir -p $TMP/include
 cp -r $TMP/install/*/include/* $TMP/include/
