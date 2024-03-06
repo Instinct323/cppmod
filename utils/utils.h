@@ -5,8 +5,9 @@
 #include <chrono>
 #include <glog/logging.h>
 
-typedef boost::format format;
 // CXX_STANDARD: __cplusplus
+typedef boost::format format;
+
 
 /** @brief 日志 */
 class Logger {
