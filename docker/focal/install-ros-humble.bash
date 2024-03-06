@@ -23,3 +23,4 @@ rm -rf $TMP/src   # 565 M
 
 mkdir -p $TMP/include
 cp -r $TMP/install/*/include/* $TMP/include/
+# cp -r /opt/ros/humble/install/*/lib/python3.8/site-packages/* /home/workbench/data/ros-humble/

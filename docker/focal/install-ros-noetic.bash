@@ -5,3 +5,4 @@ echo "deb http://packages.ros.org/ros/ubuntu focal main" > /etc/apt/sources.list
 cat /tmp/ros.asc | apt-key add -
 apt update
 apt install -y ros-noetic-desktop-full
+# cp -r /opt/ros/noetic/lib/python3/dist-packages/* /home/workbench/data/ros-noetic/
