@@ -24,7 +24,7 @@ include_directories(utils)
 file(GLOB SRC_FILES *.cpp)
 message(STATUS "${PROJECT_NAME} SRC_FILES: ${SRC_FILES}")
 
-# package
+# packages
 find_package(Glog REQUIRED)
 find_package(fmt REQUIRED)
 find_package(OpenCV REQUIRED)

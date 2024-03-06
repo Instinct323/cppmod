@@ -6,7 +6,7 @@
 #include <glog/logging.h>
 
 typedef boost::format format;
-
+// CXX_STANDARD: __cplusplus
 
 /** @brief 日志 */
 class Logger {
