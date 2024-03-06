@@ -15,7 +15,9 @@ vcs import --input /tmp/ros.yaml src
 rosdepc init
 rosdepc update
 rosdep install --from-paths src --ignore-src -y --skip-keys "fastcdr rti-connext-dds-6.0.1 urdfdom_headers"
-colcon build --symlink-install
+colcon build
+
+rm -rf $TMP/log
 
 mkdir -p $TMP/include
 cp -r $TMP/install/*/include/* $TMP/include/
