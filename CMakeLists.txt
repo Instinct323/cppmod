@@ -1,12 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 project(main)
 
-# C++ 17
-set(CMAKE_CXX_STANDARD 17)
-# todo: -pg
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
-
 # ROS-noetic header
 include_directories(/opt/ros/noetic/include)
 
@@ -14,15 +8,21 @@ include_directories(/opt/ros/noetic/include)
 file(GLOB ROS2_HEADER /opt/ros/humble/include/*)
 include_directories(${ROS2_HEADER})
 
-# cmake module, header
+# CMake module
 list(APPEND CMAKE_MODULE_PATH
         /usr/local/share/g2o/cmake
 )
-include_directories(utils)
 
-# source
+# C++ 17
+set(CMAKE_CXX_STANDARD 17)
+# todo: -pg
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
+
+# source, header
 file(GLOB SRC_FILES *.cpp)
 message(STATUS "${PROJECT_NAME} SRC_FILES: ${SRC_FILES}")
+include_directories(utils)
 
 # packages
 find_package(Glog REQUIRED)

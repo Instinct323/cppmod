@@ -23,4 +23,9 @@ rm -rf $TMP/src   # 565 M
 
 mkdir -p $TMP/include
 cp -r $TMP/install/*/include/* $TMP/include/
-# cp -r /opt/ros/humble/install/*/lib/python3.8/site-packages/* /home/workbench/data/ros-humble/
+
+# Python 3.8 Libraries
+export TMP=/usr/local/share/ros-humble-py38
+mkdir -p $TMP
+cp -r /opt/ros/humble/install/*/lib/python3.8/site-packages/* $TMP
+rm -rf $TMP/*.egg-info
