@@ -13,8 +13,8 @@ find_package(rosidl_default_generators REQUIRED)
 
 # *.msg, *.srv, *.action
 rosidl_generate_interfaces(${PROJECT_NAME}
-        cfg/Demo.action
-        DEPENDENCIES unique_identifier_msgs builtin_interfaces action_msgs
+        cfg/Act1.action cfg/Msg1.msg cfg/Srv1.srv
+        DEPENDENCIES unique_identifier_msgs builtin_interfaces action_msgs std_msgs
 )
 
 if(BUILD_TESTING)
