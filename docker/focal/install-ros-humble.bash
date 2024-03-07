@@ -1,9 +1,15 @@
 #!/bin/bash
 
-echo "WARN: Installing ros-humble may damage the C++ standard library. Do you want to continue? [Y/n]"
-read answer
+echo "WARN: Installing ros-humble may damage the C++ standard library."
+# -y option
+if [[ $* == *-y* ]]; then
+    answer="y"
+else
+    echo "Do you want to continue? [Y/n]"
+    read -r answer
+fi
 
-if [ "$answer" != "${answer#[Yy]}" ] ;then
+if [ "$answer" != "${answer#[Yy]}" ] ; then
     # https://docs.ros.org/en/humble/Installation/Alternatives/Ubuntu-Development-Setup.html
     echo "deb [arch=amd64 signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu focal main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null
     apt update
