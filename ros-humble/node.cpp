@@ -1,26 +1,23 @@
 #include <rclcpp/rclcpp.hpp>
 
 
-class NodeBase : public rclcpp::Node {
+class Node : public rclcpp::Node {
 
 public:
-    typedef std::shared_ptr<NodeBase> SharedPtr;
+    typedef std::shared_ptr<Node> SharedPtr;
 
-    // 构造方法
-    NodeBase(const std::string &name = "demo") : rclcpp::Node(name) {}
-
-    static SharedPtr create() {
-      auto node = std::make_shared<NodeBase>();
-      RCLCPP_INFO(node->get_logger(), "Successful initialization.");
-      return node;
-    }
+    Node(const std::string &name) : rclcpp::Node(name) {}
 };
 
 
 // ros2 pkg create zjros2 --dependencies rclcpp
 int main(int argc, char **argv) {
   rclcpp::init(argc, argv);
-  rclcpp::spin(NodeBase::create());
+
+  auto node = std::make_shared<Node>("demo");
+  RCLCPP_INFO(node->get_logger(), "Successful initialization.");
+
+  rclcpp::spin(node);
   rclcpp::shutdown();
   return 0;
 }

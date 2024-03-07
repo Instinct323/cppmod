@@ -1,12 +1,8 @@
 #ifndef ZJ__UTILS__UTILS_H
 #define ZJ__UTILS__UTILS_H
 
-#include <boost/format.hpp>
 #include <chrono>
 #include <glog/logging.h>
-
-// CXX_STANDARD: __cplusplus
-typedef boost::format format;
 
 
 /** @brief 日志 */
