@@ -4,8 +4,6 @@
 class Node : public rclcpp::Node {
 
 public:
-    typedef std::shared_ptr<Node> SharedPtr;
-
     Node(const std::string &name) : rclcpp::Node(name) {}
 };
 
