@@ -2,8 +2,6 @@
 
 install-eigen.bash
 install-pcl.bash
-install-ros-humble.bash
-install-ros-noetic.bash
 
 install-glog.bash   # cmake 3.22
 install-fmt.bash  # cmake 3.8...3.26

@@ -3,7 +3,6 @@
 install-eigen.bash
 install-octomap.bash
 install-pcl.bash
-install-ros-humble.bash
 
 install-glog.bash   # cmake 3.22
 install-fmt.bash  # cmake 3.8...3.26
