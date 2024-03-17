@@ -1,0 +1,7 @@
+<launch>
+    <param name="DISPLAY" value="host.docker.internal:0"/>
+    <!-- 参数: <rosparam command="load" file="*.yaml"/> -->
+    <!-- 嵌套: <include file="*.launch"/> -->
+    <!-- 映射: <remap from="old" to="new"/> -->
+    <node pkg="turtlesim" name="sim1" type="turtlesim_node"/>
+</launch>

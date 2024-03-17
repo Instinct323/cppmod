@@ -5,7 +5,7 @@ if [ $(id -u) -eq 0 ]; then
   cmake-build.bash $1
   cd $1/cmake-build
 
-  make install
+  make -j install
   rm -rf $1
 
 else
