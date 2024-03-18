@@ -1,5 +1,5 @@
 <launch>
-    <param name="DISPLAY" value="host.docker.internal:0"/>
+    <env name="DISPLAY" value="host.docker.internal:0"/>
     <!-- 参数: <rosparam command="load" file="*.yaml"/> -->
     <!-- 嵌套: <include file="*.launch"/> -->
     <!-- 映射: <remap from="old" to="new"/> -->
