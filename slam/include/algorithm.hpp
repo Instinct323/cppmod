@@ -1,5 +1,5 @@
-#ifndef ZJ__SLAM__ALGORITHM_H
-#define ZJ__SLAM__ALGORITHM_H
+#ifndef ZJ__SLAM__ALGORITHM_HPP
+#define ZJ__SLAM__ALGORITHM_HPP
 
 #include <sophus/se3.hpp>
 
@@ -35,7 +35,8 @@ public:
 /** @brief 基于 SVD 的线性三角剖分
  *  @param Tcw - 相机位姿 (相对于世界坐标系)
  *  @param p_c - 相机坐标系下的关键点 */
-bool triangulation(std::vector<Sophus::SE3d> &Tcw, std::vector<Eigen::Vector3d> &p_c) {
+bool triangulation(std::vector<Sophus::SE3d> &Tcw,
+                   std::vector<Eigen::Vector3d> &p_c) {
   if (p_c.size() < 2) {
     return false;
   } else {

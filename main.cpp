@@ -5,7 +5,6 @@
 
 int main(int argc, char **argv) {
   Logger logger(argv);
-
   LOG(INFO) << __cplusplus;
 
   return 0;

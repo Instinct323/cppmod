@@ -1,5 +1,5 @@
-#ifndef ZJ__UTILS__ALGORITHM_H
-#define ZJ__UTILS__ALGORITHM_H
+#ifndef ZJ__UTILS__ALGORITHM_HPP
+#define ZJ__UTILS__ALGORITHM_HPP
 
 #include <algorithm>
 #include <string>
