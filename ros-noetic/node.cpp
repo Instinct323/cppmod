@@ -12,5 +12,6 @@ int main(int argc, char **argv) {
   ros::init(argc, argv, "demo");
   Node node;
   ros::spin();
+  // ros::shutdown();
   return 0;
 }

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Docker: https://github.com/osrf/docker_images/blob/27cc0b68263bbbb10bb58dd814efc0a6b0a01ec7/ros/humble/ubuntu/jammy/ros-core/Dockerfile
+
 # https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debians.html
 echo "deb [arch=amd64 signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu jammy main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null
 apt update

@@ -16,6 +16,6 @@ int main(int argc, char **argv) {
   RCLCPP_INFO(node->get_logger(), "Successful initialization.");
 
   rclcpp::spin(node);
-  rclcpp::shutdown();
+  // rclcpp::shutdown();
   return 0;
 }

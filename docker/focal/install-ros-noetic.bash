@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Docker: https://github.com/osrf/docker_images/tree/master/ros/noetic/ubuntu/focal
+
 # https://wiki.ros.org/noetic/Installation/Ubuntu
 echo "deb http://packages.ros.org/ros/ubuntu focal main" > /etc/apt/sources.list.d/ros-latest.list
 cat /tmp/ros.asc | apt-key add -
