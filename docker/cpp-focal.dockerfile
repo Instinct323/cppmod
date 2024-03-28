@@ -22,6 +22,11 @@ RUN apt update && \
     apt install -y tree unzip wget sudo python3-pip && \
     apt clean
 
+# setup timezone
+RUN echo 'Asia/Shanghai' > /etc/timezone && \
+    ln -s /usr/share/zoneinfo/Etc/UTC /etc/localtime && \
+    apt install -q -y --no-install-recommends tzdata
+
 # Git
 RUN apt install -y git && \
     apt clean && \
