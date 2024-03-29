@@ -3,7 +3,7 @@
 install-eigen.bash
 install-pcl.bash
 
-install-glog.bash   # CMAKE 3.22
+install-glog.bash
 install-fmt.bash  # CMAKE 3.8...3.26
 
 install-sophus.bash    # REQUIRE eigen, fmt

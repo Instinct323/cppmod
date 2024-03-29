@@ -1,8 +1,7 @@
 #!/bin/bash
 
-install-glog.bash   # CMAKE 3.22
-install-fmt.bash  # CMAKE 3.8...3.26
-
+install-glog.bash
+install-fmt.bash
 install-eigen.bash
 install-octomap.bash
 install-pcl.bash

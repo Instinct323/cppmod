@@ -1,5 +1,4 @@
 #!/bin/bash
 
-export TMP=/tmp/glog
-git clone https://github.com/google/glog $TMP
-cmake-install.bash $TMP
+# https://github.com/google/glog
+apt install -y libgoogle-glog-dev libgflags-dev
