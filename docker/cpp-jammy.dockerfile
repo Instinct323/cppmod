@@ -1,5 +1,5 @@
 # docker build -f cpp-jammy.dockerfile -t cpp-jammy .
-# docker run -p 22:22 -v D:\Workbench:/home/workbench cpp-jammy
+# docker run -p 22:22 -v D:\Workbench:/home/workbench instinct323/cpp-jammy
 # docker exec -it <ctn> bash
 
 FROM ubuntu:22.04

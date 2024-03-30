@@ -1,5 +1,5 @@
 # docker build -f cpp-focal.dockerfile -t cpp-focal .
-# docker run -p 22:22 -v D:\Workbench:/home/workbench cpp-focal
+# docker run -p 22:22 -v D:\Workbench:/home/workbench instinct323/cpp-focal
 # docker exec -it <ctn> bash
 
 FROM ubuntu:20.04
