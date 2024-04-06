@@ -8,7 +8,7 @@
 #include <g2o/core/sparse_optimizer.h>
 #include <g2o/solvers/dense/linear_solver_dense.h>
 
-// 空序列化函数
+// g2o 空序列化函数
 #define G2O_EMPTY_SERIALIZE \
   virtual bool read(std::istream &in) override { return true; } \
   virtual bool write(std::ostream &out) const override { return true; }
