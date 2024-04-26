@@ -1,5 +1,5 @@
-#ifndef ZJ__SLAM__UTILS_HPP
-#define ZJ__SLAM__UTILS_HPP
+#ifndef ZJSLAM__UTILS_HPP
+#define ZJSLAM__UTILS_HPP
 
 #include <opencv2/opencv.hpp>
 

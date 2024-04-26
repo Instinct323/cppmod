@@ -22,7 +22,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 # source, header
 file(GLOB SRC_FILES *.cpp)
 message(STATUS "${PROJECT_NAME} SRC_FILES: ${SRC_FILES}")
-include_directories(utils)
+include_directories(utils zjslam)
 
 # packages
 find_package(Glog REQUIRED)
