@@ -4,8 +4,6 @@
 #include "base.hpp"
 #include "pinhole.hpp"
 
-// #define KANNALA_BRANDT_DEBUG
-
 // mvParam: [fx, fy, cx, cy, k0, k1, k2, k3]
 #define KANNALA_BRANDT_NPARAM 8
 
