@@ -6,29 +6,6 @@
 
 // mvParam: [fx, fy, cx, cy, k0, k1, k2, k3]
 #define KANNALA_BRANDT_NPARAM 8
-// #define CLAMP(x, amin, amax) (x < amin ? amin : (x > amax ? amax : x))
-
-// 3D -> 2D
-#define KANNALA_BRANDT_PROJECT_BY_XYZ(vp, p3D) \
-  float R = this->computeR(atan2f(hypot(p3D.x, p3D.y), p3D.z)); \
-  float psi = atan2f(p3D.y, p3D.x); \
-  return KANNALA_BRANDT_PROJECT(vp);
-
-#define KANNALA_BRANDT_PROJECT_BY_VEC3(vp, v3D) \
-  float R = this->computeR(atan2f(hypot(v3D[0], v3D[1]), v3D[2])); \
-  float psi = atan2f(v3D[1], v3D[0]); \
-  return KANNALA_BRANDT_PROJECT(vp);
-
-#define KANNALA_BRANDT_PROJECT(vp) {vp[0] * R * cosf(psi) + vp[2], vp[1] * R * sinf(psi) + vp[3]}
-
-// 2D -> 3D
-#define KANNALA_BRANDT_UNPROJECT_PRECISION 1e-6
-
-#define KANNALA_BRANDT_UNPROJECT_BY_XY(vp, p2D) \
-  float wx = (p2D.x - vp[2]) / vp[0]; \
-  float wy = (p2D.y - vp[3]) / vp[1]; \
-  float wz = this->solveWZ(wx, wy); \
-  return {wx / wz, wy / wz, 1.f};
 
 
 class KannalaBrandt8 : public CameraBase {
@@ -43,7 +20,17 @@ public:
 
     CameraType getType() const override { return CameraType::FISHEYE; }
 
-    // 3D -> 2D
+// 3D -> 2D
+#define KANNALA_BRANDT_PROJECT_BY_XYZ(vp, p3D) \
+  float R = this->computeR(atan2f(hypot(p3D.x, p3D.y), p3D.z)); \
+  float psi = atan2f(p3D.y, p3D.x); \
+  return {vp[0] * R * cosf(psi) + vp[2], vp[1] * R * sinf(psi) + vp[3]};
+
+#define KANNALA_BRANDT_PROJECT_BY_VEC3(vp, v3D) \
+  float R = this->computeR(atan2f(hypot(v3D[0], v3D[1]), v3D[2])); \
+  float psi = atan2f(v3D[1], v3D[0]); \
+  return {vp[0] * R * cosf(psi) + vp[2], vp[1] * R * sinf(psi) + vp[3]};
+
     cv::Point2f project(const cv::Point3f &p3D) const override { KANNALA_BRANDT_PROJECT_BY_XYZ(mvParam, p3D) }
 
     Eigen::Vector2d project(const Eigen::Vector3d &v3D) const override { KANNALA_BRANDT_PROJECT_BY_VEC3(mvParam, v3D) }
@@ -52,7 +39,15 @@ public:
 
     Eigen::Vector2f projectEig(const cv::Point3f &p3D) const override { KANNALA_BRANDT_PROJECT_BY_XYZ(mvParam, p3D) }
 
-    // 2D -> 3D
+// 2D -> 3D
+#define KANNALA_BRANDT_UNPROJECT_PRECISION 1e-6
+
+#define KANNALA_BRANDT_UNPROJECT_BY_XY(vp, p2D) \
+  float wx = (p2D.x - vp[2]) / vp[0]; \
+  float wy = (p2D.y - vp[3]) / vp[1]; \
+  float wz = this->solveWZ(wx, wy); \
+  return {wx / wz, wy / wz, 1.f};
+
     cv::Point3f unproject(const cv::Point2f &p2D) const override { KANNALA_BRANDT_UNPROJECT_BY_XY(mvParam, p2D) }
 
     Eigen::Vector3f unprojectEig(const cv::Point2f &p2D) const override { KANNALA_BRANDT_UNPROJECT_BY_XY(mvParam, p2D) }

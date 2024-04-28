@@ -17,7 +17,7 @@ int main(int argc, char **argv) {
                        0.0034823894022493434, 0.0007150348452162257, -0.0020532361418706202, 0.00020293673591811182});
   for (int x = 0; x < 640; x++) {
     for (int y = 0; y < 480; y++) {
-      cam2.unprojectEig(cv::Point2f(x, y));
+      LOG(INFO) << cam2.unprojectEig(cv::Point2f(x, y));
     }
   }
 
