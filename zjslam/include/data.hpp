@@ -3,6 +3,9 @@
 
 #include <fstream>
 #include <opencv2/opencv.hpp>
+#include <sophus/se3.hpp>
+
+// todo: KITTI https://www.cvlibs.net/datasets/kitti/eval_odometry.php
 
 
 bool processTxt(const std::string &file, std::function<void(std::string)> unary_op) {
@@ -21,17 +24,32 @@ bool processTxt(const std::string &file, std::function<void(std::string)> unary_
 }
 
 
-/**
- * @brief TUM-RGBD https://cvg.cit.tum.de/data/datasets/rgbd-dataset/download
- */
-class TumRgbdLoader {
+class Dataset {
+
+protected:
     std::string path;
 
 public:
     typedef std::vector<double> Timestamps;
     typedef std::vector<std::string> ImgFiles;
+    typedef std::vector<Sophus::SE3d> Poses;
+    typedef std::vector<Eigen::Vector3d> Accels;
 
-    TumRgbdLoader(const std::string &path) : path(path) {}
+    Dataset(const std::string &path) : path(path) {}
+
+    friend std::ostream &operator<<(std::ostream &os, const Dataset &dataset) {
+      return os << "Dataset(" << dataset.path << ")";
+    }
+};
+
+
+/**
+ * @brief TUM-RGBD https://cvg.cit.tum.de/data/datasets/rgbd-dataset/download
+ */
+class TumRgbd : public Dataset {
+
+public:
+    TumRgbd(const std::string &path) : Dataset(path) {}
 
     // rgb.txt, depth.txt
     void loadImage(Timestamps &vTimestamps, ImgFiles &vFilename, std::string file = "/rgb.txt") {
@@ -44,6 +62,34 @@ public:
                      iss >> timestamp >> filename;
                      vTimestamps.push_back(timestamp);
                      vFilename.push_back(filename);
+                 });
+    }
+
+    // groundtruth.txt
+    void loadPoses(Timestamps &vTimestamps, Poses &vPoses, std::string file = "/groundtruth.txt") {
+      processTxt(path + file,
+                 [&vTimestamps, &vPoses](std::string line) {
+                     std::istringstream iss(line);
+                     double timestamp;
+                     double tx, ty, tz, qx, qy, qz, qw;
+                     // timestamp tx ty tz qx qy qz qw
+                     iss >> timestamp >> tx >> ty >> tz >> qx >> qy >> qz >> qw;
+                     vTimestamps.push_back(timestamp);
+                     vPoses.emplace_back(Eigen::Quaterniond(qw, qx, qy, qz), Eigen::Vector3d(tx, ty, tz));
+                 });
+    }
+
+    // accelerometer.txt
+    void loadAccel(Timestamps &vTimestamps, Accels &vAccel, std::string file = "/accelerometer.txt") {
+      processTxt(path + file,
+                 [&vTimestamps, &vAccel](std::string line) {
+                     std::istringstream iss(line);
+                     double timestamp;
+                     double ax, ay, az;
+                     // timestamp ax ay az
+                     iss >> timestamp >> ax >> ay >> az;
+                     vTimestamps.push_back(timestamp);
+                     vAccel.emplace_back(ax, ay, az);
                  });
     }
 };
