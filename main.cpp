@@ -2,7 +2,6 @@
 
 #include "zjslam/include/camera/kannala_brandt.hpp"
 #include "zjslam/include/dataset/tum_rgbd.hpp"
-#include "zjslam/include/dataset/kitti.hpp"
 
 
 int main(int argc, char **argv) {
@@ -14,13 +13,10 @@ int main(int argc, char **argv) {
   KannalaBrandt8 cam1({190.97847715128717, 190.9733070521226, 254.93170605935475, 256.8974428996504,
                        0.0034823894022493434, 0.0007150348452162257, -0.0020532361418706202, 0.00020293673591811182});
 
-  TumRgbd tum1("/home/workbench/data/rgbd_dataset_freiburg1_desk2");
+  TumRgbd tum1("/home/workbench/data/rgbd_dataset_freiburg1_desk");
   TumRgbd::Poses vPoses;
   TumRgbd::Timestamps vTimestamps;
   tum1.loadPoses(vTimestamps, vPoses);
-
-  Kitti kitti1("/home/workbench/data/data_odometry_poses/dataset", 0);
-  kitti1.savePoses(vPoses);
 
   return 0;
 }
