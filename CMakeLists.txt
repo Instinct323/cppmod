@@ -13,7 +13,6 @@ list(APPEND CMAKE_MODULE_PATH
         /usr/local/share/g2o/cmake
 )
 
-# C++ 17
 set(CMAKE_CXX_STANDARD 17)
 # todo: -pg
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")

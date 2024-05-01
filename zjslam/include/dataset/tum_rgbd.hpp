@@ -7,15 +7,15 @@
 /**
  * @brief TUM-RGBD https://cvg.cit.tum.de/data/datasets/rgbd-dataset/download
  */
-class TumRgbd : public DatasetBase {
+class TumRGBD : public DatasetBase {
 
 public:
     // e.g., ~/rgbd_dataset_freiburg1_desk2
-    TumRgbd(const std::string &path) : DatasetBase(path) {}
+    TumRGBD(const std::string &path) : DatasetBase(path) {}
 
     // rgb.txt, depth.txt
     void loadImage(Timestamps &vTimestamps, Filenames &vFilename, std::string file = "rgb.txt") {
-      processTxt(path + file,
+      processTxt(mPath + file,
                  [this, &vTimestamps, &vFilename](std::string line) {
                      std::istringstream iss(line);
                      double timestamp;
@@ -23,13 +23,13 @@ public:
                      // timestamp filename
                      iss >> timestamp >> filename;
                      vTimestamps.push_back(timestamp);
-                     vFilename.push_back(this->path + filename);
+                     vFilename.push_back(this->mPath + filename);
                  });
     }
 
     // groundtruth.txt
     void loadPoses(Timestamps &vTimestamps, Poses &vPoses, std::string file = "groundtruth.txt") {
-      processTxt(path + file,
+      processTxt(mPath + file,
                  [&vTimestamps, &vPoses](std::string line) {
                      std::istringstream iss(line);
                      double timestamp;
@@ -43,7 +43,7 @@ public:
 
     // accelerometer.txt
     void loadAccel(Timestamps &vTimestamps, Accels &vAccel, std::string file = "accelerometer.txt") {
-      processTxt(path + file,
+      processTxt(mPath + file,
                  [&vTimestamps, &vAccel](std::string line) {
                      std::istringstream iss(line);
                      double timestamp;

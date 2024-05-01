@@ -8,7 +8,7 @@
  * @brief KITTI https://www.cvlibs.net/datasets/kitti/eval_odometry.php
  */
 class Kitti : public DatasetBase {
-    std::string id;
+    std::string mId;
 
 public:
     typedef Eigen::Matrix<double, 3, 4> Matrix34d;
@@ -17,27 +17,27 @@ public:
     Kitti(const std::string &path, int seqid) : DatasetBase(path) {
       std::stringstream ss;
       ss << std::setw(2) << std::setfill('0') << seqid;
-      id = ss.str();
+      mId = ss.str();
     }
 
     // times.txt
     void loadTimestamps(Timestamps &vTimestamps, std::string file = "times.txt") {
-      processTxt(path + "sequences/" + id + "/" + file,
+      processTxt(mPath + "sequences/" + mId + "/" + file,
                  [&vTimestamps](std::string line) {
                      vTimestamps.push_back(std::stod(line));
                  });
     }
 
-    // e.g., image_0
+    // fixme: e.g., image_0
     void loadImage(Filenames &vFilename, std::string folder = "image_0") {
-      std::string img_path = path + "sequences/" + id + "/" + folder;
+      std::string img_path = mPath + "sequences/" + mId + "/" + folder;
       for (const auto &entry: std::filesystem::directory_iterator(img_path)) {
         vFilename.push_back(entry.path());
       }
     }
 
     void loadPoses(Poses &vPoses) {
-      processTxt(path + "poses/" + id + ".txt",
+      processTxt(mPath + "poses/" + mId + ".txt",
                  [&vPoses](std::string line) {
                      std::istringstream iss(line);
                      Matrix34d pose = Matrix34d::Identity();
@@ -49,7 +49,7 @@ public:
     }
 
     void savePoses(Poses &vPoses) {
-      std::ofstream f(path + id + ".txt");
+      std::ofstream f(mPath + mId + ".txt");
       for (const auto &pose: vPoses) {
         Matrix34d p = pose.matrix3x4();
         for (int i = 0; i < p.size(); i++) {
