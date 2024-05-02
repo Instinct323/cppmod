@@ -15,7 +15,12 @@ int main(int argc, char **argv) {
   // cv::remap();
   // cv::initUndistortRectifyMap();
   dataset::TumVI tumvi("/home/workbench/data/dataset-corridor4_512_16/dso");
-  std::cout << YAML::toCvMat<float>(tumvi.loadCfg()["cam0"]["T_cam_imu"]);
+  YAML::Node cfg = tumvi.loadCfg()["cam0"];
+
+  Eigen::Vector4f dist = YAML::toEigen<float>(cfg["distortion_coeffs"]);
+  Eigen::Matrix4f T_ci = YAML::toEigen<float>(cfg["T_cam_imu"]);
+
+  std::cout << dist << std::endl << T_ci << std::endl;
 
   return 0;
 }
