@@ -2,6 +2,7 @@
 
 #include "utils.hpp"
 #include "zjslam/include/utils.hpp"
+#include "zjslam/include/dataset/tum_vi.hpp"
 
 
 int main(int argc, char **argv) {
@@ -13,9 +14,7 @@ int main(int argc, char **argv) {
   std::cout.precision(6);
 
   ImageLoader imgLoader;
-  cv::Mat img1 = imgLoader("/home/workbench/data/both.png");
-  cv::imshow("img1", img1);
-  cv::waitKey(0);
+  TumVI tumVI("/home/workbench/data/dataset-corridor4_512_16/dso");
 
   return 0;
 }
