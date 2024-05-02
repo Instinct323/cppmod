@@ -4,13 +4,13 @@
 #include <fstream>
 #include <opencv2/opencv.hpp>
 
-#define CHECK_FILE(file) if (!file.is_open()) { std::cerr << "Failed to open file: " << #file << std::endl; std::exit(-1); }
+#define ASSERT(expr, msg) if (!(expr)) { std::cerr << "AssertionError: " << msg << std::endl; std::exit(134); }
 
 
 // 逐行读出 txt 文件, 并批量映射
-void processTxt(const std::string &file, std::function<void(std::string)> unary_op) {
+void processTxt(const std::string &file, std::function<void(std::string &)> unary_op) {
   std::ifstream f(file);
-  CHECK_FILE(f)
+  ASSERT(f.is_open(), "fail to open file " << file)
   // 读取文件, 除去空行和注释
   std::string line;
   while (std::getline(f, line)) {
@@ -20,9 +20,9 @@ void processTxt(const std::string &file, std::function<void(std::string)> unary_
 
 
 // 逐行读出 csv 文件, 并批量映射
-void processCsv(const std::string &file, std::function<void(std::vector<std::string>)> unary_op) {
+void processCsv(const std::string &file, std::function<void(std::vector<std::string> &)> unary_op) {
   std::ifstream f(file);
-  CHECK_FILE(f)
+  ASSERT(f.is_open(), "fail to open file " << file)
   // 读取文件, 除去空行和注释
   std::string line;
   while (std::getline(f, line)) {
@@ -36,6 +36,33 @@ void processCsv(const std::string &file, std::function<void(std::vector<std::str
     }
   }
 }
+
+
+/**
+ * @brief 按值切片器
+ */
+template<typename T>
+class ValueSlicer {
+    int mIndex = 0;
+    const std::vector<T> mValues;
+    std::function<bool(const T &, const T &)> mCompare;
+
+public:
+    explicit ValueSlicer(const std::vector<T> &values, bool ascending = true
+    ) : mValues(values), mCompare(ascending ? [](const T &a, const T &b) { return a <= b; } :
+                                  [](const T &a, const T &b) { return a >= b; }) {}
+
+    // 返回切片索引
+    std::pair<int, int> operator()(T value) {
+      ASSERT(mIndex < mValues.size(), "The slicer has expired");
+      ASSERT(mCompare(mValues[mIndex], value), "Invalid input value");
+      int i = mIndex;
+      for (; mIndex < mValues.size(); ++mIndex) {
+        if (!mCompare(mValues[mIndex], value)) break;
+      }
+      return {i, mIndex};
+    }
+};
 
 
 /**
@@ -76,15 +103,15 @@ public:
 class VideoCap : public cv::VideoCapture {
 
 public:
-    int delay = 0;
-    cv::Mat frame;
+    int mDelay = 0;
+    cv::Mat mFrame;
 
     bool read() {
-      bool ret = cv::VideoCapture::read(frame);
+      bool ret = cv::VideoCapture::read(mFrame);
       // 给定时延, 显示图像
-      if (ret && delay > 0) {
-        cv::imshow("frame", frame);
-        cv::waitKey(delay);
+      if (ret && mDelay > 0) {
+        cv::imshow("frame", mFrame);
+        cv::waitKey(mDelay);
       }
       return ret;
     }

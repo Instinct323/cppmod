@@ -7,24 +7,26 @@
 #include "../imu_type.hpp"
 #include "../utils.hpp"
 
+namespace dataset {
 
-class DatasetBase {
+    class Base {
 
-protected:
-    std::string mPath;
+    protected:
+        std::string mPath;
 
-public:
-    typedef std::vector<double> Timestamps;
-    typedef std::vector<std::string> Filenames;
-    typedef std::vector<Sophus::SE3d> Poses;
-    typedef std::vector<Eigen::Vector3d> Accels;
-    typedef std::vector<ImuSample> ImuSamples;
+    public:
+        typedef std::vector<double> Timestamps;
+        typedef std::vector<std::string> Filenames;
+        typedef std::vector<Sophus::SE3d> Poses;
+        typedef std::vector<Eigen::Vector3d> Accels;
+        typedef std::vector<IMU::Sample> IMUsamples;
 
-    DatasetBase(const std::string &path) : mPath(path + "/") {}
+        explicit Base(const std::string &path) : mPath(path + "/") {}
 
-    friend std::ostream &operator<<(std::ostream &os, const DatasetBase &dataset) {
-      return os << "DatasetBase(" << dataset.mPath << ")";
-    }
-};
+        friend std::ostream &operator<<(std::ostream &os, const Base &dataset) {
+          return os << "Base(" << dataset.mPath << ")";
+        }
+    };
+}
 
 #endif

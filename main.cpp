@@ -13,8 +13,7 @@ int main(int argc, char **argv) {
 
   std::cout.precision(6);
 
-  ImageLoader imgLoader;
-  TumVI tumVI("/home/workbench/data/dataset-corridor4_512_16/dso");
+  dataset::TumVI tumVI("/home/workbench/data/dataset-corridor4_512_16/dso");
 
   return 0;
 }

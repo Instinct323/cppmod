@@ -3,6 +3,8 @@
 
 #include "base.hpp"
 
+namespace camera {
+
 // mvParam: [fx, fy, cx, cy]
 #define PINHOLE_NPARAM 4
 
@@ -14,17 +16,17 @@
   Eigen::Matrix3f getKEig() const override { return PINHOLE_GETK(mvParam, Eigen::Matrix3f()).finished(); }
 
 
-class Pinhole : public CameraBase {
-    CAMERA_DERIVED_SERIALIZE
+    class Pinhole : public Base {
+        CAMERA_DERIVED_SERIALIZE
 
-public:
-    PINHOLE_FUNCTION_GETK
+    public:
+        PINHOLE_FUNCTION_GETK
 
-    Pinhole() { mvParam.resize(PINHOLE_NPARAM); }
+        Pinhole() { mvParam.resize(PINHOLE_NPARAM); }
 
-    Pinhole(const std::vector<float> &vParam) : CameraBase(vParam) { assert(mvParam.size() == PINHOLE_NPARAM); }
+        Pinhole(const std::vector<float> &vParam) : Base(vParam) { assert(mvParam.size() == PINHOLE_NPARAM); }
 
-    CameraType getType() const override { return CameraType::PINHOLE; }
+        CameraType getType() const override { return CameraType::PINHOLE; }
 
 // 3D -> 2D
 #define PINHOLE_PROJECT_BY_XYZ(vp, p3D) \
@@ -33,21 +35,22 @@ public:
 #define PINHOLE_PROJECT_BY_VEC3(vp, v3D) \
   return {vp[0] * v3D[0] / v3D[2] + vp[2], vp[1] * v3D[1] / v3D[2] + vp[3]};
 
-    cv::Point2f project(const cv::Point3f &p3D) const override { PINHOLE_PROJECT_BY_XYZ(mvParam, p3D) }
+        cv::Point2f project(const cv::Point3f &p3D) const override { PINHOLE_PROJECT_BY_XYZ(mvParam, p3D) }
 
-    Eigen::Vector2d project(const Eigen::Vector3d &v3D) const override { PINHOLE_PROJECT_BY_VEC3(mvParam, v3D) }
+        Eigen::Vector2d project(const Eigen::Vector3d &v3D) const override { PINHOLE_PROJECT_BY_VEC3(mvParam, v3D) }
 
-    Eigen::Vector2f project(const Eigen::Vector3f &v3D) const override { PINHOLE_PROJECT_BY_VEC3(mvParam, v3D) }
+        Eigen::Vector2f project(const Eigen::Vector3f &v3D) const override { PINHOLE_PROJECT_BY_VEC3(mvParam, v3D) }
 
-    Eigen::Vector2f projectEig(const cv::Point3f &p3D) const override { PINHOLE_PROJECT_BY_XYZ(mvParam, p3D) }
+        Eigen::Vector2f projectEig(const cv::Point3f &p3D) const override { PINHOLE_PROJECT_BY_XYZ(mvParam, p3D) }
 
 // 2D -> 3D
 #define PINHOLE_UNPROJECT_BY_XY(vp, p2D) \
   return {(p2D.x - vp[2]) / vp[0], (p2D.y - vp[3]) / vp[1], 1.f};
 
-    cv::Point3f unproject(const cv::Point2f &p2D) const override { PINHOLE_UNPROJECT_BY_XY(mvParam, p2D) }
+        cv::Point3f unproject(const cv::Point2f &p2D) const override { PINHOLE_UNPROJECT_BY_XY(mvParam, p2D) }
 
-    Eigen::Vector3f unprojectEig(const cv::Point2f &p2D) const override { PINHOLE_UNPROJECT_BY_XY(mvParam, p2D) }
-};
+        Eigen::Vector3f unprojectEig(const cv::Point2f &p2D) const override { PINHOLE_UNPROJECT_BY_XY(mvParam, p2D) }
+    };
+}
 
 #endif
