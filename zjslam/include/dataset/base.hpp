@@ -9,24 +9,26 @@
 
 namespace dataset {
 
-    class Base {
 
-    protected:
-        std::string mPath;
+class Base {
 
-    public:
-        typedef std::vector<double> Timestamps;
-        typedef std::vector<std::string> Filenames;
-        typedef std::vector<Sophus::SE3d> Poses;
-        typedef std::vector<Eigen::Vector3d> Accels;
-        typedef std::vector<IMU::Sample> IMUsamples;
+protected:
+    std::string mPath;
 
-        explicit Base(const std::string &path) : mPath(path + "/") {}
+public:
+    typedef std::vector<double> Timestamps;
+    typedef std::vector<std::string> Filenames;
+    typedef std::vector<Sophus::SE3d> Poses;
+    typedef std::vector<Eigen::Vector3d> Accels;
+    typedef std::vector<IMU::Sample> IMUsamples;
 
-        friend std::ostream &operator<<(std::ostream &os, const Base &dataset) {
-          return os << "Base(" << dataset.mPath << ")";
-        }
-    };
+    explicit Base(const std::string &path) : mPath(path + "/") {}
+
+    friend std::ostream &operator<<(std::ostream &os, const Base &dataset) {
+      return os << "Base(" << dataset.mPath << ")";
+    }
+};
+
 }
 
 #endif
