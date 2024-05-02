@@ -82,7 +82,6 @@ public:
       return os << ")";
     }
 };
-
 }
 
 #endif

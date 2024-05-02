@@ -25,7 +25,6 @@ public:
 
     Sample(const cv::Point3f acc, const cv::Point3f gyro) : a(acc.x, acc.y, acc.z), w(gyro.x, gyro.y, gyro.z) {}
 };
-
 }
 
 #endif

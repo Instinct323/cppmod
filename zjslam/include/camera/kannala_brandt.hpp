@@ -90,7 +90,6 @@ protected:
       return wz;
     }
 };
-
 }
 
 #endif

@@ -51,7 +51,6 @@ public:
 
     Eigen::Vector3f unprojectEig(const cv::Point2f &p2D) const override { PINHOLE_UNPROJECT_BY_XY(mvParam, p2D) }
 };
-
 }
 
 #endif

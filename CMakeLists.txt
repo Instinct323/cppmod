@@ -27,6 +27,7 @@ include_directories(utils zjslam)
 find_package(Glog REQUIRED)
 find_package(fmt REQUIRED)
 find_package(OpenCV REQUIRED)
+find_package(yaml-cpp REQUIRED)
 
 # g2o library
 find_package(G2O REQUIRED)
@@ -45,4 +46,5 @@ target_link_libraries(main
         fmt::fmt
         ${G2O_LIBS}
         ${OpenCV_LIBS}
+        yaml-cpp
 )

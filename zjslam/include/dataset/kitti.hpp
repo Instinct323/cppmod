@@ -25,10 +25,11 @@ public:
     // times.txt
     void loadTimestamps(Timestamps &vTimestamps, const std::string &file = "times.txt") {
       assert(vTimestamps.empty());
-      processTxt(mPath + "sequences/" + mId + "/" + file,
-                 [&vTimestamps](const std::string &line) {
-                     vTimestamps.push_back(std::stod(line));
-                 });
+      TXT::rowMapping(
+          mPath + "sequences/" + mId + "/" + file,
+          [&vTimestamps](const std::string &line) {
+              vTimestamps.push_back(std::stod(line));
+          });
     }
 
     // fixme: e.g., image_0
@@ -42,15 +43,16 @@ public:
 
     void loadPoses(Poses &vPoses) {
       assert(vPoses.empty());
-      processTxt(mPath + "poses/" + mId + ".txt",
-                 [&vPoses](const std::string &line) {
-                     std::istringstream iss(line);
-                     Matrix34d pose = Matrix34d::Identity();
-                     for (int i = 0; i < 3; i++) {
-                       for (int j = 0; j < 4; j++) iss >> pose(i, j);
-                     }
-                     vPoses.emplace_back(Eigen::Quaterniond(pose.block<3, 3>(0, 0)), pose.block<3, 1>(0, 3));
-                 });
+      TXT::rowMapping(
+          mPath + "poses/" + mId + ".txt",
+          [&vPoses](const std::string &line) {
+              std::istringstream iss(line);
+              Matrix34d pose = Matrix34d::Identity();
+              for (int i = 0; i < 3; i++) {
+                for (int j = 0; j < 4; j++) iss >> pose(i, j);
+              }
+              vPoses.emplace_back(Eigen::Quaterniond(pose.block<3, 3>(0, 0)), pose.block<3, 1>(0, 3));
+          });
     }
 
     void savePoses(Poses &vPoses) {
@@ -65,7 +67,6 @@ public:
       f.close();
     }
 };
-
 }
 
 #endif

@@ -5,7 +5,7 @@
 #include <sophus/se3.hpp>
 
 #include "../imu_type.hpp"
-#include "../utils.hpp"
+#include "../file.hpp"
 
 namespace dataset {
 
@@ -24,11 +24,12 @@ public:
 
     explicit Base(const std::string &path) : mPath(path + "/") {}
 
+    operator std::string () const { return mPath; }
+
     friend std::ostream &operator<<(std::ostream &os, const Base &dataset) {
-      return os << "Base(" << dataset.mPath << ")";
+      return os << dataset.mPath;
     }
 };
-
 }
 
 #endif

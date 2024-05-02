@@ -9,37 +9,6 @@
 #define ASSERT(expr, msg) if (!(expr)) { LOG(FATAL) << "AssertionError: " << msg; }
 
 
-// 逐行读出 txt 文件, 并批量映射
-void processTxt(const std::string &file, std::function<void(std::string &)> unary_op) {
-  std::ifstream f(file);
-  ASSERT(f.is_open(), "fail to open file " << file)
-  // 读取文件, 除去空行和注释
-  std::string line;
-  while (std::getline(f, line)) {
-    if (!line.empty() && line[0] != '#') unary_op(line);
-  }
-}
-
-
-// 逐行读出 csv 文件, 并批量映射
-void processCsv(const std::string &file, std::function<void(std::vector<std::string> &)> unary_op) {
-  std::ifstream f(file);
-  ASSERT(f.is_open(), "fail to open file " << file)
-  // 读取文件, 除去空行和注释
-  std::string line;
-  while (std::getline(f, line)) {
-    if (!line.empty() && line[0] != '#') {
-      std::istringstream iss(line);
-      std::string token;
-      // 以逗号分隔读取
-      std::vector<std::string> tokens;
-      while (std::getline(iss, token, ',')) tokens.push_back(token);
-      unary_op(tokens);
-    }
-  }
-}
-
-
 /**
  * @brief 按值切片器
  */
