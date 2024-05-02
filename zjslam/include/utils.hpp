@@ -4,7 +4,9 @@
 #include <fstream>
 #include <opencv2/opencv.hpp>
 
-#define ASSERT(expr, msg) if (!(expr)) { std::cerr << "AssertionError: " << msg << std::endl; std::exit(134); }
+#include "logging.hpp"
+
+#define ASSERT(expr, msg) if (!(expr)) { LOG(FATAL) << "AssertionError: " << msg; }
 
 
 // 逐行读出 txt 文件, 并批量映射
@@ -54,8 +56,8 @@ public:
 
     // 返回切片索引
     std::pair<int, int> operator()(T value) {
-      ASSERT(mIndex < mValues.size(), "The slicer has expired");
-      ASSERT(mCompare(mValues[mIndex], value), "Invalid input value");
+      ASSERT(mIndex < mValues.size(), "ValueSlicer: The slicer has expired");
+      ASSERT(mCompare(mValues[mIndex], value), "ValueSlicer: Invalid input value");
       int i = mIndex;
       for (; mIndex < mValues.size(); ++mIndex) {
         if (!mCompare(mValues[mIndex], value)) break;

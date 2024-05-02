@@ -36,7 +36,7 @@ protected:
 public:
     Base() = default;
 
-    Base(const std::vector<float> &vParam) : mvParam(vParam) {}
+    explicit Base(const std::vector<float> &vParam) : mvParam(vParam) {}
 
     virtual CameraType getType() const = 0;
 

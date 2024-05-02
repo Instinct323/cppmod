@@ -18,7 +18,7 @@ public:
 
     KannalaBrandt8() { mvParam.resize(KANNALA_BRANDT_NPARAM); }
 
-    KannalaBrandt8(const std::vector<float> &vParam) : Base(vParam) { assert(mvParam.size() == KANNALA_BRANDT_NPARAM); }
+    explicit KannalaBrandt8(const std::vector<float> &vParam) : Base(vParam) { assert(mvParam.size() == KANNALA_BRANDT_NPARAM); }
 
     CameraType getType() const override { return CameraType::FISHEYE; }
 
@@ -74,19 +74,18 @@ protected:
         float theta = M_PI_2;
         // 最小化损失: (poly(theta) - R)^2
         int i = 0;
+        float e;
         for (; i < iterations; i++) {
           float theta2 = theta * theta, theta4 = theta2 * theta2, theta6 = theta4 * theta2, theta8 = theta6 * theta2;
           float k0_theta2 = mvParam[4] * theta2, k1_theta4 = mvParam[5] * theta4,
               k2_theta6 = mvParam[6] * theta6, k3_theta8 = mvParam[7] * theta8;
-          float e = theta * (1 + k0_theta2 + k1_theta4 + k2_theta6 + k3_theta8) - R;
+          e = theta * (1 + k0_theta2 + k1_theta4 + k2_theta6 + k3_theta8) - R;
           if (abs(e) < R * KANNALA_BRANDT_UNPROJECT_PRECISION) break;
           // 梯度下降法: g = (poly(theta) - R) / poly'(theta)
           theta -= e / (1 + 3 * k0_theta2 + 5 * k1_theta4 + 7 * k2_theta6 + 9 * k3_theta8);
         }
         wz = R / tanf(theta);
-#ifdef KANNALA_BRANDT_DEBUG
-        std::cout << i << " ";
-#endif
+        if (i == iterations) LOG(WARNING) << "solveWZ(" << wx << ", " << wy << "): relative error " << abs(e) / R;
       }
       return wz;
     }

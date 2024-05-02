@@ -1,5 +1,5 @@
-#ifndef ZJ__UTILS__UTILS_HPP
-#define ZJ__UTILS__UTILS_HPP
+#ifndef ZJSLAM__LOGGING_HPP
+#define ZJSLAM__LOGGING_HPP
 
 #include <chrono>
 #include <glog/logging.h>

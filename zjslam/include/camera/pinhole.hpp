@@ -24,7 +24,7 @@ public:
 
     Pinhole() { mvParam.resize(PINHOLE_NPARAM); }
 
-    Pinhole(const std::vector<float> &vParam) : Base(vParam) { assert(mvParam.size() == PINHOLE_NPARAM); }
+    explicit Pinhole(const std::vector<float> &vParam) : Base(vParam) { assert(mvParam.size() == PINHOLE_NPARAM); }
 
     CameraType getType() const override { return CameraType::PINHOLE; }
 
