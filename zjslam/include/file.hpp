@@ -64,6 +64,7 @@ void assertMatrix(const Node &node) {
 }
 
 
+// 矩阵转换
 template<typename T, typename MatrixT>
 MatrixT toMatrix(const Node &node) {
   assertMatrix(node);
