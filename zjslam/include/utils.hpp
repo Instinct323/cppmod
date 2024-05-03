@@ -47,7 +47,7 @@ public:
 
     explicit ImageLoader(float scale = 1.f,
                          double clipLimit = 3.0,
-                         cv::Size tileGridSize = cv::Size(8, 8)
+                         cv::Size tileGridSize = {8, 8}
     ) : mScale(scale), mClahe(cv::createCLAHE(clipLimit, tileGridSize)) {}
 
     cv::Mat operator()(const std::string &filename) const {

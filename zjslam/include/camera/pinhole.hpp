@@ -5,26 +5,12 @@
 
 namespace camera {
 
-// mvParam: [fx, fy, cx, cy]
-#define PINHOLE_NPARAM 4
-
-// 内参矩阵 K
-#define PINHOLE_GETK(vp, K) (K << vp[0], 0.f, vp[2], 0.f, vp[1], vp[3], 0.f, 0.f, 1.f)
-
-#define PINHOLE_FUNCTION_GETK \
-  cv::Mat getK() const override { return PINHOLE_GETK(mvParam, cv::Mat_<float>(3, 3)); } \
-  Eigen::Matrix3f getKEig() const override { return PINHOLE_GETK(mvParam, Eigen::Matrix3f()).finished(); }
-
 
 class Pinhole : public Base {
-    CAMERA_DERIVED_SERIALIZE
 
 public:
-    PINHOLE_FUNCTION_GETK
-
-    Pinhole() { mvParam.resize(PINHOLE_NPARAM); }
-
-    explicit Pinhole(const std::vector<float> &vParam) : Base(vParam) { assert(mvParam.size() == PINHOLE_NPARAM); }
+    explicit Pinhole(const cv::Size imgSize, const Vectorf &intrinsics, const Vectorf &distCoeffs
+    ) : Base(imgSize, intrinsics, distCoeffs) {}
 
     CameraType getType() const override { return CameraType::PINHOLE; }
 

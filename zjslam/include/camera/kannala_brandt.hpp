@@ -2,23 +2,15 @@
 #define ZJSLAM__CAMERA__KANNALA_BRANDT_HPP
 
 #include "base.hpp"
-#include "pinhole.hpp"
 
 namespace camera {
 
-// mvParam: [fx, fy, cx, cy, k0, k1, k2, k3]
-#define KANNALA_BRANDT_NPARAM 8
-
 
 class KannalaBrandt8 : public Base {
-    CAMERA_DERIVED_SERIALIZE
 
 public:
-    PINHOLE_FUNCTION_GETK
-
-    KannalaBrandt8() { mvParam.resize(KANNALA_BRANDT_NPARAM); }
-
-    explicit KannalaBrandt8(const std::vector<float> &vParam) : Base(vParam) { assert(mvParam.size() == KANNALA_BRANDT_NPARAM); }
+    explicit KannalaBrandt8(const cv::Size imgSize, const Vectorf &intrinsics, const Vectorf &distCoeffs
+    ) : Base(imgSize, intrinsics, distCoeffs) {}
 
     CameraType getType() const override { return CameraType::FISHEYE; }
 
