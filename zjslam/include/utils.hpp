@@ -6,8 +6,6 @@
 
 #include "logging.hpp"
 
-#define ASSERT(expr, msg) if (!(expr)) { LOG(FATAL) << "AssertionError: " << msg; }
-
 
 /**
  * @brief 按值切片器

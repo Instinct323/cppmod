@@ -4,6 +4,8 @@
 #include <chrono>
 #include <glog/logging.h>
 
+#define ASSERT(expr, msg) if (!(expr)) { LOG(FATAL) << "AssertionError: " << msg; }
+
 
 /** @brief 日志 */
 class Logger {

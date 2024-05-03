@@ -4,7 +4,7 @@
 #include <fstream>
 #include <yaml-cpp/yaml.h>
 
-#include "utils.hpp"
+#include "logging.hpp"
 
 
 namespace CSV {
@@ -45,6 +45,16 @@ void rowMapping(const std::string &file, std::function<void(std::string &)> unar
 
 
 namespace YAML {
+
+// std::vector 转换
+template<typename T>
+std::vector<T> toVec(const YAML::Node &node) {
+  ASSERT(node.IsSequence(), "YAML: Invalid vector format");
+  std::vector<T> vec;
+  for (int i = 0; i < node.size(); ++i) vec.push_back(node[i].as<T>());
+  return vec;
+}
+
 
 // 矩阵判断
 void assertMatrix(const Node &node) {
@@ -90,7 +100,7 @@ Eigen::Matrix<T, -1, -1> toEigen(const Node &node) { return toMatrix<T, Eigen::M
 
 // cv::Mat 转换
 template<typename T>
-cv::Mat toCvMat(const Node &node) {return toMatrix<T, cv::Mat_<T>>(node);}
+cv::Mat toCvMat(const Node &node) { return toMatrix<T, cv::Mat_<T>>(node); }
 
 }
 
