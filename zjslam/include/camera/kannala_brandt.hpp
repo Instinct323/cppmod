@@ -53,12 +53,12 @@ public:
         mMap1 = cv::Mat(mImgSize, CV_32FC1), mMap2 = mMap1.clone();
         // 获取 3D 边界
         float W = mImgSize.width - 1, H = mImgSize.height - 1;
-        float x = unproject({0, H / 2}).x, y = unproject({W / 2, 0}).y,
-            w = unproject({W, H / 2}).x - x, h = unproject({W / 2, H}).y - y;
+        float x = this->unproject({0, H / 2}).x, y = this->unproject({W / 2, 0}).y,
+            w = this->unproject({W, H / 2}).x - x, h = this->unproject({W / 2, H}).y - y;
         // 计算畸变矫正映射
         for (int r = 0; r < H; ++r) {
           for (int c = 0; c < W; ++c) {
-            cv::Point2f p2D = project(cv::Point3f(w * c / W + x, h * r / H + y, 1));
+            cv::Point2f p2D = this->project(cv::Point3f(w * c / W + x, h * r / H + y, 1));
             mMap1.at<float>(r, c) = p2D.x;
             mMap2.at<float>(r, c) = p2D.y;
           }

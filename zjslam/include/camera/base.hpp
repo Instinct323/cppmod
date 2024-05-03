@@ -66,9 +66,9 @@ public:
     // 运算符
     bool operator==(const Base &other) {
       if (this == &other) return true;
-      if (getType() != other.getType() || getParamSize() != other.getParamSize()) return false;
-      for (int i = 0; i < getParamSize(); i++) {
-        if (getParam(i) != other.getParam(i)) return false;
+      if (this->getType() != other.getType() || this->getParamSize() != other.getParamSize()) return false;
+      for (int i = 0; i < this->getParamSize(); i++) {
+        if (this->getParam(i) != other.getParam(i)) return false;
       }
       return true;
     }
