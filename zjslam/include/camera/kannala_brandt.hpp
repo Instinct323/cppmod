@@ -10,7 +10,9 @@ class KannalaBrandt8 : public Base {
 
 public:
     explicit KannalaBrandt8(const cv::Size imgSize, const Vectorf &intrinsics, const Vectorf &distCoeffs
-    ) : Base(imgSize, intrinsics, distCoeffs) {}
+    ) : Base(imgSize, intrinsics, distCoeffs) {
+      ASSERT(distCoeffs.size() == 4, "Distortion coefficients size must be 4")
+    }
 
     CameraType getType() const override { return CameraType::FISHEYE; }
 
@@ -47,7 +49,9 @@ public:
     Eigen::Vector3f unprojectEig(const cv::Point2f &p2D) const override { KANNALA_BRANDT_UNPROJECT_BY_XY(mvParam, p2D) }
 
     // 去畸变
-    void undistort(const cv::Mat &src, cv::Mat &dst) override {
+    void undistort(const cv::Mat &src, cv::Mat &dst) override {if (dst.empty()) dst = src.clone();}
+
+    void undistortShow(const cv::Mat &src) {
       LOG(WARNING) << "A deprecated method is being called";
       if (mMap1.empty()) {
         mMap1 = cv::Mat(mImgSize, CV_32FC1), mMap2 = mMap1.clone();
@@ -64,7 +68,9 @@ public:
           }
         }
       }
+      cv::Mat dst;
       cv::remap(src, dst, mMap1, mMap2, cv::INTER_LINEAR);
+      cv::imshow("undistort", dst);
     }
 
 protected:

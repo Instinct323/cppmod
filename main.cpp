@@ -43,8 +43,7 @@ void pinhole_test() {
   );*/
   cv::imshow("0", img);
 
-  cam.undistort(img, dst1);
-  cv::imshow("1", dst1);
+  cam.undistortShow(img);
 
   cv::waitKey(0);
 }
