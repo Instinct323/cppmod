@@ -2,8 +2,9 @@
 
 #include "zjslam/include/logging.hpp"
 #include "zjslam/include/dataset/tum_vi.hpp"
-#include "zjslam/include/camera/pinhole.hpp"
+#include "zjslam/include/camera/kannala_brandt.hpp"
 #include "zjslam/include/camera/calib.hpp"
+#include "zjslam/include/utils.hpp"
 
 
 void dataset_test() {
@@ -18,11 +19,12 @@ void dataset_test() {
 
 void pinhole_test() {
   // cv::stereoRectify();
+  ImageLoader loader;
 
-  /*dataset::TumVI tumvi("/home/workbench/data/dataset-corridor4_512_16/dso");
+  dataset::TumVI tumvi("/home/workbench/data/dataset-corridor4_512_16/dso");
   YAML::Node cfg = tumvi.loadCfg()["cam0"];
   auto size = YAML::toVec<int>(cfg["resolution"]);
-  camera::Pinhole cam(
+  camera::KannalaBrandt8 cam(
       {size[0], size[1]},
       YAML::toVec<float>(cfg["intrinsics"]),
       YAML::toCvMat<float>(cfg["distortion_coeffs"])
@@ -31,14 +33,14 @@ void pinhole_test() {
   dataset::Timestamps vTimestamps;
   dataset::Filenames vFilename;
   tumvi.loadImage(vTimestamps, vFilename);
-  cv::Mat img = cv::imread(vFilename[0]), dst1;*/
+  cv::Mat img = loader(vFilename[0]), dst1;
 
-  cv::Mat img = cv::imread("/home/workbench/data/distorted.png"), dst1;
+  /*cv::Mat img = cv::imread("/home/workbench/data/distorted.png"), dst1;
   camera::Pinhole cam(
       img.size(),
       {458.654, 457.296, 367.215, 248.375},
       {-0.28340811, 0.07395907, 0.00019359, 1.76187114e-05}
-  );
+  );*/
   cv::imshow("0", img);
 
   cam.undistort(img, dst1);

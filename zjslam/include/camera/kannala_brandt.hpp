@@ -46,6 +46,27 @@ public:
 
     Eigen::Vector3f unprojectEig(const cv::Point2f &p2D) const override { KANNALA_BRANDT_UNPROJECT_BY_XY(mvParam, p2D) }
 
+    // 去畸变
+    void undistort(const cv::Mat &src, cv::Mat &dst) override {
+      LOG(WARNING) << "A deprecated method is being called";
+      if (mMap1.empty()) {
+        mMap1 = cv::Mat(mImgSize, CV_32FC1), mMap2 = mMap1.clone();
+        // 获取 3D 边界
+        float W = mImgSize.width - 1, H = mImgSize.height - 1;
+        float x = unproject({0, H / 2}).x, y = unproject({W / 2, 0}).y,
+            w = unproject({W, H / 2}).x - x, h = unproject({W / 2, H}).y - y;
+        // 计算畸变矫正映射
+        for (int r = 0; r < H; ++r) {
+          for (int c = 0; c < W; ++c) {
+            cv::Point2f p2D = project(cv::Point3f(w * c / W + x, h * r / H + y, 1));
+            mMap1.at<float>(r, c) = p2D.x;
+            mMap2.at<float>(r, c) = p2D.y;
+          }
+        }
+      }
+      cv::remap(src, dst, mMap1, mMap2, cv::INTER_LINEAR);
+    }
+
 protected:
     // 3D -> 2D: R(theta)
     float computeR(float theta) const {
