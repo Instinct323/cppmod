@@ -22,7 +22,7 @@ void fisheye_test() {
 
   dataset::TumVI tumvi("/home/workbench/data/dataset-corridor4_512_16/dso");
   YAML::Node cfg = tumvi.loadCfg()["cam0"];
-  camera::KannalaBrandt8::Ptr cam(camera::fromYAML<camera::KannalaBrandt8>(cfg));
+  camera::Base::Ptr cam(camera::fromYAML<camera::KannalaBrandt8>(cfg));
 
   dataset::Timestamps vTimestamps;
   dataset::Filenames vFilename;
