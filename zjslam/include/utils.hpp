@@ -1,10 +1,21 @@
 #ifndef ZJSLAM__UTILS_HPP
 #define ZJSLAM__UTILS_HPP
 
+#include <boost/thread.hpp>
 #include <fstream>
 #include <opencv2/opencv.hpp>
 
 #include "logging.hpp"
+
+
+// 线程共享变量
+template<typename T>
+struct SharedVar {
+    boost::mutex mMutex;
+    T mValue;
+
+    SharedVar(T value) : mValue(value) {};
+};
 
 
 // 按值切片器

@@ -6,16 +6,6 @@
 #include "zjslam/include/utils.hpp"
 
 
-void dataset_test() {
-  dataset::TumVI tumvi("/home/workbench/data/dataset-corridor4_512_16/dso");
-  YAML::Node cfg = tumvi.loadCfg()["cam0"];
-
-  dataset::Timestamps vTimestamps;
-  dataset::Filenames vFilename;
-  tumvi.loadImage(vTimestamps, vFilename);
-}
-
-
 void fisheye_test() {
   // cv::stereoRectify();
   ImageLoader loader;
@@ -37,7 +27,7 @@ void fisheye_test() {
 }
 
 
-void draft() {
+void pinhole_test() {
   dataset::TumVI tumvi("/home/workbench/data/dataset-corridor4_512_16/dso");
   YAML::Node cfg = tumvi.loadCfg();
 
@@ -54,13 +44,18 @@ void draft() {
 }
 
 
+void draft(){
+
+}
+
+
 int main(int argc, char **argv) {
   putenv("DISPLAY=host.docker.internal:0");
 
   Logger logger(argv);
   LOG(INFO) << "CXX standard: " << __cplusplus;
 
-  fisheye_test();
+  draft();
 
   return 0;
 }

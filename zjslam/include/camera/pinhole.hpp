@@ -2,6 +2,7 @@
 #define ZJSLAM__CAMERA__PINHOLE_HPP
 
 #include "base.hpp"
+#include "../convert.hpp"
 
 namespace camera {
 
