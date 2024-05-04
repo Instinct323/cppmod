@@ -16,39 +16,41 @@ void dataset_test() {
 }
 
 
-void pinhole_test() {
+void fisheye_test() {
   // cv::stereoRectify();
   ImageLoader loader;
 
   dataset::TumVI tumvi("/home/workbench/data/dataset-corridor4_512_16/dso");
   YAML::Node cfg = tumvi.loadCfg()["cam0"];
   camera::KannalaBrandt8::Ptr cam(camera::fromYAML<camera::KannalaBrandt8>(cfg));
-  std::cout << cam->T_cam_imu.matrix3x4() << std::endl;
 
   dataset::Timestamps vTimestamps;
   dataset::Filenames vFilename;
   tumvi.loadImage(vTimestamps, vFilename);
   cv::Mat img = loader(vFilename[0]), dst1;
 
-  /*cv::Mat img = cv::imread("/home/workbench/data/distorted.png"), dst1;
-  camera::Pinhole cam(
-      img.size(),
-      {458.654, 457.296, 367.215, 248.375},
-      {-0.28340811, 0.07395907, 0.00019359, 1.76187114e-05}
-  );*/
   cv::imshow("0", img);
-
-  cam->undistortShow(img);
+  cam->drawNormalizedPlane(img, img);
+  cv::imshow("1", img);
 
   cv::waitKey(0);
 }
 
 
 void draft() {
-  dataset::TumVI tumvi("/home/workbench/data/dataset-calib-cam2_512_16/dso");
-  dataset::Timestamps vTimestamps;
-  dataset::Filenames vFilename;
-  tumvi.loadImage(vTimestamps, vFilename);
+  dataset::TumVI tumvi("/home/workbench/data/dataset-corridor4_512_16/dso");
+  YAML::Node cfg = tumvi.loadCfg();
+
+  std::vector<float> intrinsics = {458.654, 457.296, 367.215, 248.375};
+  std::vector<float> distortion = {-0.28340811, 0.07395907, 0.00019359, 1.76187114e-05};
+
+  cv::Mat img = cv::imread("/home/workbench/data/distorted.png"), dst1;
+  camera::Pinhole cam1(img.size(), intrinsics, distortion, YAML::toSE3d(cfg["cam0"]["T_cam_imu"])),
+      cam2(img.size(), intrinsics, distortion, YAML::toSE3d(cfg["cam1"]["T_cam_imu"]));
+
+  cam1.stereoRectify(&cam2);
+
+  cv::waitKey();
 }
 
 
@@ -58,7 +60,7 @@ int main(int argc, char **argv) {
   Logger logger(argv);
   LOG(INFO) << "CXX standard: " << __cplusplus;
 
-  pinhole_test();
+  fisheye_test();
 
   return 0;
 }

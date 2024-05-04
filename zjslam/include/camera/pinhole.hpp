@@ -47,6 +47,31 @@ public:
 
     // 去畸变
     void undistort(const cv::Mat &src, cv::Mat &dst) override { cv::remap(src, dst, mMap1, mMap2, cv::INTER_LINEAR); }
+
+    void stereoRectify(Pinhole *cam_right) {
+      ASSERT(this->mImgSize == cam_right->mImgSize, "Image size must be the same")
+      Sophus::SE3d Trl = this->T_cam_imu.inverse() * cam_right->T_cam_imu;
+      cv::Mat R1_, R2_, P1_, P2_, Q_;
+      cv::stereoRectify(this->getK(), this->getDistCoeffs(), cam_right->getK(), cam_right->getDistCoeffs(), mImgSize,
+                        cvt::toCvMat<double>(Trl.rotationMatrix()),
+                        cvt::toCvMat<double>(Trl.translation()), R1_, R2_, P1_, P2_, Q_);
+      // 重新初始化畸变矫正映射
+      cv::initUndistortRectifyMap(this->getK(), this->getDistCoeffs(), R1_, P1_, mImgSize, CV_32FC1, mMap1, mMap2);
+      cv::initUndistortRectifyMap(cam_right->getK(), cam_right->getDistCoeffs(), R2_, P2_, mImgSize, CV_32FC1,
+                                  cam_right->mMap1, cam_right->mMap2);
+      // 原地修改相机内参
+      int paramPos[2][4] = {{0, 1, 0, 1},
+                            {0, 1, 2, 2}};
+      for (int i = 0; i < 4; i++) {
+        this->setParam(i, P1_.at<double>(paramPos[0][i], paramPos[1][i]));
+        cam_right->setParam(i, P2_.at<double>(paramPos[0][i], paramPos[1][i]));
+      }
+      // 原地修改相机位姿
+      Sophus::SE3d R1(cvt::toEigen<double>(R1_), Eigen::Vector3d::Zero()),
+          R2(cvt::toEigen<double>(R2_), Eigen::Vector3d::Zero());
+      this->T_cam_imu = R1 * this->T_cam_imu;
+      cam_right->T_cam_imu = R2 * cam_right->T_cam_imu;
+    }
 };
 }
 

@@ -27,7 +27,7 @@ protected:
     cv::Mat mMap1, mMap2;   // 畸变矫正映射
 
 public:
-    const Sophus::SE3d T_cam_imu;
+    Sophus::SE3d T_cam_imu;
 
     typedef std::shared_ptr<Base> Ptr;
 
@@ -41,9 +41,13 @@ public:
     virtual CameraType getType() const = 0;
 
     // 参数读取
+    inline void setParam(int i, float value) { mvParam[i] = value; }
+
     inline float getParam(int i) const { return mvParam[i]; }
 
     inline size_t getParamSize() const { return mvParam.size(); }
+
+    Vectorf getDistCoeffs() const { return {mvParam.begin() + 4, mvParam.end()}; }
 
     // 内参矩阵 K
 #define GETK(vp, K) (K << vp[0], 0.f, vp[2], 0.f, vp[1], vp[3], 0.f, 0.f, 1.f)
@@ -68,6 +72,26 @@ public:
 
     // 去畸变
     virtual void undistort(const cv::Mat &src, cv::Mat &dst) = 0;
+
+    // 绘制归一化平面 (z=1)
+    void drawNormalizedPlane(const cv::Mat &src, cv::Mat &dst) {
+      undistort(src, dst);
+      cv::Mat npMap1 = cv::Mat(mImgSize, CV_32FC1), npMap2 = npMap1.clone();
+      // 获取归一化平面边界
+      float W = mImgSize.width - 1, H = mImgSize.height - 1;
+      float x = this->unproject({0, H / 2}).x, y = this->unproject({W / 2, 0}).y,
+          w = this->unproject({W, H / 2}).x - x, h = this->unproject({W / 2, H}).y - y;
+      LOG(INFO) << "Normalized plane: " << cv::Vec4f(x, y, x + w, y + h);
+      // 计算畸变矫正映射
+      for (int r = 0; r < H; ++r) {
+        for (int c = 0; c < W; ++c) {
+          cv::Point2f p2D = this->project(cv::Point3f(w * c / W + x, h * r / H + y, 1));
+          npMap1.at<float>(r, c) = p2D.x;
+          npMap2.at<float>(r, c) = p2D.y;
+        }
+      }
+      cv::remap(dst, dst, npMap1, npMap2, cv::INTER_LINEAR);
+    }
 
     // 运算符
     bool operator==(const Base &other) {

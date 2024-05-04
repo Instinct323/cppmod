@@ -8,7 +8,7 @@
 
 namespace camera {
 
-// YAML -> Camera
+// YAML -> Camera::Ptr
 template<typename CameraT>
 typename CameraT::Ptr fromYAML(const YAML::Node &node) {
   auto imgSize = YAML::toVec<int>(node["resolution"]);

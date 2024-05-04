@@ -53,28 +53,6 @@ public:
     // 去畸变
     void undistort(const cv::Mat &src, cv::Mat &dst) override { if (dst.empty()) dst = src.clone(); }
 
-    void undistortShow(const cv::Mat &src) {
-      LOG(WARNING) << "A deprecated method is being called";
-      if (mMap1.empty()) {
-        mMap1 = cv::Mat(mImgSize, CV_32FC1), mMap2 = mMap1.clone();
-        // 获取 3D 边界
-        float W = mImgSize.width - 1, H = mImgSize.height - 1;
-        float x = this->unproject({0, H / 2}).x, y = this->unproject({W / 2, 0}).y,
-            w = this->unproject({W, H / 2}).x - x, h = this->unproject({W / 2, H}).y - y;
-        // 计算畸变矫正映射
-        for (int r = 0; r < H; ++r) {
-          for (int c = 0; c < W; ++c) {
-            cv::Point2f p2D = this->project(cv::Point3f(w * c / W + x, h * r / H + y, 1));
-            mMap1.at<float>(r, c) = p2D.x;
-            mMap2.at<float>(r, c) = p2D.y;
-          }
-        }
-      }
-      cv::Mat dst;
-      cv::remap(src, dst, mMap1, mMap2, cv::INTER_LINEAR);
-      cv::imshow("undistort", dst);
-    }
-
 protected:
     cv::Mat mUnprojectCache;
 
