@@ -9,8 +9,11 @@ namespace camera {
 class Pinhole : public Base {
 
 public:
-    explicit Pinhole(const cv::Size imgSize, const Vectorf &intrinsics, const Vectorf &distCoeffs
-    ) : Base(imgSize, intrinsics, distCoeffs) {
+    typedef std::shared_ptr<Pinhole> Ptr;
+
+    explicit Pinhole(const cv::Size imgSize, const Vectorf &intrinsics, const Vectorf &distCoeffs,
+                     const Sophus::SE3d &T_cam_imu = Sophus::SE3d()
+    ) : Base(imgSize, intrinsics, distCoeffs, T_cam_imu) {
       ASSERT(distCoeffs.size() >= 4, "Distortion coefficients size must be at least 4")
       // 计算畸变矫正映射
       cv::Mat K = getK();

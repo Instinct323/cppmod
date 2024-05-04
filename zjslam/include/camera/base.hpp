@@ -5,6 +5,7 @@
 #include <boost/serialization/base_object.hpp>
 #include <Eigen/Core>
 #include <opencv2/opencv.hpp>
+#include <sophus/se3.hpp>
 
 #include "../logging.hpp"
 
@@ -23,11 +24,16 @@ class Base {
 protected:
     cv::Size mImgSize;
     Vectorf mvParam;
-    cv::Mat mMap1, mMap2;
+    cv::Mat mMap1, mMap2;   // 畸变矫正映射
 
 public:
-    explicit Base(const cv::Size imgSize, const Vectorf &intrinsics, const Vectorf &distCoeffs
-    ) : mvParam(intrinsics), mImgSize(imgSize) {
+    const Sophus::SE3d T_cam_imu;
+
+    typedef std::shared_ptr<Base> Ptr;
+
+    explicit Base(const cv::Size imgSize, const Vectorf &intrinsics, const Vectorf &distCoeffs,
+                  const Sophus::SE3d &T_cam_imu = Sophus::SE3d()
+    ) : mImgSize(imgSize), mvParam(intrinsics), T_cam_imu(T_cam_imu) {
       ASSERT(intrinsics.size() == 4, "Intrinsics size must be 4")
       mvParam.insert(mvParam.end(), distCoeffs.begin(), distCoeffs.end());
     }

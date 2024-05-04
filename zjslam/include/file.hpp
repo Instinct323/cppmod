@@ -2,6 +2,7 @@
 #define ZJSLAM__FILE_HPP
 
 #include <fstream>
+#include <sophus/se3.hpp>
 #include <yaml-cpp/yaml.h>
 
 #include "logging.hpp"
@@ -101,6 +102,23 @@ Eigen::Matrix<T, -1, -1> toEigen(const Node &node) { return toMatrix<T, Eigen::M
 // cv::Mat 转换
 template<typename T>
 cv::Mat toCvMat(const Node &node) { return toMatrix<T, cv::Mat_<T>>(node); }
+
+
+// SE3d 转换
+Sophus::SE3d toSE3d(const Node &node) {
+  Eigen::MatrixXd mat = toEigen<double>(node);
+  // tx ty tz qw qx qy qz
+  if (mat.size() == 7) {
+    return {Eigen::Quaterniond(mat(3), mat(4), mat(5), mat(6)),
+            Eigen::Vector3d(mat(0), mat(1), mat(2))};
+  } else if (mat.size() == 12 || mat.size() == 16) {
+    // Rotation + Translation
+    Eigen::MatrixXd matn4(mat.size() / 4, 4);
+    for (int i = 0; i < mat.size(); ++i) matn4(i) = mat(i);
+    return {Eigen::Quaterniond(matn4.block<3, 3>(0, 0)), matn4.block<3, 1>(0, 3)};
+  }
+  LOG(FATAL) << "YAML: Invalid SE3d format";
+}
 
 }
 

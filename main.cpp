@@ -2,8 +2,7 @@
 
 #include "zjslam/include/logging.hpp"
 #include "zjslam/include/dataset/tum_vi.hpp"
-#include "zjslam/include/camera/kannala_brandt.hpp"
-#include "zjslam/include/camera/calib.hpp"
+#include "zjslam/include/camera.hpp"
 #include "zjslam/include/utils.hpp"
 
 
@@ -23,12 +22,8 @@ void pinhole_test() {
 
   dataset::TumVI tumvi("/home/workbench/data/dataset-corridor4_512_16/dso");
   YAML::Node cfg = tumvi.loadCfg()["cam0"];
-  auto size = YAML::toVec<int>(cfg["resolution"]);
-  camera::KannalaBrandt8 cam(
-      {size[0], size[1]},
-      YAML::toVec<float>(cfg["intrinsics"]),
-      YAML::toCvMat<float>(cfg["distortion_coeffs"])
-  );
+  camera::KannalaBrandt8::Ptr cam(camera::fromYAML<camera::KannalaBrandt8>(cfg));
+  std::cout << cam->T_cam_imu.matrix3x4() << std::endl;
 
   dataset::Timestamps vTimestamps;
   dataset::Filenames vFilename;
@@ -43,7 +38,7 @@ void pinhole_test() {
   );*/
   cv::imshow("0", img);
 
-  cam.undistortShow(img);
+  cam->undistortShow(img);
 
   cv::waitKey(0);
 }

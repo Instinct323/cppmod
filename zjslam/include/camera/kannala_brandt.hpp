@@ -9,9 +9,13 @@ namespace camera {
 class KannalaBrandt8 : public Base {
 
 public:
-    explicit KannalaBrandt8(const cv::Size imgSize, const Vectorf &intrinsics, const Vectorf &distCoeffs
-    ) : Base(imgSize, intrinsics, distCoeffs) {
+    typedef std::shared_ptr<KannalaBrandt8> Ptr;
+
+    explicit KannalaBrandt8(const cv::Size imgSize, const Vectorf &intrinsics, const Vectorf &distCoeffs,
+                            const Sophus::SE3d &T_cam_imu = Sophus::SE3d()
+    ) : Base(imgSize, intrinsics, distCoeffs, T_cam_imu), mUnprojectCache(mImgSize, CV_32FC2) {
       ASSERT(distCoeffs.size() == 4, "Distortion coefficients size must be 4")
+      makeUnprojectCache();
     }
 
     CameraType getType() const override { return CameraType::FISHEYE; }
@@ -38,18 +42,16 @@ public:
 // 2D -> 3D
 #define KANNALA_BRANDT_UNPROJECT_PRECISION 1e-6
 
-#define KANNALA_BRANDT_UNPROJECT_BY_XY(vp, p2D) \
-  float wx = (p2D.x - vp[2]) / vp[0]; \
-  float wy = (p2D.y - vp[3]) / vp[1]; \
-  float wz = this->solveWZ(wx, wy); \
-  return {wx / wz, wy / wz, 1.f};
+#define KANNALA_BRANDT_UNPROJECT_BY_XY(p2D) \
+  cv::Vec2f wxy = mUnprojectCache.at<cv::Vec2f>(p2D.y, p2D.x); \
+  return {wxy[0], wxy[1], 1};
 
-    cv::Point3f unproject(const cv::Point2f &p2D) const override { KANNALA_BRANDT_UNPROJECT_BY_XY(mvParam, p2D) }
+    cv::Point3f unproject(const cv::Point2f &p2D) const override { KANNALA_BRANDT_UNPROJECT_BY_XY(p2D) }
 
-    Eigen::Vector3f unprojectEig(const cv::Point2f &p2D) const override { KANNALA_BRANDT_UNPROJECT_BY_XY(mvParam, p2D) }
+    Eigen::Vector3f unprojectEig(const cv::Point2f &p2D) const override { KANNALA_BRANDT_UNPROJECT_BY_XY(p2D) }
 
     // 去畸变
-    void undistort(const cv::Mat &src, cv::Mat &dst) override {if (dst.empty()) dst = src.clone();}
+    void undistort(const cv::Mat &src, cv::Mat &dst) override { if (dst.empty()) dst = src.clone(); }
 
     void undistortShow(const cv::Mat &src) {
       LOG(WARNING) << "A deprecated method is being called";
@@ -74,10 +76,25 @@ public:
     }
 
 protected:
+    cv::Mat mUnprojectCache;
+
     // 3D -> 2D: R(theta)
     float computeR(float theta) const {
       float theta2 = theta * theta;
       return theta + theta2 * (mvParam[4] + theta2 * (mvParam[5] + theta2 * (mvParam[6] + theta2 * mvParam[7])));
+    }
+
+    // 2D -> 3D: cache
+    void makeUnprojectCache() {
+      float wx, wy, wz;
+      for (int r = 0; r < mImgSize.height; ++r) {
+        wy = (r - mvParam[3]) / mvParam[1];
+        for (int c = 0; c < mImgSize.width; ++c) {
+          wx = (c - mvParam[2]) / mvParam[0];
+          wz = this->solveWZ(wx, wy);
+          mUnprojectCache.at<cv::Vec2f>(r, c) = {wx / wz, wy / wz};
+        }
+      }
     }
 
     // 2D -> 3D: wz(wx, wy)
