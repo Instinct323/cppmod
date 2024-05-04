@@ -8,6 +8,7 @@
 
 namespace cvt {
 
+// Eigen reshape
 template<typename T>
 Eigen::Matrix<T, -1, -1> reshape(Eigen::Matrix<T, -1, -1> &m, int rows, int cols) {
   ASSERT(rows != -1 || cols != -1, "Invalid reshape size")
@@ -20,6 +21,7 @@ Eigen::Matrix<T, -1, -1> reshape(Eigen::Matrix<T, -1, -1> &m, int rows, int cols
 }
 
 
+// Eigen -> cv::Mat
 template<typename T>
 cv::Mat toCvMat(const Eigen::Matrix<T, -1, -1> &m) {
   cv::Mat_<T> mat(m.rows(), m.cols());
@@ -32,6 +34,7 @@ cv::Mat toCvMat(const Eigen::Matrix<T, -1, -1> &m) {
 }
 
 
+// cv::Mat -> Eigen
 template<typename T>
 Eigen::Matrix<T, -1, -1> toEigen(const cv::Mat &mat) {
   Eigen::Matrix<T, -1, -1> m(mat.rows, mat.cols);
@@ -44,6 +47,7 @@ Eigen::Matrix<T, -1, -1> toEigen(const cv::Mat &mat) {
 }
 
 
+// std::vector -> Eigen
 template<typename T>
 Eigen::Vector<T, -1> toEigen(const std::vector<T> &vec) {
   Eigen::Vector<T, -1> v(vec.size());

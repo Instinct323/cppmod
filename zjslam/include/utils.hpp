@@ -7,9 +7,7 @@
 #include "logging.hpp"
 
 
-/**
- * @brief 按值切片器
- */
+// 按值切片器
 template<typename T>
 class ValueSlicer {
     int mIndex = 0;
