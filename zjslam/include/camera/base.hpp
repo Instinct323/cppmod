@@ -1,8 +1,6 @@
 #ifndef ZJSLAM__CAMERA__BASE_HPP
 #define ZJSLAM__CAMERA__BASE_HPP
 
-#include <boost/serialization/serialization.hpp>
-#include <boost/serialization/base_object.hpp>
 #include <Eigen/Core>
 #include <opencv2/opencv.hpp>
 #include <sophus/se3.hpp>
@@ -81,9 +79,9 @@ public:
 void Base::drawNormalizedPlane(const cv::Mat &src, cv::Mat &dst) {
   undistort(src, dst);
   cv::Mat npMap1 = cv::Mat(mImgSize, CV_32FC1), npMap2 = npMap1.clone();
-  // 获取归一化平面边界
-  float W = mImgSize.width - 1, H = mImgSize.height - 1;
-  float x = this->unproject({0, H / 2}).x, y = this->unproject({W / 2, 0}).y,
+  // 获取归一化平面边界 (桶形畸变)
+  float x, y, w, h, W = mImgSize.width - 1, H = mImgSize.height - 1;
+  x = this->unproject({0, H / 2}).x, y = this->unproject({W / 2, 0}).y,
       w = this->unproject({W, H / 2}).x - x, h = this->unproject({W / 2, H}).y - y;
   LOG(INFO) << "Normalized plane: " << cv::Vec4f(x, y, x + w, y + h);
   // 计算畸变矫正映射

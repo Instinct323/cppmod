@@ -48,7 +48,7 @@ public:
           });
     }
 
-    // camchain.yaml
+    // camchain.yaml, imu_config.yaml
     YAML::Node loadCfg(const std::string &file = "camchain.yaml") { return YAML::LoadFile(mPath + file); }
 };
 }

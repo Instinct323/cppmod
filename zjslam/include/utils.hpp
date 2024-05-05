@@ -44,17 +44,17 @@ public:
 
 
 /**
- * @brief 图像加载器
+ * @brief 灰度图像加载器
  * @param scale - 图像缩放比例
  * @param clipLimit - 对比度限制
  * @param tileGridSize - 网格大小
  */
-class ImageLoader {
+class GrayLoader {
 public:
     float mScale = 1.f;
     cv::Ptr<cv::CLAHE> mClahe;
 
-    explicit ImageLoader(float scale = 1.f,
+    explicit GrayLoader(float scale = 1.f,
                          double clipLimit = 3.0,
                          cv::Size tileGridSize = {8, 8}
     ) : mScale(scale), mClahe(cv::createCLAHE(clipLimit, tileGridSize)) {}
