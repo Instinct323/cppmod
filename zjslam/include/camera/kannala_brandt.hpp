@@ -92,10 +92,9 @@ float KannalaBrandt8::solveWZ(float wx, float wy, size_t iterations) const {
   // wz = lim_{theta -> 0} R / tan(theta) = 1
   float wz = 1.f;
   float R = hypot(wx, wy);
-  float maxR = this->computeR(KANNALA_BRANDT_MAX_FOV);
   if (R > KANNALA_BRANDT_UNPROJECT_PRECISION) {
     float theta = KANNALA_BRANDT_MAX_FOV;
-    if (R < maxR) {
+    if (R < this->computeR(theta)) {
       // 最小化损失: (poly(theta) - R)^2
       int i = 0;
       float e;
