@@ -10,6 +10,7 @@
 namespace camera {
 
 typedef std::vector<float> Vectorf;
+typedef std::vector<cv::Point2f> VectorPt2f;
 
 
 enum CameraType {
@@ -38,8 +39,11 @@ public:
 
     virtual CameraType getType() const = 0;
 
-    // 参数读取
-    inline void setParam(int i, float value) { mvParam[i] = value; }
+    // 参数读写
+    inline void setParam(int i, float value, bool safe = false) {
+      if (!safe) LOG(WARNING) << "Unsafe setParam: " << i << " = " << value;
+      mvParam[i] = value;
+    }
 
     inline float getParam(int i) const { return mvParam[i]; }
 
@@ -71,6 +75,8 @@ public:
     // 去畸变
     virtual void undistort(const cv::Mat &src, cv::Mat &dst) = 0;
 
+    virtual void undistort(const VectorPt2f &src, VectorPt2f &dst) = 0;
+
     // 绘制归一化平面 (z=1)
     void drawNormalizedPlane(const cv::Mat &src, cv::Mat &dst);
 };
@@ -82,7 +88,7 @@ void Base::drawNormalizedPlane(const cv::Mat &src, cv::Mat &dst) {
   // 获取归一化平面边界 (桶形畸变)
   float x, y, w, h, W = mImgSize.width - 1, H = mImgSize.height - 1;
   x = this->unproject({0, H / 2}).x, y = this->unproject({W / 2, 0}).y,
-      w = this->unproject({W, H / 2}).x - x, h = this->unproject({W / 2, H}).y - y;
+  w = this->unproject({W, H / 2}).x - x, h = this->unproject({W / 2, H}).y - y;
   LOG(INFO) << "Normalized plane: " << cv::Vec4f(x, y, x + w, y + h);
   // 计算畸变矫正映射
   for (int r = 0; r < H; ++r) {

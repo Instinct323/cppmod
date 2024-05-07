@@ -19,17 +19,17 @@ namespace camera {
 
 
 class Pinhole : public Base {
+    cv::Mat mOrgK, mRectR;
 
 public:
     typedef std::shared_ptr<Pinhole> Ptr;
 
     explicit Pinhole(const cv::Size imgSize, const Vectorf &intrinsics, const Vectorf &distCoeffs,
                      const Sophus::SE3d &T_cam_imu = Sophus::SE3d()
-    ) : Base(imgSize, intrinsics, distCoeffs, T_cam_imu) {
+    ) : Base(imgSize, intrinsics, distCoeffs, T_cam_imu), mOrgK(getK()) {
       ASSERT(distCoeffs.size() >= 4, "Distortion coefficients size must be at least 4")
       // 计算畸变矫正映射
-      cv::Mat K = getK();
-      cv::initUndistortRectifyMap(K, distCoeffs, cv::Mat(), K, mImgSize, CV_32FC1, mMap1, mMap2);
+      cv::initUndistortRectifyMap(mOrgK, distCoeffs, cv::Mat(), mOrgK, mImgSize, CV_32FC1, mMap1, mMap2);
     }
 
     CameraType getType() const override { return CameraType::PINHOLE; }
@@ -51,6 +51,9 @@ public:
     // 去畸变
     void undistort(const cv::Mat &src, cv::Mat &dst) override { cv::remap(src, dst, mMap1, mMap2, cv::INTER_LINEAR); }
 
+    void undistort(const VectorPt2f &src, VectorPt2f &dst) override {cv::undistortPoints(src, dst, mOrgK, getDistCoeffs(), mRectR, getK());}
+
+    // 立体校正
     void stereoRectify(Pinhole *cam_right);
 };
 
@@ -58,24 +61,24 @@ public:
 void Pinhole::stereoRectify(Pinhole *cam_right) {
   ASSERT(this->mImgSize == cam_right->mImgSize, "Image size must be the same")
   Sophus::SE3d Trl = this->T_cam_imu.inverse() * cam_right->T_cam_imu;
-  cv::Mat R1_, R2_, P1_, P2_, Q_;
+  cv::Mat P1, P2;
   cv::stereoRectify(this->getK(), this->getDistCoeffs(), cam_right->getK(), cam_right->getDistCoeffs(), mImgSize,
                     cvt::toCvMat<double>(Trl.rotationMatrix()),
-                    cvt::toCvMat<double>(Trl.translation()), R1_, R2_, P1_, P2_, Q_);
+                    cvt::toCvMat<double>(Trl.translation()), this->mRectR, cam_right->mRectR, P1, P2, cv::Mat());
   // 重新初始化畸变矫正映射
-  cv::initUndistortRectifyMap(this->getK(), this->getDistCoeffs(), R1_, P1_, mImgSize, CV_32FC1, mMap1, mMap2);
-  cv::initUndistortRectifyMap(cam_right->getK(), cam_right->getDistCoeffs(), R2_, P2_, mImgSize, CV_32FC1,
+  cv::initUndistortRectifyMap(this->getK(), this->getDistCoeffs(), this->mRectR, P1, mImgSize, CV_32FC1, mMap1, mMap2);
+  cv::initUndistortRectifyMap(cam_right->getK(), cam_right->getDistCoeffs(), cam_right->mRectR, P2, mImgSize, CV_32FC1,
                               cam_right->mMap1, cam_right->mMap2);
   // 原地修改相机内参
   int paramPos[2][4] = {{0, 1, 0, 1},
                         {0, 1, 2, 2}};
   for (int i = 0; i < 4; i++) {
-    this->setParam(i, P1_.at<double>(paramPos[0][i], paramPos[1][i]));
-    cam_right->setParam(i, P2_.at<double>(paramPos[0][i], paramPos[1][i]));
+    this->setParam(i, P1.at<double>(paramPos[0][i], paramPos[1][i]), true);
+    cam_right->setParam(i, P2.at<double>(paramPos[0][i], paramPos[1][i]), true);
   }
   // 原地修改相机位姿
-  Sophus::SE3d R1(cvt::toEigen<double>(R1_), Eigen::Vector3d::Zero()),
-      R2(cvt::toEigen<double>(R2_), Eigen::Vector3d::Zero());
+  Sophus::SE3d R1(cvt::toEigen<double>(this->mRectR), Eigen::Vector3d::Zero()),
+      R2(cvt::toEigen<double>(cam_right->mRectR), Eigen::Vector3d::Zero());
   this->T_cam_imu = R1 * this->T_cam_imu;
   cam_right->T_cam_imu = R2 * cam_right->T_cam_imu;
 }

@@ -66,6 +66,8 @@ public:
 
     // 去畸变
     void undistort(const cv::Mat &src, cv::Mat &dst) override { if (src.data != dst.data) dst = src.clone(); }
+
+    void undistort(const VectorPt2f &src, VectorPt2f &dst) override { if (src.data() != dst.data()) dst = src; }
 };
 
 

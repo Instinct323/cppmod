@@ -61,11 +61,7 @@ public:
 
     cv::Mat operator()(const std::string &filename) const {
       cv::Mat img = cv::imread(filename, cv::IMREAD_GRAYSCALE);
-      // 检查图像状态
-      if (img.empty()) {
-        std::cerr << "fail to load " << filename << std::endl;
-        std::exit(-1);
-      }
+      ASSERT(!img.empty(), "fail to load " << filename);
       // 缩放图像, 直方图均衡
       if (mScale != 1.f) cv::resize(img, img, cv::Size(), mScale, mScale);
       mClahe->apply(img, img);

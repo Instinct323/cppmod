@@ -18,13 +18,15 @@ void fisheye_test() {
   dataset::Timestamps vTimestamps;
   dataset::Filenames vFilename;
   tumvi.loadImage(vTimestamps, vFilename);
-  cv::Mat img = loader(vFilename[0]), dst1;
 
-  // 显示原始图像, 以及去畸变后的图像
-  cv::imshow("Origin", img);
-  cam->drawNormalizedPlane(img, img);
-  cv::imshow("NormalizedPlane", img);
-  cv::waitKey(0);
+  for (int i = 0; i < vFilename.size(); ++i) {
+    cv::Mat img = loader(vFilename[i]);
+    // 显示原始图像, 以及去畸变后的图像
+    cv::imshow("Origin", img);
+    cam->drawNormalizedPlane(img, img);
+    cv::imshow("NormalizedPlane", img);
+    cv::waitKey(20);
+  }
 }
 
 
@@ -46,7 +48,7 @@ void pinhole_test() {
 }
 
 
-void draft(){
+void draft() {
   dataset::TumVI tumvi("/home/workbench/data/dataset-corridor4_512_16/dso");
   IMU::Device::Ptr dev = IMU::Device::fromYAML(tumvi.loadCfg("imu_config.yaml"));
   std::cout << dev->covWalk.diagonal() << std::endl;
