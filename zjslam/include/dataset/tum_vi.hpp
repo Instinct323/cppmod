@@ -12,8 +12,9 @@ namespace dataset {
 class TumVI : public Base {
 
 public:
+    // 继承构造函数
     // e.g., ~/dataset-corridor4_512_16/dso
-    explicit TumVI(const std::string &path) : Base(path) {}
+    using Base::Base;
 
     // cam0, cam1
     void loadImage(Timestamps &vTimestamps, Filenames &vFilename, const std::string &folder = "cam0") {

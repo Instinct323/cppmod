@@ -12,8 +12,9 @@ namespace dataset {
 class TumRGBD : public Base {
 
 public:
+    // 继承构造函数
     // e.g., ~/rgbd_dataset_freiburg1_desk2
-    explicit TumRGBD(const std::string &path) : Base(path) {}
+    using Base::Base;
 
     // rgb.txt, depth.txt
     void loadImage(Timestamps &vTimestamps, Filenames &vFilename, const std::string &file = "rgb.txt") {

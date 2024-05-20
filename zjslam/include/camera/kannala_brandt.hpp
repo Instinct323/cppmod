@@ -9,21 +9,16 @@ namespace camera {
 #define KANNALA_BRANDT_MAX_FOV M_PI_2
 
 // 3D -> 2D
-#define KANNALA_BRANDT_PROJECT_BY_XYZ(vp, p3D) \
-  float R = this->computeR(atan2f(hypot(p3D.x, p3D.y), p3D.z)); \
-  float psi = atan2f(p3D.y, p3D.x); \
-  return {vp[0] * R * cosf(psi) + vp[2], vp[1] * R * sinf(psi) + vp[3]};
-
-#define KANNALA_BRANDT_PROJECT_BY_VEC3(vp, v3D) \
-  float R = this->computeR(atan2f(hypot(v3D[0], v3D[1]), v3D[2])); \
-  float psi = atan2f(v3D[1], v3D[0]); \
+#define KANNALA_BRANDT_PROJECT(vp, x, y, z) \
+  float R = this->computeR(atan2f(hypot(x, y), z)); \
+  float psi = atan2f(y, x); \
   return {vp[0] * R * cosf(psi) + vp[2], vp[1] * R * sinf(psi) + vp[3]};
 
 // 2D -> 3D
 #define KANNALA_BRANDT_UNPROJECT_PRECISION 1e-6
 
-#define KANNALA_BRANDT_UNPROJECT_BY_XY(cache, p2D) \
-  cv::Vec2f wxy = cache.at<cv::Vec2f>(p2D.y, p2D.x); \
+#define KANNALA_BRANDT_UNPROJECT(cache, x, y) \
+  cv::Vec2f wxy = cache.at<cv::Vec2f>(y, x); \
   return {wxy[0], wxy[1], 1};
 
 
@@ -49,20 +44,20 @@ public:
     // 3D -> 2D
     float computeR(float theta) const;
 
-    cv::Point2f project(const cv::Point3f &p3D) const override { KANNALA_BRANDT_PROJECT_BY_XYZ(mvParam, p3D) }
+    cv::Point2f project(const cv::Point3f &p3D) const override { KANNALA_BRANDT_PROJECT(mvParam, p3D.x, p3D.y, p3D.z) }
 
-    Eigen::Vector2d project(const Eigen::Vector3d &v3D) const override { KANNALA_BRANDT_PROJECT_BY_VEC3(mvParam, v3D) }
+    Eigen::Vector2d project(const Eigen::Vector3d &v3D) const override { KANNALA_BRANDT_PROJECT(mvParam, v3D[0], v3D[1], v3D[2]) }
 
-    Eigen::Vector2f project(const Eigen::Vector3f &v3D) const override { KANNALA_BRANDT_PROJECT_BY_VEC3(mvParam, v3D) }
+    Eigen::Vector2f project(const Eigen::Vector3f &v3D) const override { KANNALA_BRANDT_PROJECT(mvParam, v3D[0], v3D[1], v3D[2]) }
 
-    Eigen::Vector2f projectEig(const cv::Point3f &p3D) const override { KANNALA_BRANDT_PROJECT_BY_XYZ(mvParam, p3D) }
+    Eigen::Vector2f projectEig(const cv::Point3f &p3D) const override { KANNALA_BRANDT_PROJECT(mvParam, p3D.x, p3D.y, p3D.z) }
 
     // 2D -> 3D
     float solveWZ(float wx, float wy, size_t iterations = 10) const;
 
-    cv::Point3f unproject(const cv::Point2f &p2D) const override { KANNALA_BRANDT_UNPROJECT_BY_XY(mUnprojectCache, p2D) }
+    cv::Point3f unproject(const cv::Point2f &p2D) const override { KANNALA_BRANDT_UNPROJECT(mUnprojectCache, p2D.x, p2D.y) }
 
-    Eigen::Vector3f unprojectEig(const cv::Point2f &p2D) const override { KANNALA_BRANDT_UNPROJECT_BY_XY(mUnprojectCache, p2D) }
+    Eigen::Vector3f unprojectEig(const cv::Point2f &p2D) const override { KANNALA_BRANDT_UNPROJECT(mUnprojectCache, p2D.x, p2D.y) }
 
     // 去畸变
     void undistort(const cv::Mat &src, cv::Mat &dst) override { if (src.data != dst.data) dst = src.clone(); }

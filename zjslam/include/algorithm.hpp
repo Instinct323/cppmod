@@ -8,35 +8,14 @@
 #include <g2o/core/sparse_optimizer.h>
 #include <g2o/solvers/dense/linear_solver_dense.h>
 
-// g2o 空序列化函数
-#define G2O_EMPTY_SERIALIZE \
-  virtual bool read(std::istream &in) override { return true; } \
-  virtual bool write(std::ostream &out) const override { return true; }
-
-
-/** @brief g2o 优化器 */
-template<int p, int l,
-    template<typename> class LinearSolverTp = g2o::LinearSolverDense,
-    typename AlgorithmT = g2o::OptimizationAlgorithmLevenberg>
-
-class Optimizer : public g2o::SparseOptimizer {
-public:
-    typedef g2o::BlockSolverPL<p, l> BlockSolverType;
-    typedef LinearSolverTp<typename BlockSolverType::PoseMatrixType> LinearSolverType;
-
-    Optimizer() {
-      setAlgorithm(new AlgorithmT(
-          g2o::make_unique<BlockSolverType>(
-              g2o::make_unique<LinearSolverType>())));
-    }
-};
-
 
 /** @brief 基于 SVD 的线性三角剖分
  *  @param Tcw - 相机位姿 (相对于世界坐标系)
  *  @param p_c - 相机坐标系下的关键点 */
 bool triangulation(std::vector<Sophus::SE3d> &Tcw,
-                   std::vector<Eigen::Vector3d> &p_c) {
+                   std::vector<Eigen::Vector3d> &p_c,
+                   Eigen::Vector3d &p_w,
+                   float z_floor = 0.) {
   if (p_c.size() < 2) {
     return false;
   } else {
@@ -54,6 +33,33 @@ bool triangulation(std::vector<Sophus::SE3d> &Tcw,
     p_w = svd.matrixV().col(3).head(3) / svd.matrixV()(3, 3);
     return p_w[2] > z_floor && svd.singularValues()[3] / svd.singularValues()[2] < 1e-2;
   }
+}
+
+
+namespace g2o {
+
+// g2o 空序列化函数
+#define G2O_EMPTY_SERIALIZE \
+  virtual bool read(std::istream &in) override { return true; } \
+  virtual bool write(std::ostream &out) const override { return true; }
+
+
+/** @brief g2o 优化器 */
+template<int p, int l,
+    template<typename> class LinearSolverTp = LinearSolverDense,
+    typename AlgorithmT = OptimizationAlgorithmLevenberg>
+
+class Optimizer : public SparseOptimizer {
+public:
+    typedef BlockSolverPL<p, l> BlockSolverType;
+    typedef LinearSolverTp<typename BlockSolverType::PoseMatrixType> LinearSolverType;
+
+    Optimizer() {
+      setAlgorithm(new AlgorithmT(
+          make_unique<BlockSolverType>(
+              make_unique<LinearSolverType>())));
+    }
+};
 }
 
 #endif
