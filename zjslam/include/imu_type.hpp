@@ -2,9 +2,9 @@
 #define ZJSLAM__IMU_TYPE_HPP
 
 #include <Eigen/Core>
+#include <memory>
 #include <opencv2/opencv.hpp>
 #include <yaml-cpp/yaml.h>
-
 
 // IMU (加速度计, 陀螺仪)
 namespace IMU {
@@ -27,13 +27,13 @@ public:
     }
 
     static Ptr fromYAML(YAML::Node node) {
-      return Ptr(new Device(
+      return std::make_shared<Device>(
           node["acc_noise"].as<float>(),
           node["acc_walk"].as<float>(),
           node["gyro_noise"].as<float>(),
           node["gyro_walk"].as<float>(),
           node["frequency"].as<float>()
-      ));
+      );
     }
 };
 
@@ -55,7 +55,7 @@ public:
 
 
 // 偏置值
-class Bias: public Sample {
+class Bias : public Sample {
 public:
     // 继承构造函数
     using Sample::Sample;

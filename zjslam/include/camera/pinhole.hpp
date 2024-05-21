@@ -1,8 +1,9 @@
 #ifndef ZJSLAM__CAMERA__PINHOLE_HPP
 #define ZJSLAM__CAMERA__PINHOLE_HPP
 
+#include "../extension/cv.hpp"
+#include "../extension/eigen.hpp"
 #include "base.hpp"
-#include "../convert.hpp"
 
 namespace camera {
 
@@ -60,8 +61,8 @@ void Pinhole::stereoRectify(Pinhole *cam_right) {
   Sophus::SE3d Trl = this->T_cam_imu.inverse() * cam_right->T_cam_imu;
   cv::Mat P1, P2;
   cv::stereoRectify(this->getK(), this->getDistCoeffs(), cam_right->getK(), cam_right->getDistCoeffs(), mImgSize,
-                    cvt::toCvMat<double>(Trl.rotationMatrix()),
-                    cvt::toCvMat<double>(Trl.translation()), this->mRectR, cam_right->mRectR, P1, P2, cv::Mat());
+                    Eigen::toCvMat<double>(Trl.rotationMatrix()),
+                    Eigen::toCvMat<double>(Trl.translation()), this->mRectR, cam_right->mRectR, P1, P2, cv::Mat());
   // 重新初始化畸变矫正映射
   cv::initUndistortRectifyMap(this->getK(), this->getDistCoeffs(), this->mRectR, P1, mImgSize, CV_32FC1, mMap1, mMap2);
   cv::initUndistortRectifyMap(cam_right->getK(), cam_right->getDistCoeffs(), cam_right->mRectR, P2, mImgSize, CV_32FC1,
@@ -74,8 +75,8 @@ void Pinhole::stereoRectify(Pinhole *cam_right) {
     cam_right->setParam(i, P2.at<double>(paramPos[0][i], paramPos[1][i]), true);
   }
   // 原地修改相机位姿
-  Sophus::SE3d R1(cvt::toEigen<double>(this->mRectR), Eigen::Vector3d::Zero()),
-      R2(cvt::toEigen<double>(cam_right->mRectR), Eigen::Vector3d::Zero());
+  Sophus::SE3d R1(cv::toEigen<double>(this->mRectR), Eigen::Vector3d::Zero()),
+      R2(cv::toEigen<double>(cam_right->mRectR), Eigen::Vector3d::Zero());
   this->T_cam_imu = R1 * this->T_cam_imu;
   cam_right->T_cam_imu = R2 * cam_right->T_cam_imu;
 }

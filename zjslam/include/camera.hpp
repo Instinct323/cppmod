@@ -9,6 +9,7 @@
 
 namespace camera {
 
+
 // YAML -> Camera::Ptr
 template<typename CameraT>
 typename CameraT::Ptr fromYAML(const YAML::Node &node) {
