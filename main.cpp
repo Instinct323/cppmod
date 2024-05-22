@@ -21,14 +21,14 @@ void draft() {
   cv::GrayLoader loader;
   cv::Mat img = loader(vFilename[0]);
 
-//  ORB::Extractor orb;
-//  std::vector<cv::KeyPoint> keypoints;
-//  cv::Mat descriptors;
-//  orb(img, cv::noArray(), keypoints, descriptors);
+  ORB::Extractor orb = ORB::Extractor(200, 1.2f, 8, {300, 400});
+  ORB::KeyPoints keypoints;
+  cv::Mat descriptors;
 
-  std::vector<int> x = {1, 2, 3, 4, 5};
-  for (auto it = x.rbegin(); it != x.rend(); ++it) {
-    LOG(INFO) << *it;
+  int monoCnt = orb(img, cv::noArray(), keypoints, descriptors);
+  std::cout << "begin: ";
+  for (auto &kp : keypoints) {
+    std::cout << kp.pt.x << " ";
   }
 }
 

@@ -26,7 +26,7 @@ public:
       covWalk.diagonal() << wg2, wg2, wg2, wa2, wa2, wa2;
     }
 
-    static Ptr fromYAML(YAML::Node node) {
+    static Ptr fromYAML(const YAML::Node &node) {
       return std::make_shared<Device>(
           node["acc_noise"].as<float>(),
           node["acc_walk"].as<float>(),

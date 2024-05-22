@@ -21,6 +21,7 @@ typename CameraT::Ptr fromYAML(const YAML::Node &node) {
       YAML::toSE3d(node["T_cam_imu"])
   ));
 }
+
 }
 
 #endif
