@@ -11,7 +11,7 @@
 namespace CSV {
 
 // 逐行映射
-void rowMapping(const std::string &file, std::function<void(std::vector<std::string> &)> unary_op) {
+void rowMapping(const std::string &file, const std::function<void(std::vector<std::string> &)>& unary_op) {
   std::ifstream f(file);
   ASSERT(f.is_open(), "fail to open file " << file)
   // 读取文件, 除去空行和注释
@@ -33,7 +33,7 @@ void rowMapping(const std::string &file, std::function<void(std::vector<std::str
 namespace TXT {
 
 // 逐行映射
-void rowMapping(const std::string &file, std::function<void(std::string &)> unary_op) {
+void rowMapping(const std::string &file, const std::function<void(std::string &)>& unary_op) {
   std::ifstream f(file);
   ASSERT(f.is_open(), "fail to open file " << file)
   // 读取文件, 除去空行和注释
@@ -50,7 +50,7 @@ namespace YAML {
 // std::vector 转换
 template<typename T>
 std::vector<T> toVec(const YAML::Node &node) {
-  ASSERT(node.IsSequence(), "YAML: Invalid vector format");
+  ASSERT(node.IsSequence(), "YAML: Invalid vector format")
   std::vector<T> vec;
   for (int i = 0; i < node.size(); ++i) vec.push_back(node[i].as<T>());
   return vec;
@@ -62,8 +62,8 @@ void assertMatrix(const Node &node) {
   bool flag = node.IsSequence();
   if (flag) {
     // 校对每一行的列数
-    int rows = node.size();
-    int cols = node[0].size();
+    size_t rows = node.size();
+    size_t cols = node[0].size();
     if (cols) {
       for (int i = 0; i < rows; ++i) {
         flag = node[i].IsSequence() && node[i].size() == cols;
@@ -79,7 +79,7 @@ void assertMatrix(const Node &node) {
 template<typename T, typename MatrixT>
 MatrixT toMatrix(const Node &node) {
   assertMatrix(node);
-  int rows = node.size(), cols = node[0].size();
+  size_t rows = node.size(), cols = node[0].size();
   MatrixT mat(rows, MAX(1, cols));
   // 向量形式
   if (cols == 0) {
