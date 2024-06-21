@@ -1,5 +1,5 @@
-#ifndef ZJSLAM__CAMERA__PINHOLE_HPP
-#define ZJSLAM__CAMERA__PINHOLE_HPP
+#ifndef ZJCV__CAMERA__PINHOLE_HPP
+#define ZJCV__CAMERA__PINHOLE_HPP
 
 #include "../extension/cv.hpp"
 #include "../extension/eigen.hpp"
@@ -56,6 +56,7 @@ public:
 };
 
 
+// Source
 void Pinhole::stereoRectify(Pinhole *cam_right) {
   ASSERT(this->mImgSize == cam_right->mImgSize, "Image size must be the same")
   Sophus::SE3d Trl = this->T_cam_imu.inverse() * cam_right->T_cam_imu;

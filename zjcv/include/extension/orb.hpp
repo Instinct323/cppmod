@@ -1,9 +1,10 @@
-#ifndef ZJSLAM__EXTENSION__ORB_HPP
-#define ZJSLAM__EXTENSION__ORB_HPP
+#ifndef ZJCV__EXTENSION__ORB_HPP
+#define ZJCV__EXTENSION__ORB_HPP
 
 #include <opencv2/opencv.hpp>
 
 #include "../file.hpp"
+#include "../logging.hpp"
 
 namespace ORB {
 
@@ -18,6 +19,7 @@ public:
     typedef std::shared_ptr<Extractor> Ptr;
 
     static Ptr fromYAML(const YAML::Node &node) {
+      if (node.IsNull()) return nullptr;
       auto area = YAML::toVec<int>(node["lappingArea"]);
       return Ptr(new Extractor(
           node["nfeatures"].as<int>(),
@@ -27,7 +29,7 @@ public:
       ));
     }
 
-    Extractor(int nfeatures = 1500,
+    Extractor(int nfeatures = 1000,
               float scaleFactor = 1.2f,
               int nlevels = 8,
               std::pair<int, int> lappingArea = {-1, -1}
@@ -46,13 +48,18 @@ public:
 };
 
 
+// Source
 int Extractor::operator()(cv::InputArray img, cv::InputArray mask,
                           KeyPoints &keypoints,
                           cv::OutputArray descriptors) {
   mpExtractor->detectAndCompute(img, mask, keypoints, descriptors);
   int monoCnt = 0;
-  // 重叠区域的点 聚集到前面
   if (mLappingArea.first >= 0) {
+    // 全部在重叠区域内
+    if (mLappingArea.first == 0 && mLappingArea.second < img.cols()) {
+      return keypoints.size();
+    }
+    // 重叠区域的点聚集到前面
     cv::Mat desc = descriptors.getMat();
     for (int i = 0; i < keypoints.size(); i++) {
       if (mLappingArea.first <= keypoints[i].pt.x && keypoints[i].pt.x <= mLappingArea.second) {

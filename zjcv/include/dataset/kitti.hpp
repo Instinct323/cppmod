@@ -1,5 +1,5 @@
-#ifndef ZJSLAM__DATASET__KITTI_HPP
-#define ZJSLAM__DATASET__KITTI_HPP
+#ifndef ZJCV__DATASET__KITTI_HPP
+#define ZJCV__DATASET__KITTI_HPP
 
 #include "base.hpp"
 

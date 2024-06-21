@@ -1,5 +1,5 @@
-#ifndef ZJSLAM__ALGORITHM_HPP
-#define ZJSLAM__ALGORITHM_HPP
+#ifndef ZJCV__ALGORITHM_HPP
+#define ZJCV__ALGORITHM_HPP
 
 #include <sophus/se3.hpp>
 

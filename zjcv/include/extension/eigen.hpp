@@ -1,5 +1,5 @@
-#ifndef ZJSLAM__EXTENSION__EIGEN_HPP
-#define ZJSLAM__EXTENSION__EIGEN_HPP
+#ifndef ZJCV__EXTENSION__EIGEN_HPP
+#define ZJCV__EXTENSION__EIGEN_HPP
 
 #include <Eigen/Core>
 #include <opencv2/opencv.hpp>

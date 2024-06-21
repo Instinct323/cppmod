@@ -1,11 +1,21 @@
-#ifndef ZJSLAM__UTILS_HPP
-#define ZJSLAM__UTILS_HPP
+#ifndef ZJCV__EXTENSION__STD_HPP
+#define ZJCV__EXTENSION__STD_HPP
 
 #include <boost/thread.hpp>
-#include <fstream>
-#include <opencv2/opencv.hpp>
+#include <Eigen/Core>
 
-#include "logging.hpp"
+#include "../logging.hpp"
+
+namespace std {
+
+
+// std::vector -> Eigen
+template<typename T>
+Eigen::Vector<T, -1> toEigen(const vector<T> &vec) {
+  Eigen::Vector<T, -1> v(vec.size());
+  for (int i = 0; i < vec.size(); i++) v(i) = vec[i];
+  return v;
+}
 
 
 // 线程共享变量
@@ -41,5 +51,7 @@ public:
       return {i, mIndex};
     }
 };
+
+}
 
 #endif

@@ -1,5 +1,5 @@
-#ifndef ZJSLAM__CAMERA__CALIB_HPP
-#define ZJSLAM__CAMERA__CALIB_HPP
+#ifndef ZJCV__CAMERA__CALIB_HPP
+#define ZJCV__CAMERA__CALIB_HPP
 
 #include <opencv2/opencv.hpp>
 

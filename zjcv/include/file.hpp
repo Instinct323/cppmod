@@ -1,5 +1,5 @@
-#ifndef ZJSLAM__FILE_HPP
-#define ZJSLAM__FILE_HPP
+#ifndef ZJCV__FILE_HPP
+#define ZJCV__FILE_HPP
 
 #include <fstream>
 #include <sophus/se3.hpp>

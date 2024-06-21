@@ -1,5 +1,5 @@
-#ifndef ZJSLAM__CAMERA__BASE_HPP
-#define ZJSLAM__CAMERA__BASE_HPP
+#ifndef ZJCV__CAMERA__BASE_HPP
+#define ZJCV__CAMERA__BASE_HPP
 
 #include <Eigen/Core>
 #include <opencv2/opencv.hpp>
@@ -14,7 +14,7 @@ typedef std::vector<cv::Point2f> VectorPt2f;
 
 
 enum CameraType {
-    PINHOLE, FISHEYE
+    PINHOLE, KANNALA_BRANDT
 };
 
 
@@ -82,6 +82,7 @@ public:
 };
 
 
+// Source
 void Base::drawNormalizedPlane(const cv::Mat &src, cv::Mat &dst) {
   undistort(src, dst);
   cv::Mat npMap1 = cv::Mat(mImgSize, CV_32FC1), npMap2 = npMap1.clone();

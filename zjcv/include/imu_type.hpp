@@ -1,5 +1,5 @@
-#ifndef ZJSLAM__IMU_TYPE_HPP
-#define ZJSLAM__IMU_TYPE_HPP
+#ifndef ZJCV__IMU_TYPE_HPP
+#define ZJCV__IMU_TYPE_HPP
 
 #include <Eigen/Core>
 #include <memory>
@@ -27,6 +27,7 @@ public:
     }
 
     static Ptr fromYAML(const YAML::Node &node) {
+      if (node.IsNull()) return nullptr;
       return std::make_shared<Device>(
           node["acc_noise"].as<float>(),
           node["acc_walk"].as<float>(),

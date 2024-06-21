@@ -1,5 +1,5 @@
-#ifndef ZJSLAM__DATASET__TUM_VI_HPP
-#define ZJSLAM__DATASET__TUM_VI_HPP
+#ifndef ZJCV__DATASET__TUM_VI_HPP
+#define ZJCV__DATASET__TUM_VI_HPP
 
 #include "base.hpp"
 

@@ -1,11 +1,10 @@
 #include <cstdlib>
 
-#include "zjslam/include/logging.hpp"
-#include "zjslam/include/dataset/tum_vi.hpp"
-#include "zjslam/include/utils.hpp"
-#include "zjslam/include/imu_type.hpp"
-#include "zjslam/include/extension/cv.hpp"
-#include "zjslam/include/extension/orb.hpp"
+#include "zjcv/include/logging.hpp"
+#include "zjcv/include/dataset/tum_vi.hpp"
+#include "zjcv/include/imu_type.hpp"
+#include "zjcv/include/extension/cv.hpp"
+#include "zjcv/include/extension/orb.hpp"
 
 #include <opencv2/opencv.hpp>
 

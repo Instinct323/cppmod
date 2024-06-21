@@ -1,5 +1,5 @@
-#ifndef ZJSLAM__DATASET__BASE_HPP
-#define ZJSLAM__DATASET__BASE_HPP
+#ifndef ZJCV__DATASET__BASE_HPP
+#define ZJCV__DATASET__BASE_HPP
 
 #include <filesystem>
 #include <sophus/se3.hpp>

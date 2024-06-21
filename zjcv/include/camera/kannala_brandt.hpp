@@ -1,5 +1,5 @@
-#ifndef ZJSLAM__CAMERA__KANNALA_BRANDT_HPP
-#define ZJSLAM__CAMERA__KANNALA_BRANDT_HPP
+#ifndef ZJCV__CAMERA__KANNALA_BRANDT_HPP
+#define ZJCV__CAMERA__KANNALA_BRANDT_HPP
 
 #include "base.hpp"
 
@@ -22,7 +22,7 @@ namespace camera {
   return {wxy[0], wxy[1], 1};
 
 
-class KannalaBrandt8 : public Base {
+class KannalaBrandt : public Base {
 
 protected:
     cv::Mat mUnprojectCache;
@@ -30,16 +30,16 @@ protected:
     void makeUnprojectCache();
 
 public:
-    typedef std::shared_ptr<KannalaBrandt8> Ptr;
+    typedef std::shared_ptr<KannalaBrandt> Ptr;
 
-    explicit KannalaBrandt8(const cv::Size imgSize, const Vectorf &intrinsics, const Vectorf &distCoeffs,
-                            const Sophus::SE3d &T_cam_imu = Sophus::SE3d()
+    explicit KannalaBrandt(const cv::Size imgSize, const Vectorf &intrinsics, const Vectorf &distCoeffs,
+                           const Sophus::SE3d &T_cam_imu = Sophus::SE3d()
     ) : Base(imgSize, intrinsics, distCoeffs, T_cam_imu), mUnprojectCache(mImgSize, CV_32FC2) {
       ASSERT(distCoeffs.size() == 4, "Distortion coefficients size must be 4")
       makeUnprojectCache();
     }
 
-    CameraType getType() const override { return CameraType::FISHEYE; }
+    CameraType getType() const override { return CameraType::KANNALA_BRANDT; }
 
     // 3D -> 2D
     float computeR(float theta) const;
@@ -66,13 +66,14 @@ public:
 };
 
 
-float KannalaBrandt8::computeR(float theta) const {
+// Source
+float KannalaBrandt::computeR(float theta) const {
   float theta2 = theta * theta;
   return theta + theta2 * (mvParam[4] + theta2 * (mvParam[5] + theta2 * (mvParam[6] + theta2 * mvParam[7])));
 }
 
 
-void KannalaBrandt8::makeUnprojectCache() {
+void KannalaBrandt::makeUnprojectCache() {
   float wx, wy, wz;
   for (int r = 0; r < mImgSize.height; ++r) {
     wy = (r - mvParam[3]) / mvParam[1];
@@ -85,7 +86,7 @@ void KannalaBrandt8::makeUnprojectCache() {
 }
 
 
-float KannalaBrandt8::solveWZ(float wx, float wy, size_t iterations) const {
+float KannalaBrandt::solveWZ(float wx, float wy, size_t iterations) const {
   // wz = lim_{theta -> 0} R / tan(theta) = 1
   float wz = 1.f;
   float R = hypot(wx, wy);

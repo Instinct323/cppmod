@@ -1,5 +1,5 @@
-#ifndef ZJSLAM__EXTENSION__CV_HPP
-#define ZJSLAM__EXTENSION__CV_HPP
+#ifndef ZJCV__EXTENSION__CV_HPP
+#define ZJCV__EXTENSION__CV_HPP
 
 #include <Eigen/Core>
 #include <opencv2/opencv.hpp>
@@ -34,8 +34,8 @@ public:
     Ptr<CLAHE> mClahe;
 
     explicit GrayLoader(float scale = 1.f,
-                         double clipLimit = 3.0,
-                         Size tileGridSize = {8, 8}
+                        double clipLimit = 3.0,
+                        Size tileGridSize = {8, 8}
     ) : mScale(scale), mClahe(createCLAHE(clipLimit, tileGridSize)) {}
 
     Mat operator()(const std::string &filename) const {
