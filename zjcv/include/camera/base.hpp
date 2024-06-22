@@ -81,26 +81,6 @@ public:
     void drawNormalizedPlane(const cv::Mat &src, cv::Mat &dst);
 };
 
-
-// Source
-void Base::drawNormalizedPlane(const cv::Mat &src, cv::Mat &dst) {
-  undistort(src, dst);
-  cv::Mat npMap1 = cv::Mat(mImgSize, CV_32FC1), npMap2 = npMap1.clone();
-  // 获取归一化平面边界 (桶形畸变)
-  float x, y, w, h, W = mImgSize.width - 1, H = mImgSize.height - 1;
-  x = this->unproject({0, H / 2}).x, y = this->unproject({W / 2, 0}).y,
-  w = this->unproject({W, H / 2}).x - x, h = this->unproject({W / 2, H}).y - y;
-  LOG(INFO) << "Normalized plane: " << cv::Vec4f(x, y, x + w, y + h);
-  // 计算畸变矫正映射
-  for (int r = 0; r < H; ++r) {
-    for (int c = 0; c < W; ++c) {
-      cv::Point2f p2D = this->project(cv::Point3f(w * c / W + x, h * r / H + y, 1));
-      npMap1.at<float>(r, c) = p2D.x;
-      npMap2.at<float>(r, c) = p2D.y;
-    }
-  }
-  cv::remap(dst, dst, npMap1, npMap2, cv::INTER_LINEAR);
-}
 }
 
 #endif

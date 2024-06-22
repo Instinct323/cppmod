@@ -63,6 +63,7 @@ public:
 
     Bias() : Sample(0, 0, 0, 0, 0, 0) {}
 };
+
 }
 
 #endif

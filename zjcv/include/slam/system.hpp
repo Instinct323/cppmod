@@ -11,7 +11,18 @@ class System {
 public:
     Tracker::Ptr mpTracker;
 
-    explicit System(YAML::Node cfg) : mpTracker(new Tracker(cfg)) {};
+    explicit System(YAML::Node cfg) : mpTracker(new Tracker(cfg, this)) {};
+
+    // Tracking
+    void GrabMono(const double &timestamp, const cv::Mat &img0,
+                  const dataset::IMUsamples &vImu = dataset::IMUsamples()) {
+      mpTracker->GrabImageAndImu(timestamp, img0, cv::Mat(), vImu);
+    }
+
+    void GrabStereo(const double &timestamp, const cv::Mat &img0, const cv::Mat &img1,
+                    const dataset::IMUsamples &vImu = dataset::IMUsamples()) {
+      mpTracker->GrabImageAndImu(timestamp, img0, img1, vImu);
+    }
 };
 
 }

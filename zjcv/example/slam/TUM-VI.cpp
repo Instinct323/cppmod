@@ -1,4 +1,3 @@
-#include "camera.hpp"
 #include "dataset/tum_vi.hpp"
 #include "extension/cv.hpp"
 #include "extension/std.hpp"
@@ -34,8 +33,8 @@ int main(int argc, char **argv) {
     cv::Mat imgLeft = grayloader(vImgLeft[i]), imgRight = grayloader(vImgRight[i]);
     auto [j, k] = slicer(vImgLeftTs[i]);
 
-    system.mpTracker->GrabStereo(vImgLeftTs[i], imgLeft, imgRight,
-                                 dataset::IMUsamples(vImu.begin() + j, vImu.begin() + k));
+    system.GrabStereo(vImgLeftTs[i], imgLeft, imgRight,
+                      dataset::IMUsamples(vImu.begin() + j, vImu.begin() + k));
 
     cv::imshow("Left", imgLeft);
     cv::imshow("Right", imgRight);

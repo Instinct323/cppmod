@@ -36,12 +36,9 @@ set(LIBRARY
         ${G2O_SOLVER_CSPARSE_EXTENSION}
 )
 
-# my header
-include_directories(utils zjcv/include)
+# subdirectory
+add_subdirectory(zjcv)
 
-# executable
+# test
 add_executable(test main.cpp)
 target_link_libraries(test ${LIBRARY})
-
-add_executable(tumvi zjcv/example/slam/TUM-VI.cpp)
-target_link_libraries(tumvi ${LIBRARY})

@@ -3,10 +3,17 @@
 
 #include <Eigen/Core>
 #include <opencv2/opencv.hpp>
+#include <sophus/se3.hpp>
 
 #include "../logging.hpp"
 
 namespace Eigen {
+
+/** @brief 基于 SVD 的线性三角剖分
+ *  @param Tcw - 相机位姿 (相对于世界坐标系)
+ *  @param p_c - 相机坐标系下的关键点 */
+bool triangulation(std::vector<Sophus::SE3d> &Tcw, std::vector<Eigen::Vector3d> &p_c,
+                   Eigen::Vector3d &p_w, float z_floor = 0.);
 
 
 // Eigen -> cv::Mat

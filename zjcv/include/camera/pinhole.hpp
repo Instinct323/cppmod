@@ -55,33 +55,6 @@ public:
     void stereoRectify(Pinhole *cam_right);
 };
 
-
-// Source
-void Pinhole::stereoRectify(Pinhole *cam_right) {
-  ASSERT(this->mImgSize == cam_right->mImgSize, "Image size must be the same")
-  Sophus::SE3d Trl = this->T_cam_imu.inverse() * cam_right->T_cam_imu;
-  cv::Mat P1, P2;
-  cv::stereoRectify(this->getK(), this->getDistCoeffs(), cam_right->getK(), cam_right->getDistCoeffs(), mImgSize,
-                    Eigen::toCvMat<double>(Trl.rotationMatrix()),
-                    Eigen::toCvMat<double>(Trl.translation()), this->mRectR, cam_right->mRectR, P1, P2, cv::Mat());
-  // 重新初始化畸变矫正映射
-  cv::initUndistortRectifyMap(this->getK(), this->getDistCoeffs(), this->mRectR, P1, mImgSize, CV_32FC1, mMap1, mMap2);
-  cv::initUndistortRectifyMap(cam_right->getK(), cam_right->getDistCoeffs(), cam_right->mRectR, P2, mImgSize, CV_32FC1,
-                              cam_right->mMap1, cam_right->mMap2);
-  // 原地修改相机内参
-  int paramPos[2][4] = {{0, 1, 0, 1},
-                        {0, 1, 2, 2}};
-  for (int i = 0; i < 4; i++) {
-    this->setParam(i, P1.at<double>(paramPos[0][i], paramPos[1][i]), true);
-    cam_right->setParam(i, P2.at<double>(paramPos[0][i], paramPos[1][i]), true);
-  }
-  // 原地修改相机位姿
-  Sophus::SE3d R1(cv::toEigen<double>(this->mRectR), Eigen::Vector3d::Zero()),
-      R2(cv::toEigen<double>(cam_right->mRectR), Eigen::Vector3d::Zero());
-  this->T_cam_imu = R1 * this->T_cam_imu;
-  cam_right->T_cam_imu = R2 * cam_right->T_cam_imu;
-}
-
 }
 
 #endif

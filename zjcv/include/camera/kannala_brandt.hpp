@@ -65,52 +65,6 @@ public:
     void undistort(const VectorPt2f &src, VectorPt2f &dst) override { if (src.data() != dst.data()) dst = src; }
 };
 
-
-// Source
-float KannalaBrandt::computeR(float theta) const {
-  float theta2 = theta * theta;
-  return theta + theta2 * (mvParam[4] + theta2 * (mvParam[5] + theta2 * (mvParam[6] + theta2 * mvParam[7])));
-}
-
-
-void KannalaBrandt::makeUnprojectCache() {
-  float wx, wy, wz;
-  for (int r = 0; r < mImgSize.height; ++r) {
-    wy = (r - mvParam[3]) / mvParam[1];
-    for (int c = 0; c < mImgSize.width; ++c) {
-      wx = (c - mvParam[2]) / mvParam[0];
-      wz = this->solveWZ(wx, wy);
-      mUnprojectCache.at<cv::Vec2f>(r, c) = {wx / wz, wy / wz};
-    }
-  }
-}
-
-
-float KannalaBrandt::solveWZ(float wx, float wy, size_t iterations) const {
-  // wz = lim_{theta -> 0} R / tan(theta) = 1
-  float wz = 1.f;
-  float R = hypot(wx, wy);
-  if (R > KANNALA_BRANDT_UNPROJECT_PRECISION) {
-    float theta = KANNALA_BRANDT_MAX_FOV;
-    if (R < this->computeR(theta)) {
-      // 最小化损失: (poly(theta) - R)^2
-      int i = 0;
-      float e;
-      for (; i < iterations; i++) {
-        float theta2 = theta * theta, theta4 = theta2 * theta2, theta6 = theta4 * theta2, theta8 = theta6 * theta2;
-        float k0_theta2 = mvParam[4] * theta2, k1_theta4 = mvParam[5] * theta4,
-            k2_theta6 = mvParam[6] * theta6, k3_theta8 = mvParam[7] * theta8;
-        e = theta * (1 + k0_theta2 + k1_theta4 + k2_theta6 + k3_theta8) - R;
-        if (abs(e) < R * KANNALA_BRANDT_UNPROJECT_PRECISION) break;
-        // 梯度下降法: g = (poly(theta) - R) / poly'(theta)
-        theta -= e / (1 + 3 * k0_theta2 + 5 * k1_theta4 + 7 * k2_theta6 + 9 * k3_theta8);
-      }
-      if (i == iterations) LOG(WARNING) << "solveWZ(" << wx << ", " << wy << "): relative error " << abs(e) / R;
-    }
-    wz = R / tanf(theta);
-  }
-  return wz;
-}
 }
 
 #endif

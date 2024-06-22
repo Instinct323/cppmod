@@ -28,6 +28,7 @@ public:
 
     friend std::ostream &operator<<(std::ostream &os, const Base &dataset) { return os << dataset.mPath; }
 };
+
 }
 
 #endif
