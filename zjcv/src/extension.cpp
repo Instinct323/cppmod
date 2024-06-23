@@ -1,5 +1,22 @@
+#include "extension/cv.hpp"
 #include "extension/eigen.hpp"
 #include "extension/orb.hpp"
+#include "logging.hpp"
+
+
+namespace cv {
+
+Mat GrayLoader::operator()(const std::string &filename) const {
+  Mat img = imread(filename, IMREAD_GRAYSCALE);
+  ASSERT(!img.empty(), "fail to load " << filename);
+  // 缩放图像, 直方图均衡
+  if (mScale != 1.f) resize(img, img, Size(), mScale, mScale);
+  mClahe->apply(img, img);
+  return img;
+}
+
+}
+
 
 namespace Eigen {
 
@@ -30,6 +47,19 @@ bool triangulation(std::vector<Sophus::SE3d> &Tcw,
 
 
 namespace ORB {
+
+
+Extractor::Ptr Extractor::fromYAML(const YAML::Node &node) {
+  if (node.IsNull()) return nullptr;
+  auto area = YAML::toVec<int>(node["lappingArea"]);
+  return Ptr(new Extractor(
+      node["nfeatures"].as<int>(),
+      node["scaleFactor"].as<float>(),
+      node["nlevels"].as<int>(),
+      {area[0], area[1]}
+  ));
+}
+
 
 int Extractor::operator()(cv::InputArray img, cv::InputArray mask,
                           KeyPoints &keypoints, cv::OutputArray descriptors) {

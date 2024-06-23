@@ -4,7 +4,6 @@
 #include <yaml-cpp/yaml.h>
 
 #include "camera.hpp"
-#include "dataset/base.hpp"
 #include "extension/orb.hpp"
 #include "imu_type.hpp"
 
@@ -36,7 +35,7 @@ public:
     };
 
     void GrabImageAndImu(const double &timestamp, const cv::Mat &img0, const cv::Mat &img1 = cv::Mat(),
-                         const dataset::IMUsamples &vImu = dataset::IMUsamples());
+                         const std::vector<IMU::Sample> &vImu = std::vector<IMU::Sample>());
 };
 
 }

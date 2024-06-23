@@ -4,8 +4,6 @@
 #include <Eigen/Core>
 #include <opencv2/opencv.hpp>
 
-#include "../logging.hpp"
-
 namespace cv {
 
 
@@ -38,14 +36,7 @@ public:
                         Size tileGridSize = {8, 8}
     ) : mScale(scale), mClahe(createCLAHE(clipLimit, tileGridSize)) {}
 
-    Mat operator()(const std::string &filename) const {
-      Mat img = imread(filename, IMREAD_GRAYSCALE);
-      ASSERT(!img.empty(), "fail to load " << filename);
-      // 缩放图像, 直方图均衡
-      if (mScale != 1.f) resize(img, img, Size(), mScale, mScale);
-      mClahe->apply(img, img);
-      return img;
-    }
+    Mat operator()(const std::string &filename) const;
 };
 
 

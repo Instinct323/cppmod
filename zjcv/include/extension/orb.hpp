@@ -18,16 +18,7 @@ class Extractor {
 public:
     typedef std::shared_ptr<Extractor> Ptr;
 
-    static Ptr fromYAML(const YAML::Node &node) {
-      if (node.IsNull()) return nullptr;
-      auto area = YAML::toVec<int>(node["lappingArea"]);
-      return Ptr(new Extractor(
-          node["nfeatures"].as<int>(),
-          node["scaleFactor"].as<float>(),
-          node["nlevels"].as<int>(),
-          {area[0], area[1]}
-      ));
-    }
+    static Ptr fromYAML(const YAML::Node &node);
 
     Extractor(int nfeatures = 1000,
               float scaleFactor = 1.2f,

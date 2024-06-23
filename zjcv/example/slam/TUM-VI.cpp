@@ -9,7 +9,10 @@
 int main(int argc, char **argv) {
   putenv("DISPLAY=host.docker.internal:0");
   Logger logger(argv);
+
+  // config
   YAML::Node cfg = YAML::LoadFile("/home/workbench/cppmod/ZJCV/example/slam/TUM-VI.yaml");
+  slam::System system(cfg);
 
   // dataset
   dataset::Timestamps vImgLeftTs, vImgRightTs, vImuTs;
@@ -26,7 +29,6 @@ int main(int argc, char **argv) {
 
   cv::GrayLoader grayloader;
   std::ValueSlicer<double> slicer(vImuTs);
-  slam::System system(cfg);
 
   // main loop
   for (size_t i = 0; i < vImgLeftTs.size(); i++) {
