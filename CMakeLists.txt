@@ -20,13 +20,18 @@ include_directories(${ROS2_HEADER})
 # packages
 find_package(G2O REQUIRED)
 find_package(Glog REQUIRED)
+find_package(fbow REQUIRED)
 find_package(fmt REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
 # all library
 set(LIBRARY
+        -lboost_chrono
+        -lboost_system
+        -lboost_thread
         glog::glog
+        ${fbow_LIBS}
         fmt::fmt
         ${OpenCV_LIBS}
         yaml-cpp
@@ -37,9 +42,14 @@ set(LIBRARY
         ${G2O_SOLVER_CSPARSE_EXTENSION}
 )
 
+# utils
+include_directories(utils/include)
+aux_source_directory(utils/src UTILS_SRC)
+add_library(utils STATIC ${UTILS_SRC})
+
 # subdirectory
 add_subdirectory(zjcv)
 
 # test
 add_executable(test main.cpp)
-target_link_libraries(test ${LIBRARY})
+target_link_libraries(test utils ${LIBRARY})

@@ -1,11 +1,11 @@
-#ifndef ZJCV__EXTENSION__EIGEN_HPP
-#define ZJCV__EXTENSION__EIGEN_HPP
+#ifndef UTILS__EIGEN_HPP
+#define UTILS__EIGEN_HPP
 
 #include <Eigen/Core>
 #include <opencv2/opencv.hpp>
 #include <sophus/se3.hpp>
 
-#include "../logging.hpp"
+#include "logging.hpp"
 
 namespace Eigen {
 

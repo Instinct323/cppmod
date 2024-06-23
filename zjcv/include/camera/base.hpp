@@ -5,7 +5,7 @@
 #include <opencv2/opencv.hpp>
 #include <sophus/se3.hpp>
 
-#include "../logging.hpp"
+#include "logging.hpp"
 
 namespace camera {
 

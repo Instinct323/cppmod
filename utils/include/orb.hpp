@@ -1,10 +1,10 @@
-#ifndef ZJCV__EXTENSION__ORB_HPP
-#define ZJCV__EXTENSION__ORB_HPP
+#ifndef UTILS__ORB_HPP
+#define UTILS__ORB_HPP
 
 #include <opencv2/opencv.hpp>
 
-#include "../file.hpp"
-#include "../logging.hpp"
+#include "file.hpp"
+#include "logging.hpp"
 
 namespace ORB {
 
@@ -33,8 +33,8 @@ public:
      * @brief ORB 关键点提取及描述子计算
      * @return 重叠区域内的关键点数量
      */
-    int operator()(cv::InputArray img, cv::InputArray mask,
-                   KeyPoints &keypoints, cv::OutputArray descriptors);
+    int detectAndCompute(cv::InputArray img, cv::InputArray mask,
+                         KeyPoints &keypoints, cv::OutputArray descriptors);
 };
 
 }

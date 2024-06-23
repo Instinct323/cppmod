@@ -5,7 +5,7 @@
 #include <sophus/se3.hpp>
 #include <yaml-cpp/yaml.h>
 
-#include "extension/eigen.hpp"
+#include "eigen.hpp"
 #include "logging.hpp"
 
 namespace CSV {

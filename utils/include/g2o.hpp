@@ -1,5 +1,5 @@
-#ifndef ZJCV__EXTENSION__G2O_HPP
-#define ZJCV__EXTENSION__G2O_HPP
+#ifndef UTILS__G2O_HPP
+#define UTILS__G2O_HPP
 
 #include <g2o/core/block_solver.h>
 #include <g2o/core/optimization_algorithm_levenberg.h>

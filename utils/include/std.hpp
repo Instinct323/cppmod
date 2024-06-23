@@ -1,12 +1,17 @@
-#ifndef ZJCV__EXTENSION__STD_HPP
-#define ZJCV__EXTENSION__STD_HPP
+#ifndef UTILS__STD_HPP
+#define UTILS__STD_HPP
 
 #include <boost/thread.hpp>
 #include <Eigen/Core>
 
-#include "../logging.hpp"
+#include "logging.hpp"
 
 namespace std {
+
+
+void sleep(double seconds) {
+  boost::this_thread::sleep_for(boost::chrono::milliseconds(int(1e3 * seconds)));
+}
 
 
 // std::vector -> Eigen

@@ -2,7 +2,7 @@
 #include <sophus/se3.hpp>
 #include <yaml-cpp/yaml.h>
 
-#include "extension/eigen.hpp"
+#include "eigen.hpp"
 #include "file.hpp"
 #include "logging.hpp"
 
@@ -46,7 +46,6 @@ void rowMapping(const std::string &file, const std::function<void(std::string &)
 
 
 namespace YAML {
-
 
 Sophus::SE3d toSE3d(const Node &node) {
   Eigen::MatrixXd mat = toEigen<double>(node);

@@ -1,8 +1,8 @@
 #ifndef ZJCV__CAMERA__PINHOLE_HPP
 #define ZJCV__CAMERA__PINHOLE_HPP
 
-#include "../extension/cv.hpp"
-#include "../extension/eigen.hpp"
+#include "cv.hpp"
+#include "eigen.hpp"
 #include "base.hpp"
 
 namespace camera {

@@ -4,7 +4,7 @@
 #include <yaml-cpp/yaml.h>
 
 #include "camera.hpp"
-#include "extension/orb.hpp"
+#include "orb.hpp"
 #include "imu_type.hpp"
 
 namespace slam {

@@ -1,6 +1,9 @@
+#include <filesystem>
+
 #include "dataset/tum_vi.hpp"
-#include "extension/cv.hpp"
-#include "extension/std.hpp"
+#include "cv.hpp"
+#include "fbow.hpp"
+#include "std.hpp"
 #include "imu_type.hpp"
 #include "logging.hpp"
 #include "slam/system.hpp"
@@ -29,6 +32,19 @@ int main(int argc, char **argv) {
 
   cv::GrayLoader grayloader;
   std::ValueSlicer<double> slicer(vImuTs);
+
+  // 载入词汇表
+  std::string vocPath = cfg["vocabulary"].as<std::string>();
+  fbow::Vocabulary voc;
+  if (exists(std::filesystem::path(vocPath))) {
+    voc.readFromFile(vocPath);
+  } else {
+    LOG(ERROR) << "Vocabulary not found: " << vocPath;
+    LOG(INFO) << "Press any key to create a new vocabulary...";
+    std::getchar();
+    fbow::createORBvocabulary(voc, system.mpTracker->mpExtractor0, grayloader, vImgLeft);
+    voc.saveToFile(vocPath);
+  }
 
   // main loop
   for (size_t i = 0; i < vImgLeftTs.size(); i++) {
