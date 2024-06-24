@@ -3,6 +3,7 @@
 install-glog.bash
 install-fmt.bash
 install-eigen.bash
+install-indicators.bash
 install-octomap.bash
 install-pcl.bash
 
