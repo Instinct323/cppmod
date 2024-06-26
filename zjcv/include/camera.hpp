@@ -4,15 +4,15 @@
 #include "camera/base.hpp"
 #include "camera/kannala_brandt.hpp"
 #include "camera/pinhole.hpp"
-#include "file.hpp"
+#include "utils/file.hpp"
 
 namespace camera {
 
 // YAML -> Camera::Ptr
-Base::Ptr fromYAML(const YAML::Node &node);
+Base::Ptr from_yaml(const YAML::Node &node);
 
-void calibByChessboard(std::vector<std::string> &filenames, cv::Mat distCoeffs,
-                       cv::Size boardSize, cv::Size imgSize = {-1, -1}, int delay = 1);
+void calib_by_chessboard(std::vector<std::string> &filenames, cv::Mat distCoeffs,
+                         cv::Size boardSize, cv::Size imgSize = {-1, -1}, int delay = 1);
 
 }
 

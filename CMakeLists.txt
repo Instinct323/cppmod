@@ -44,12 +44,12 @@ set(LIBRARY
 
 # utils
 include_directories(utils/include)
-aux_source_directory(utils/src UTILS_SRC)
-add_library(utils STATIC ${UTILS_SRC})
+file(GLOB UTILS_SRC utils/src/utils/*.cpp)
 
 # subdirectory
 add_subdirectory(zjcv)
 
 # test
-add_executable(test main.cpp)
-target_link_libraries(test utils ${LIBRARY})
+# add_library(utils STATIC ${UTILS_SRC})
+# add_executable(test main.cpp)
+# target_link_libraries(test utils ${LIBRARY})

@@ -24,6 +24,13 @@ ProgressBar getProgressBar(int total, int width = PROGRESS_WIDTH);
 
 ProgressSpinner getProgressSpinner(int total);
 
+
+// 设置前缀文本
+template<typename T>
+void set_desc(T &bar, const std::string &desc) {
+  bar.set_option(option::PrefixText{desc});
+}
+
 }
 
 #endif

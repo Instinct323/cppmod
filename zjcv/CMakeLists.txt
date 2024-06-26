@@ -1,8 +1,8 @@
 project(zjcv)
 
 include_directories(include)
-aux_source_directory(src SRC)
-add_library(${PROJECT_NAME} STATIC ${SRC})
+file(GLOB ZJCV_SRC src/*.cpp)
+add_library(${PROJECT_NAME} STATIC ${ZJCV_SRC} ${UTILS_SRC})
 
 add_executable(tumvi example/slam/TUM-VI.cpp)
-target_link_libraries(tumvi utils ${PROJECT_NAME} ${LIBRARY})
+target_link_libraries(tumvi ${PROJECT_NAME} ${LIBRARY})

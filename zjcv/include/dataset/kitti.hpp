@@ -23,9 +23,9 @@ public:
     }
 
     // times.txt
-    void loadTimestamps(Timestamps &vTimestamps, const std::string &file = "times.txt") {
+    void load_timestamps(Timestamps &vTimestamps, const std::string &file = "times.txt") {
       assert(vTimestamps.empty());
-      TXT::rowMapping(
+      TXT::row_mapping(
           mPath + "sequences/" + mId + "/" + file,
           [&vTimestamps](const std::string &line) {
               vTimestamps.push_back(std::stod(line));
@@ -33,7 +33,7 @@ public:
     }
 
     // fixme: e.g., image_0
-    void loadImage(Filenames &vFilename, const std::string &folder = "image_0") {
+    void load_image(Filenames &vFilename, const std::string &folder = "image_0") {
       assert(vFilename.empty());
       std::string img_path = mPath + "sequences/" + mId + "/" + folder;
       for (const auto &entry: std::filesystem::directory_iterator(img_path)) {
@@ -41,9 +41,9 @@ public:
       }
     }
 
-    void loadPoses(Poses &vPoses) {
+    void load_poses(Poses &vPoses) {
       assert(vPoses.empty());
-      TXT::rowMapping(
+      TXT::row_mapping(
           mPath + "poses/" + mId + ".txt",
           [&vPoses](const std::string &line) {
               std::istringstream iss(line);
@@ -55,7 +55,7 @@ public:
           });
     }
 
-    void savePoses(Poses &vPoses) {
+    void save_poses(Poses &vPoses) {
       std::ofstream f(mPath + mId + ".txt");
       for (const auto &pose: vPoses) {
         Matrix34d p = pose.matrix3x4();

@@ -17,9 +17,9 @@ public:
     using Base::Base;
 
     // rgb.txt, depth.txt
-    void loadImage(Timestamps &vTimestamps, Filenames &vFilename, const std::string &file = "rgb.txt") {
+    void load_image(Timestamps &vTimestamps, Filenames &vFilename, const std::string &file = "rgb.txt") {
       assert(vTimestamps.empty() && vFilename.empty());
-      TXT::rowMapping(
+      TXT::row_mapping(
           mPath + file,
           [this, &vTimestamps, &vFilename](const std::string &line) {
               std::istringstream iss(line);
@@ -33,9 +33,9 @@ public:
     }
 
     // groundtruth.txt
-    void loadPoses(Timestamps &vTimestamps, Poses &vPoses, const std::string &file = "groundtruth.txt") {
+    void load_poses(Timestamps &vTimestamps, Poses &vPoses, const std::string &file = "groundtruth.txt") {
       assert(vTimestamps.empty() && vPoses.empty());
-      TXT::rowMapping(
+      TXT::row_mapping(
           mPath + file,
           [&vTimestamps, &vPoses](const std::string &line) {
               std::istringstream iss(line);
@@ -49,9 +49,9 @@ public:
     }
 
     // accelerometer.txt
-    void loadAccel(Timestamps &vTimestamps, Accels &vAccel, const std::string &file = "accelerometer.txt") {
+    void load_accel(Timestamps &vTimestamps, Accels &vAccel, const std::string &file = "accelerometer.txt") {
       assert(vTimestamps.empty() && vAccel.empty());
-      TXT::rowMapping(
+      TXT::row_mapping(
           mPath + file,
           [&vTimestamps, &vAccel](const std::string &line) {
               std::istringstream iss(line);

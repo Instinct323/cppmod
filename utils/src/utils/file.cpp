@@ -2,14 +2,14 @@
 #include <sophus/se3.hpp>
 #include <yaml-cpp/yaml.h>
 
-#include "eigen.hpp"
-#include "file.hpp"
-#include "logging.hpp"
+#include "utils/eigen.hpp"
+#include "utils/file.hpp"
+#include "utils/logging.hpp"
 
 namespace CSV {
 
 // 逐行映射
-void rowMapping(const std::string &file, const std::function<void(std::vector<std::string> &)>& unary_op) {
+void row_mapping(const std::string &file, const std::function<void(std::vector<std::string> &)> &unary_op) {
   std::ifstream f(file);
   ASSERT(f.is_open(), "fail to open file " << file)
   // 读取文件, 除去空行和注释
@@ -32,7 +32,7 @@ void rowMapping(const std::string &file, const std::function<void(std::vector<st
 namespace TXT {
 
 // 逐行映射
-void rowMapping(const std::string &file, const std::function<void(std::string &)>& unary_op) {
+void row_mapping(const std::string &file, const std::function<void(std::string &)> &unary_op) {
   std::ifstream f(file);
   ASSERT(f.is_open(), "fail to open file " << file)
   // 读取文件, 除去空行和注释
@@ -47,22 +47,7 @@ void rowMapping(const std::string &file, const std::function<void(std::string &)
 
 namespace YAML {
 
-Sophus::SE3d toSE3d(const Node &node) {
-  Eigen::MatrixXd mat = toEigen<double>(node);
-  // tx ty tz qx qy qz qw
-  if (mat.size() == 7) {
-    return {Eigen::Quaterniond(mat(6), mat(3), mat(4), mat(5)),
-            Eigen::Vector3d(mat(0), mat(1), mat(2))};
-  } else if (mat.size() == 12 || mat.size() == 16) {
-    // Rotation + Translation
-    Eigen::MatrixXd matn4 = Eigen::reshape<double>(mat, -1, 4);
-    return {Eigen::Quaterniond(matn4.block<3, 3>(0, 0)), matn4.block<3, 1>(0, 3)};
-  }
-  LOG(FATAL) << "YAML: Invalid SE3d format";
-}
-
-
-void assertMatrix(const Node &node) {
+void assert_matrix(const Node &node) {
   bool flag = node.IsSequence();
   if (flag) {
     // 校对每一行的列数
@@ -76,6 +61,21 @@ void assertMatrix(const Node &node) {
     }
   }
   if (!flag) LOG(FATAL) << "YAML: Invalid matrix format";
+}
+
+
+Sophus::SE3d toSE3d(const Node &node) {
+  Eigen::MatrixXd mat = toEigen<double>(node);
+  // tx ty tz qx qy qz qw
+  if (mat.size() == 7) {
+    return {Eigen::Quaterniond(mat(6), mat(3), mat(4), mat(5)),
+            Eigen::Vector3d(mat(0), mat(1), mat(2))};
+  } else if (mat.size() == 12 || mat.size() == 16) {
+    // Rotation + Translation
+    Eigen::MatrixXd matn4 = Eigen::reshape<double>(mat, -1, 4);
+    return {Eigen::Quaterniond(matn4.block<3, 3>(0, 0)), matn4.block<3, 1>(0, 3)};
+  }
+  LOG(FATAL) << "YAML: Invalid SE3d format";
 }
 
 }

@@ -11,7 +11,7 @@
 namespace CSV {
 
 // 逐行映射
-void rowMapping(const std::string &file, const std::function<void(std::vector<std::string> &)> &unary_op);
+void row_mapping(const std::string &file, const std::function<void(std::vector<std::string> &)> &unary_op);
 
 }
 
@@ -19,18 +19,18 @@ void rowMapping(const std::string &file, const std::function<void(std::vector<st
 namespace TXT {
 
 // 逐行映射
-void rowMapping(const std::string &file, const std::function<void(std::string &)> &unary_op);
+void row_mapping(const std::string &file, const std::function<void(std::string &)> &unary_op);
 
 }
 
 
 namespace YAML {
 
+// 矩阵判断
+void assert_matrix(const Node &node);
+
 // SE3d 转换
 Sophus::SE3d toSE3d(const Node &node);
-
-// 矩阵判断
-void assertMatrix(const Node &node);
 
 
 // std::vector 转换
@@ -46,7 +46,7 @@ std::vector<T> toVec(const YAML::Node &node) {
 // 矩阵转换
 template<typename T, typename MatrixT>
 MatrixT toMatrix(const Node &node) {
-  assertMatrix(node);
+  assert_matrix(node);
   size_t rows = node.size(), cols = node[0].size();
   MatrixT mat(rows, MAX(1, cols));
   // 向量形式

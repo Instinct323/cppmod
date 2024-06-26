@@ -1,12 +1,13 @@
 #include <filesystem>
 
 #include "dataset/tum_vi.hpp"
-#include "cv.hpp"
-#include "fbow.hpp"
-#include "std.hpp"
 #include "imu_type.hpp"
-#include "logging.hpp"
 #include "slam/system.hpp"
+#include "utils/cv.hpp"
+#include "utils/fbow.hpp"
+#include "utils/indicators.hpp"
+#include "utils/logging.hpp"
+#include "utils/std.hpp"
 
 
 int main(int argc, char **argv) {
@@ -24,9 +25,9 @@ int main(int argc, char **argv) {
 
   // 载入并校验数据
   dataset::TumVI tum_vi(cfg["dataset"].as<std::string>());
-  tum_vi.loadImage(vImgLeftTs, vImgLeft, "cam0");
-  tum_vi.loadImage(vImgRightTs, vImgRight, "cam1");
-  tum_vi.loadIMU(vImuTs, vImu);
+  tum_vi.load_image(vImgLeftTs, vImgLeft, "cam0");
+  tum_vi.load_image(vImgRightTs, vImgRight, "cam1");
+  tum_vi.load_imu(vImuTs, vImu);
   assert(vImgLeftTs.size() == vImgRightTs.size());
   LOG(INFO) << "Images: " << vImgLeftTs.size() << ", IMU: " << vImuTs.size();
 
@@ -47,17 +48,18 @@ int main(int argc, char **argv) {
   }
 
   // main loop
-  for (size_t i = 0; i < vImgLeftTs.size(); i++) {
+  system.run();
+  auto pbar = indicators::getProgressBar(vImgLeftTs.size());
+  while (!pbar.is_completed()) {
+    int i = pbar.current();
     cv::Mat imgLeft = grayloader(vImgLeft[i]), imgRight = grayloader(vImgRight[i]);
     auto [j, k] = slicer(vImgLeftTs[i]);
 
-    system.GrabStereo(vImgLeftTs[i], imgLeft, imgRight,
-                      dataset::IMUsamples(vImu.begin() + j, vImu.begin() + k));
-
-    cv::imshow("Left", imgLeft);
-    cv::imshow("Right", imgRight);
-    cv::waitKey(1);
+    system.grad_stereo(vImgLeftTs[i], imgLeft, imgRight,
+                       dataset::IMUsamples(vImu.begin() + j, vImu.begin() + k));
+    pbar.tick();
   }
+  pbar.mark_as_completed();
 
   return 0;
 }

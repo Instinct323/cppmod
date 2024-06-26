@@ -1,6 +1,6 @@
 #include <cstdlib>
 
-#include "logging.hpp"
+#include "utils/logging.hpp"
 
 
 int main(int argc, char **argv) {

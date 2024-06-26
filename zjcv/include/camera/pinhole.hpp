@@ -1,9 +1,9 @@
 #ifndef ZJCV__CAMERA__PINHOLE_HPP
 #define ZJCV__CAMERA__PINHOLE_HPP
 
-#include "cv.hpp"
-#include "eigen.hpp"
 #include "base.hpp"
+#include "utils/cv.hpp"
+#include "utils/eigen.hpp"
 
 namespace camera {
 
@@ -30,7 +30,7 @@ public:
       cv::initUndistortRectifyMap(mOrgK, distCoeffs, cv::Mat(), mOrgK, mImgSize, CV_32FC1, mMap1, mMap2);
     }
 
-    CameraType getType() const override { return CameraType::PINHOLE; }
+    CameraType get_type() const override { return CameraType::PINHOLE; }
 
     // 3D -> 2D
     cv::Point2f project(const cv::Point3f &p3D) const override { PINHOLE_PROJECT(mvParam, p3D.x, p3D.y, p3D.z) }
@@ -39,20 +39,20 @@ public:
 
     Eigen::Vector2f project(const Eigen::Vector3f &v3D) const override { PINHOLE_PROJECT(mvParam, v3D[0], v3D[1], v3D[2]) }
 
-    Eigen::Vector2f projectEig(const cv::Point3f &p3D) const override { PINHOLE_PROJECT(mvParam, p3D.x, p3D.y, p3D.z) }
+    Eigen::Vector2f project_eig(const cv::Point3f &p3D) const override { PINHOLE_PROJECT(mvParam, p3D.x, p3D.y, p3D.z) }
 
     // 2D -> 3D
     cv::Point3f unproject(const cv::Point2f &p2D) const override { PINHOLE_UNPROJECT(mvParam, p2D.x, p2D.y) }
 
-    Eigen::Vector3f unprojectEig(const cv::Point2f &p2D) const override { PINHOLE_UNPROJECT(mvParam, p2D.x, p2D.y) }
+    Eigen::Vector3f unproject_eig(const cv::Point2f &p2D) const override { PINHOLE_UNPROJECT(mvParam, p2D.x, p2D.y) }
 
     // 去畸变
     void undistort(const cv::Mat &src, cv::Mat &dst) override { cv::remap(src, dst, mMap1, mMap2, cv::INTER_LINEAR); }
 
-    void undistort(const VectorPt2f &src, VectorPt2f &dst) override {cv::undistortPoints(src, dst, mOrgK, getDistCoeffs(), mRectR, getK());}
+    void undistort(const VectorPt2f &src, VectorPt2f &dst) override { cv::undistortPoints(src, dst, mOrgK, get_distcoeffs(), mRectR, getK()); }
 
     // 立体校正
-    void stereoRectify(Pinhole *cam_right);
+    void stereo_rectify(Pinhole *cam_right);
 };
 
 }

@@ -27,7 +27,7 @@ class KannalaBrandt : public Base {
 protected:
     cv::Mat mUnprojectCache;
 
-    void makeUnprojectCache();
+    void make_unproject_cache();
 
 public:
     typedef std::shared_ptr<KannalaBrandt> Ptr;
@@ -36,10 +36,10 @@ public:
                            const Sophus::SE3d &T_cam_imu = Sophus::SE3d()
     ) : Base(imgSize, intrinsics, distCoeffs, T_cam_imu), mUnprojectCache(mImgSize, CV_32FC2) {
       ASSERT(distCoeffs.size() == 4, "Distortion coefficients size must be 4")
-      makeUnprojectCache();
+      make_unproject_cache();
     }
 
-    CameraType getType() const override { return CameraType::KANNALA_BRANDT; }
+    CameraType get_type() const override { return CameraType::KANNALA_BRANDT; }
 
     // 3D -> 2D
     float computeR(float theta) const;
@@ -50,19 +50,21 @@ public:
 
     Eigen::Vector2f project(const Eigen::Vector3f &v3D) const override { KANNALA_BRANDT_PROJECT(mvParam, v3D[0], v3D[1], v3D[2]) }
 
-    Eigen::Vector2f projectEig(const cv::Point3f &p3D) const override { KANNALA_BRANDT_PROJECT(mvParam, p3D.x, p3D.y, p3D.z) }
+    Eigen::Vector2f project_eig(const cv::Point3f &p3D) const override { KANNALA_BRANDT_PROJECT(mvParam, p3D.x, p3D.y, p3D.z) }
 
     // 2D -> 3D
     float solveWZ(float wx, float wy, size_t iterations = 10) const;
 
     cv::Point3f unproject(const cv::Point2f &p2D) const override { KANNALA_BRANDT_UNPROJECT(mUnprojectCache, p2D.x, p2D.y) }
 
-    Eigen::Vector3f unprojectEig(const cv::Point2f &p2D) const override { KANNALA_BRANDT_UNPROJECT(mUnprojectCache, p2D.x, p2D.y) }
+    Eigen::Vector3f unproject_eig(const cv::Point2f &p2D) const override { KANNALA_BRANDT_UNPROJECT(mUnprojectCache, p2D.x, p2D.y) }
 
     // 去畸变
     void undistort(const cv::Mat &src, cv::Mat &dst) override { if (src.data != dst.data) dst = src.clone(); }
 
     void undistort(const VectorPt2f &src, VectorPt2f &dst) override { if (src.data() != dst.data()) dst = src; }
+
+    void undistort(const VectorKp &src, VectorKp &dst) override { if (src.data() != dst.data()) dst = src; }
 };
 
 }

@@ -17,10 +17,10 @@ public:
     using Base::Base;
 
     // cam0, cam1
-    void loadImage(Timestamps &vTimestamps, Filenames &vFilename, const std::string &folder = "cam0") {
+    void load_image(Timestamps &vTimestamps, Filenames &vFilename, const std::string &folder = "cam0") {
       assert(vTimestamps.empty() && vFilename.empty());
       std::string root = mPath + folder + "/";
-      TXT::rowMapping(
+      TXT::row_mapping(
           root + "times.txt",
           [&root, &vTimestamps, &vFilename](const std::string &line) {
               std::istringstream iss(line);
@@ -34,9 +34,9 @@ public:
     }
 
     // imu.txt
-    void loadIMU(Timestamps &vTimestamps, IMUsamples &vImu, const std::string &file = "imu.txt") {
+    void load_imu(Timestamps &vTimestamps, IMUsamples &vImu, const std::string &file = "imu.txt") {
       assert(vTimestamps.empty() && vImu.empty());
-      TXT::rowMapping(
+      TXT::row_mapping(
           mPath + file,
           [&vTimestamps, &vImu](const std::string &line) {
               std::istringstream iss(line);
@@ -50,7 +50,7 @@ public:
     }
 
     // camchain.yaml, imu_config.yaml
-    YAML::Node loadCfg(const std::string &file = "camchain.yaml") { return YAML::LoadFile(mPath + file); }
+    YAML::Node load_cfg(const std::string &file = "camchain.yaml") { return YAML::LoadFile(mPath + file); }
 };
 
 }

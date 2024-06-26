@@ -1,4 +1,4 @@
-#include "fbow.hpp"
+#include "utils/fbow.hpp"
 
 namespace fbow {
 
@@ -12,7 +12,7 @@ void createORBvocabulary(Vocabulary &voc,
   // todo: 增加进度条, 线程池
   for (int i = 0; i < filenames.size(); i++) {
     ORB::KeyPoints kps;
-    extractor->detectAndCompute(loader(filenames[i]), cv::noArray(), kps, descriptors[i]);
+    extractor->detect_and_compute(loader(filenames[i]), cv::Mat(), kps, descriptors[i]);
   }
   // 训练词汇表
   VocabularyCreator creator;

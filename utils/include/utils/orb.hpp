@@ -18,7 +18,7 @@ class Extractor {
 public:
     typedef std::shared_ptr<Extractor> Ptr;
 
-    static Ptr fromYAML(const YAML::Node &node);
+    static Ptr from_yaml(const YAML::Node &node);
 
     Extractor(int nfeatures = 1000,
               float scaleFactor = 1.2f,
@@ -33,8 +33,7 @@ public:
      * @brief ORB 关键点提取及描述子计算
      * @return 重叠区域内的关键点数量
      */
-    int detectAndCompute(cv::InputArray img, cv::InputArray mask,
-                         KeyPoints &keypoints, cv::OutputArray descriptors);
+    int detect_and_compute(cv::Mat img, cv::Mat mask, KeyPoints &keypoints, cv::Mat descriptors);
 };
 
 }

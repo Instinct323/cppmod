@@ -8,10 +8,9 @@
 
 namespace std {
 
+typedef boost::mutex::scoped_lock ScopedLock;
 
-void sleep(double seconds) {
-  boost::this_thread::sleep_for(boost::chrono::milliseconds(int(1e3 * seconds)));
-}
+void sleep(double seconds);
 
 
 // std::vector -> Eigen
@@ -30,6 +29,14 @@ struct SharedVar {
     T mValue;
 
     SharedVar(T value) : mValue(value) {};
+
+    operator T() { return mValue; }
+
+    SharedVar<T> operator=(T value) {
+      ScopedLock lock(mMutex);
+      mValue = value;
+      return this;
+    }
 };
 
 
