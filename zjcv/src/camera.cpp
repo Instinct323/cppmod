@@ -7,7 +7,7 @@ Base::Ptr from_yaml(const YAML::Node &node) {
   Base::Ptr pCam;
   if (!node.IsNull()) {
 
-    std::string type = node["type"].as<std::string>();
+    auto type = node["type"].as<std::string>();
     auto imgSize = YAML::toVec<int>(node["resolution"]);
     auto intrinsics = YAML::toVec<float>(node["intrinsics"]);
     auto distCoeffs = YAML::toVec<float>(node["dist_coeffs"]);
@@ -29,7 +29,7 @@ Base::Ptr from_yaml(const YAML::Node &node) {
 }
 
 
-void calib_by_chessboard(std::vector<std::string> &filenames, cv::Mat distCoeffs,
+void calib_by_chessboard(std::vector<std::string> &filenames, cv::Mat &distCoeffs,
                          cv::Size boardSize, cv::Size imgSize, int delay) {
   std::vector<std::vector<cv::Point3f>> objPoints;
   std::vector<std::vector<cv::Point2f>> imgPoints;

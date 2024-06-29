@@ -50,6 +50,6 @@ file(GLOB UTILS_SRC utils/src/utils/*.cpp)
 add_subdirectory(zjcv)
 
 # test
-# add_library(utils STATIC ${UTILS_SRC})
-# add_executable(test main.cpp)
-# target_link_libraries(test utils ${LIBRARY})
+add_library(utils STATIC ${UTILS_SRC})
+add_executable(test main.cpp)
+target_link_libraries(test utils ${LIBRARY})

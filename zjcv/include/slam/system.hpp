@@ -2,6 +2,7 @@
 #define ZJCV__SLAM__SYSTEM_HPP
 
 #include "tracker.hpp"
+#include "utils/parallel.hpp"
 #include "utils/std.hpp"
 #include "viewer.hpp"
 
@@ -15,14 +16,14 @@ public:
     Viewer::Ptr mpViewer;
 
     // Status
-    std::SharedVar<bool> mbRunning = false;
+    parallel::SharedVar<bool> mbRunning = false;
 
     explicit System(YAML::Node cfg) : mpTracker(new Tracker(this, cfg)), mpViewer(new Viewer(this)) {};
 
     // Daemons
     void run() {
       mbRunning = true;
-      boost::thread tView(&Viewer::run, mpViewer);
+      parallel::thread_pool.emplace(0, &Viewer::run, mpViewer);
     }
 
     // Tracking

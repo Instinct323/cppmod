@@ -1,14 +1,11 @@
 #ifndef UTILS__STD_HPP
 #define UTILS__STD_HPP
 
-#include <boost/thread.hpp>
 #include <Eigen/Core>
 
 #include "logging.hpp"
 
 namespace std {
-
-typedef boost::mutex::scoped_lock ScopedLock;
 
 void sleep(double seconds);
 
@@ -20,24 +17,6 @@ Eigen::Vector<T, -1> toEigen(const vector<T> &vec) {
   for (int i = 0; i < vec.size(); i++) v(i) = vec[i];
   return v;
 }
-
-
-// 线程共享变量
-template<typename T>
-struct SharedVar {
-    boost::mutex mMutex;
-    T mValue;
-
-    SharedVar(T value) : mValue(value) {};
-
-    operator T() { return mValue; }
-
-    SharedVar<T> operator=(T value) {
-      ScopedLock lock(mMutex);
-      mValue = value;
-      return this;
-    }
-};
 
 
 // 按值切片器
@@ -54,8 +33,8 @@ public:
 
     // 返回切片索引
     std::pair<int, int> operator()(T value) {
-      ASSERT(mIndex < mValues.size(), "ValueSlicer: The slicer has expired");
-      ASSERT(mCompare(mValues[mIndex], value), "ValueSlicer: Invalid input value");
+      ASSERT(mIndex < mValues.size(), "ValueSlicer: The slicer has expired")
+      ASSERT(mCompare(mValues[mIndex], value), "ValueSlicer: Invalid input value")
       int i = mIndex;
       for (; mIndex < mValues.size(); ++mIndex) {
         if (!mCompare(mValues[mIndex], value)) break;

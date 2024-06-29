@@ -15,15 +15,17 @@ Extractor::Ptr Extractor::from_yaml(const YAML::Node &node) {
 }
 
 
-int Extractor::detect_and_compute(cv::Mat img, cv::Mat mask, KeyPoints &keypoints, cv::Mat descriptors) {
-  mpExtractor->detectAndCompute(img, mask, keypoints, descriptors);
+int Extractor::detect_and_compute(cv::InputArray img, cv::InputArray mask,
+                                  KeyPoints &keypoints, cv::OutputArray &desc) {
+  mpExtractor->detectAndCompute(img, mask, keypoints, desc);
   int monoCnt = 0;
   if (mLappingArea.first >= 0) {
     // 全部在重叠区域内
-    if (mLappingArea.first == 0 && mLappingArea.second < img.cols) {
+    if (mLappingArea.first == 0 && mLappingArea.second < img.cols()) {
       return keypoints.size();
     }
     // 重叠区域的点聚集到前面
+    cv::Mat descriptors = desc.getMat();
     for (int i = 0; i < keypoints.size(); i++) {
       if (mLappingArea.first <= keypoints[i].pt.x && keypoints[i].pt.x <= mLappingArea.second) {
         if (monoCnt != i) {

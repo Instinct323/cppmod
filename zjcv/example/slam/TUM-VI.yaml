@@ -1,5 +1,5 @@
 dataset: "/home/workbench/data/dataset-corridor4_512_16/dso"
-vocabulary: "/home/workbench/data/dataset-corridor4_512_16/dso/voc.bin"
+vocabulary: "/home/workbench/Repository/dbow2/ORBvoc.bin"
 
 cam0:
   type: "KannalaBrandt"

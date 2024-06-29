@@ -3,9 +3,6 @@
 #include "slam/tracker.hpp"
 #include "slam/viewer.hpp"
 
-#include "boost/thread.hpp"
-#include <thread>
-
 namespace slam {
 
 
@@ -17,13 +14,15 @@ Frame::Frame(Tracker *pTracker,
   ASSERT((!pTracker->mpCam1) == img1.empty(), "miss match between Camera1 and Image1")
   ASSERT((!pTracker->mpIMU) == vImu.empty(), "miss match between IMU device and IMU samples")
   // 特征点提取、去畸
-  boost::thread t0(std::bind(&ORB::Extractor::detect_and_compute,
-                             pTracker->mpExtractor0.get(), mImg0, cv::Mat(), std::ref(mvKps0), std::ref(mDesc0)));
+  parallel::PriorityThread t0 = parallel::thread_pool.emplace(
+      1, std::bind(&ORB::Extractor::detect_and_compute,
+                   pTracker->mpExtractor0.get(), mImg0, cv::Mat(), std::ref(mvKps0), std::ref(mDesc0))
+  );
   if (pTracker->mpExtractor1) {
     pTracker->mpExtractor1->detect_and_compute(mImg1, cv::Mat(), mvKps1, mDesc1);
     pTracker->mpCam1->undistort(mvKps1, mvKps1);
   }
-  t0.join();
+  t0->join();
   pTracker->mpCam0->undistort(mvKps0, mvKps0);
 }
 
@@ -44,7 +43,7 @@ Tracker::Tracker(System *pSystem, YAML::Node cfg) :
       static_cast<camera::Pinhole *>(mpCam0.get())->stereo_rectify(static_cast<camera::Pinhole *>(mpCam1.get()));
     }
   }
-};
+}
 
 
 void Tracker::grad_image_and_imu(const double &timestamp, const cv::Mat &img0, const cv::Mat &img1,

@@ -10,6 +10,7 @@
 namespace fbow {
 
 typedef VocabularyCreator::Params Params;
+typedef std::shared_ptr<fbow::Vocabulary> VocabularyPtr;
 
 /**
  * @brief 创建 ORB 特征词汇表

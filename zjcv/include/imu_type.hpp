@@ -51,7 +51,7 @@ public:
            const float &angvel_x, const float &angvel_y, const float &angvel_z
     ) : a(acc_x, acc_y, acc_z), w(angvel_x, angvel_y, angvel_z) {}
 
-    Sample(const Eigen::Vector3f acc, const Eigen::Vector3f angvel) : a(acc), w(angvel) {}
+    Sample(const Eigen::Vector3f &acc, const Eigen::Vector3f &angvel) : a(acc), w(angvel) {}
 };
 
 

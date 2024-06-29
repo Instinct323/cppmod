@@ -40,7 +40,7 @@ public:
 
     Mat operator()(const std::string &filename) const {
       Mat img = imread(filename, IMREAD_GRAYSCALE);
-      ASSERT(!img.empty(), "fail to load " << filename);
+      ASSERT(!img.empty(), "fail to load " << filename)
       // 缩放图像, 直方图均衡
       if (mScale != 1.f) resize(img, img, Size(), mScale, mScale);
       mClahe->apply(img, img);
