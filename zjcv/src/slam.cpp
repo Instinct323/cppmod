@@ -61,13 +61,14 @@ void Viewer::run() {
       // Image 0
       cv::cvtColor(img0, img0, cv::COLOR_GRAY2BGR);
       cv::drawKeypoints(img0, pCurFrame->mvKps0, img0);
-      cv::imshow("Image 0", img0);
       // Image 1
       if (!img1.empty()) {
         cv::cvtColor(img1, img1, cv::COLOR_GRAY2BGR);
         cv::drawKeypoints(img1, pCurFrame->mvKps1, img1);
-        cv::imshow("Image 1", img1);
+        // Concat
+        cv::hconcat(img0, img1, img0);
       }
+      cv::imshow("Image", img0);
       cv::waitKey(mDelay);
     }
   }

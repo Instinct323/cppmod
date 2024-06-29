@@ -32,7 +32,7 @@ cv::Mat toCvMat(const Matrix<T, -1, -1> &m) {
 // Eigen reshape
 template<typename T>
 Matrix<T, -1, -1> reshape(Matrix<T, -1, -1> &m, int rows, int cols) {
-  ASSERT(rows != -1 || cols != -1, "Invalid reshape size")
+  ASSERT(rows > 0 || cols > 0, "Invalid reshape size")
   if (rows == -1) rows = m.size() / cols;
   if (cols == -1) cols = m.size() / rows;
   ASSERT(rows * cols == m.size(), "Invalid reshape size")

@@ -60,6 +60,7 @@ int main(int argc, char **argv) {
     pbar.tick();
   }
   pbar.mark_as_completed();
+  system.stop();
 
   return 0;
 }

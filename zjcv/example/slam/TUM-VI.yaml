@@ -1,3 +1,6 @@
+# ORB-SLAM3 New Features:
+# - 全局线程池: 将线程总数限定在硬件并发上限以内
+
 dataset: "/home/workbench/data/dataset-corridor4_512_16/dso"
 vocabulary: "/home/workbench/Repository/dbow2/ORBvoc.bin"
 

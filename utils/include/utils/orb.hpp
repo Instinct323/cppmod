@@ -11,6 +11,12 @@ namespace ORB {
 typedef std::vector<cv::KeyPoint> KeyPoints;
 
 
+// 亚像素级精化
+void KeypointSubPix(cv::Mat &img0, cv::Mat &img1, cv::Point2f &kp0, cv::Point2f &kp1,
+                    int hRadius = 5, int vRadius = 5, int winSize = 5, int levelDiff = 1);
+
+
+// 特征提取器
 class Extractor {
     cv::Ptr<cv::ORB> mpExtractor;
     std::pair<int, int> mLappingArea;

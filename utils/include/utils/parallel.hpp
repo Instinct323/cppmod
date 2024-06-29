@@ -1,6 +1,7 @@
 #ifndef UTILS__PARALLEL_HPP
 #define UTILS__PARALLEL_HPP
 
+#include <atomic>
 #include <algorithm>
 #include <memory>
 #include <mutex>
@@ -22,21 +23,14 @@ extern PriorityThreadPool thread_pool;
 
 // 线程共享变量
 template<typename T>
-struct SharedVar {
-    std::mutex mMutex;
-    T mValue;
+class atomic_ptr : public std::unique_ptr<T>, public std::mutex {
 
-    SharedVar(T value) : mValue(value) {};
+public:
+    atomic_ptr() : std::unique_ptr<T>(new T) {};
 
-    inline ScopedLock lock() { return ScopedLock(mMutex); }
+    atomic_ptr(const T &value) : std::unique_ptr<T>(new T(value)) {};
 
-    operator T() { return mValue; }
-
-    SharedVar<T> &operator=(T value) {
-      ScopedLock lock(mMutex);
-      mValue = value;
-      return *this;
-    }
+    atomic_ptr(const T *pValue) : std::unique_ptr<T>(pValue) {};
 };
 
 
@@ -47,10 +41,9 @@ struct SharedVar {
 class PriorityThread : public ThreadPtr {
 
 public:
-    static size_t mCnt;
+    static std::atomic_size_t mCnt;
 
     size_t mTimestamp, mPriority;
-
 
     template<typename Callable, typename... Args>
     explicit PriorityThread(size_t priority, Callable &&f, Args &&... args
