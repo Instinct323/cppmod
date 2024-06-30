@@ -32,6 +32,8 @@ public:
 
     explicit Tracker(System *pSystem, YAML::Node cfg);
 
+    Tracker(const Tracker &) = delete;
+
     void grad_image_and_imu(const double &timestamp, const cv::Mat &img0, const cv::Mat &img1 = cv::Mat(),
                             const std::vector<IMU::Sample> &vImu = std::vector<IMU::Sample>());
 };

@@ -9,21 +9,27 @@ namespace slam {
 Frame::Frame(Tracker *pTracker,
              const double &timestamp, const cv::Mat &img0, const cv::Mat &img1,
              const std::vector<IMU::Sample> &vImu
-) : mTimestamp(timestamp), mImg0(img0), mImg1(img1), mvImu(vImu) {
+) : mpTracker(pTracker), mTimestamp(timestamp), mImg0(img0), mImg1(img1), mvImu(vImu) {
   // 设备与数据校验
-  ASSERT((!pTracker->mpCam1) == img1.empty(), "miss match between Camera1 and Image1")
-  ASSERT((!pTracker->mpIMU) == vImu.empty(), "miss match between IMU device and IMU samples")
+  ASSERT((!mpTracker->mpCam1) == img1.empty(), "miss match between Camera1 and Image1")
+  ASSERT((!mpTracker->mpIMU) == vImu.empty(), "miss match between IMU device and IMU samples")
   // 特征点提取、去畸
+  int lapCnt0 = 0, lapCnt1 = 0;
   parallel::PriorityThread t0 = parallel::thread_pool.emplace(
-      1, std::bind(&ORB::Extractor::detect_and_compute,
-                   pTracker->mpExtractor0.get(), mImg0, cv::Mat(), std::ref(mvKps0), std::ref(mDesc0))
+      1, [this, &lapCnt0]() {
+          lapCnt0 = mpTracker->mpExtractor0->detect_and_compute(mImg0, cv::Mat(), mvKps0, mDesc0);
+      }
   );
-  if (pTracker->mpExtractor1) {
-    pTracker->mpExtractor1->detect_and_compute(mImg1, cv::Mat(), mvKps1, mDesc1);
-    pTracker->mpCam1->undistort(mvKps1, mvKps1);
+  if (mpTracker->mpExtractor1) {
+    lapCnt1 = mpTracker->mpExtractor1->detect_and_compute(mImg1, cv::Mat(), mvKps1, mDesc1);
+    mpTracker->mpCam1->undistort(mvKps1, mvKps1);
   }
   t0->join();
-  pTracker->mpCam0->undistort(mvKps0, mvKps0);
+  mpTracker->mpCam0->undistort(mvKps0, mvKps0);
+  // 双目匹配
+  if (lapCnt1 != 0 && lapCnt0 != 0) {
+    // todo: match
+  }
 }
 
 
@@ -54,23 +60,28 @@ void Tracker::grad_image_and_imu(const double &timestamp, const cv::Mat &img0, c
 
 
 void Viewer::run() {
+  glog::Timer timer;
   while (mpSystem->mbRunning) {
+    timer.reset();
     Frame::Ptr pCurFrame = mpSystem->mpTracker->mpCurFrame;
     if (pCurFrame) {
       cv::Mat img0 = pCurFrame->mImg0.clone(), img1 = pCurFrame->mImg1.clone();
       // Image 0
+      pCurFrame->mpTracker->mpCam0->undistort(img0, img0);
       cv::cvtColor(img0, img0, cv::COLOR_GRAY2BGR);
       cv::drawKeypoints(img0, pCurFrame->mvKps0, img0);
       // Image 1
       if (!img1.empty()) {
+        pCurFrame->mpTracker->mpCam1->undistort(img1, img1);
         cv::cvtColor(img1, img1, cv::COLOR_GRAY2BGR);
         cv::drawKeypoints(img1, pCurFrame->mvKps1, img1);
         // Concat
         cv::hconcat(img0, img1, img0);
       }
       cv::imshow("Image", img0);
-      cv::waitKey(mDelay);
     }
+    int cost = static_cast<int>(timer.count() * 1e3);
+    cv::waitKey(MAX(1, mDelay - cost));
   }
 }
 

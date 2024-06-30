@@ -4,7 +4,7 @@
 #include <Eigen/Core>
 #include <opencv2/opencv.hpp>
 
-#include "logging.hpp"
+#include "glog.hpp"
 
 namespace cv {
 

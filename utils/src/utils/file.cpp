@@ -4,7 +4,7 @@
 
 #include "utils/eigen.hpp"
 #include "utils/file.hpp"
-#include "utils/logging.hpp"
+#include "utils/glog.hpp"
 
 namespace CSV {
 

@@ -1,7 +1,7 @@
 #ifndef ZJCV__SLAM__VIEWER_HPP
 #define ZJCV__SLAM__VIEWER_HPP
 
-#include "utils/logging.hpp"
+#include "utils/glog.hpp"
 
 namespace slam {
 
@@ -16,9 +16,10 @@ public:
     System *mpSystem;
     int mDelay;
 
-    Viewer(System *pSystem, int delay = 30) : mpSystem(pSystem), mDelay(delay) {
-      ASSERT(delay > 0, "Viewer: The delay must be greater than 0")
-    }
+    Viewer(System *pSystem, int fps = 45
+    ) : mpSystem(pSystem), mDelay(1000 / fps) { ASSERT(fps > 0, "Viewer: The delay must be greater than 0")}
+
+    Viewer(const Viewer &) = delete;
 
     void run();
 };

@@ -18,7 +18,7 @@ Extractor::Ptr Extractor::from_yaml(const YAML::Node &node) {
 int Extractor::detect_and_compute(cv::InputArray img, cv::InputArray mask,
                                   KeyPoints &keypoints, cv::OutputArray &desc) {
   mpExtractor->detectAndCompute(img, mask, keypoints, desc);
-  int monoCnt = 0;
+  int lapCnt = 0;
   if (mLappingArea.first >= 0) {
     // 全部在重叠区域内
     if (mLappingArea.first == 0 && mLappingArea.second < img.cols()) {
@@ -28,18 +28,18 @@ int Extractor::detect_and_compute(cv::InputArray img, cv::InputArray mask,
     cv::Mat descriptors = desc.getMat();
     for (int i = 0; i < keypoints.size(); i++) {
       if (mLappingArea.first <= keypoints[i].pt.x && keypoints[i].pt.x <= mLappingArea.second) {
-        if (monoCnt != i) {
-          std::swap(keypoints[monoCnt], keypoints[i]);
+        if (lapCnt != i) {
+          std::swap(keypoints[lapCnt], keypoints[i]);
           // 交换描述子
-          cv::Mat tmp = descriptors.row(monoCnt).clone();
-          descriptors.row(i).copyTo(descriptors.row(monoCnt));
+          cv::Mat tmp = descriptors.row(lapCnt).clone();
+          descriptors.row(i).copyTo(descriptors.row(lapCnt));
           tmp.copyTo(descriptors.row(i));
         }
-        monoCnt++;
+        lapCnt++;
       }
     }
   }
-  return monoCnt;
+  return lapCnt;
 }
 
 }

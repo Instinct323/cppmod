@@ -4,16 +4,16 @@
 #include <opencv2/opencv.hpp>
 
 #include "file.hpp"
-#include "logging.hpp"
+#include "glog.hpp"
 
 namespace ORB {
 
 typedef std::vector<cv::KeyPoint> KeyPoints;
 
 
-// 亚像素级精化
-void KeypointSubPix(cv::Mat &img0, cv::Mat &img1, cv::Point2f &kp0, cv::Point2f &kp1,
-                    int hRadius = 5, int vRadius = 5, int winSize = 5, int levelDiff = 1);
+// 亚像素级精化 (模板匹配)
+void matchesSubPix(cv::Mat &img0, cv::Mat &img1, cv::Point2f &kp0, cv::Point2f &kp1,
+                   int hRadius = 5, int vRadius = 5, int winSize = 5, int levelDiff = 1);
 
 
 // 特征提取器
@@ -42,6 +42,14 @@ public:
     int detect_and_compute(cv::InputArray img, cv::InputArray mask,
                            KeyPoints &keypoints, cv::OutputArray &desc);
 };
+
+
+// 特征匹配器
+namespace Matcher {
+
+
+
+}
 
 }
 

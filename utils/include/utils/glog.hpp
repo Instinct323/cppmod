@@ -6,8 +6,10 @@
 
 #define ASSERT(expr, msg) if (!(expr)) { LOG(FATAL) << "AssertionError: " << msg; }
 
+namespace glog {
 
-/** @brief 日志 */
+
+// 日志
 class Logger {
 public:
     explicit Logger(char **argv) {
@@ -21,7 +23,7 @@ public:
 };
 
 
-/** @brief 计时器 */
+// 计时器
 class Timer {
 
 public:
@@ -41,5 +43,7 @@ public:
       return time_used.count();
     }
 };
+
+}
 
 #endif

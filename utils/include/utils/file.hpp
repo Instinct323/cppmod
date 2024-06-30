@@ -6,7 +6,7 @@
 #include <yaml-cpp/yaml.h>
 
 #include "eigen.hpp"
-#include "logging.hpp"
+#include "glog.hpp"
 
 namespace CSV {
 

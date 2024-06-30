@@ -5,7 +5,7 @@
 
 #include "tracker.hpp"
 #include "utils/parallel.hpp"
-#include "utils/std.hpp"
+#include "utils/math.hpp"
 #include "viewer.hpp"
 
 namespace slam {
@@ -22,6 +22,8 @@ public:
 
     explicit System(YAML::Node cfg
     ) : mpTracker(new Tracker(this, cfg)), mpViewer(new Viewer(this)) {};
+
+    System(const System &) = delete;
 
     // Daemons
     void run() {

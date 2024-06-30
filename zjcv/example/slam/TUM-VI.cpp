@@ -6,13 +6,13 @@
 #include "utils/cv.hpp"
 #include "utils/fbow.hpp"
 #include "utils/indicators.hpp"
-#include "utils/logging.hpp"
-#include "utils/std.hpp"
+#include "utils/glog.hpp"
+#include "utils/math.hpp"
 
 
 int main(int argc, char **argv) {
   putenv("DISPLAY=host.docker.internal:0");
-  Logger logger(argv);
+  glog::Logger logger(argv);
 
   // config
   YAML::Node cfg = YAML::LoadFile("/home/workbench/cppmod/ZJCV/example/slam/TUM-VI.yaml");
@@ -32,7 +32,7 @@ int main(int argc, char **argv) {
   LOG(INFO) << "Images: " << vImgLeftTs.size() << ", IMU: " << vImuTs.size();
 
   cv::GrayLoader grayloader;
-  std::ValueSlicer<double> slicer(vImuTs);
+  math::ValueSlicer<double> slicer(vImuTs);
 
   // 载入词汇表
   std::string vocPath = cfg["vocabulary"].as<std::string>();

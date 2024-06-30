@@ -20,6 +20,8 @@ extern unsigned int thread_pool_size;
 // 优先级线程池 (优先级 反比于 生命周期)
 extern PriorityThreadPool thread_pool;
 
+void sleep(double seconds);
+
 
 // 线程共享变量
 template<typename T>
