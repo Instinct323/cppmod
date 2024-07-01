@@ -14,21 +14,11 @@ Frame::Frame(Tracker *pTracker,
   ASSERT((!mpTracker->mpCam1) == img1.empty(), "miss match between Camera1 and Image1")
   ASSERT((!mpTracker->mpIMU) == vImu.empty(), "miss match between IMU device and IMU samples")
   // 特征点提取、去畸
-  int lapCnt0 = 0, lapCnt1 = 0;
-  parallel::PriorityThread t0 = parallel::thread_pool.emplace(
-      1, [this, &lapCnt0]() {
-          lapCnt0 = mpTracker->mpExtractor0->detect_and_compute(mImg0, cv::Mat(), mvKps0, mDesc0);
-      }
-  );
-  if (mpTracker->mpExtractor1) {
-    lapCnt1 = mpTracker->mpExtractor1->detect_and_compute(mImg1, cv::Mat(), mvKps1, mDesc1);
-    mpTracker->mpCam1->undistort(mvKps1, mvKps1);
-  }
-  t0->join();
-  mpTracker->mpCam0->undistort(mvKps0, mvKps0);
-  // 双目匹配
-  if (lapCnt1 != 0 && lapCnt0 != 0) {
-    // todo: match
+  if (!mpTracker->mpExtractor1) {
+    mpTracker->mpCam0->monoORBfeatures(mpTracker->mpExtractor0.get(), mImg0, mvKps0, mDesc0);
+  } else {
+    mpTracker->mpCam0->stereoORBfeatures(mpTracker->mpCam1.get(), mpTracker->mpExtractor0.get(), mpTracker->mpExtractor1.get(),
+                                         mImg0, mImg1, mvKps0, mvKps1, mDesc0, mDesc1, mStereoMatches);
   }
 }
 
@@ -65,20 +55,21 @@ void Viewer::run() {
     timer.reset();
     Frame::Ptr pCurFrame = mpSystem->mpTracker->mpCurFrame;
     if (pCurFrame) {
-      cv::Mat img0 = pCurFrame->mImg0.clone(), img1 = pCurFrame->mImg1.clone();
+      cv::Mat img0 = pCurFrame->mImg0.clone(), img1 = pCurFrame->mImg1.clone(), imgs;
       // Image 0
       pCurFrame->mpTracker->mpCam0->undistort(img0, img0);
       cv::cvtColor(img0, img0, cv::COLOR_GRAY2BGR);
-      cv::drawKeypoints(img0, pCurFrame->mvKps0, img0);
+      // cv::drawKeypoints(img0, pCurFrame->mvKps0, img0);
       // Image 1
       if (!img1.empty()) {
         pCurFrame->mpTracker->mpCam1->undistort(img1, img1);
         cv::cvtColor(img1, img1, cv::COLOR_GRAY2BGR);
-        cv::drawKeypoints(img1, pCurFrame->mvKps1, img1);
-        // Concat
-        cv::hconcat(img0, img1, img0);
+        // cv::drawKeypoints(img1, pCurFrame->mvKps1, img1);
+        // cv::hconcat(img0, img1, img0);
       }
-      cv::imshow("Image", img0);
+      cv::drawMatches(img0, pCurFrame->mvKps0, img1, pCurFrame->mvKps1, pCurFrame->mStereoMatches, imgs);
+
+      cv::imshow("Image", imgs);
     }
     int cost = static_cast<int>(timer.count() * 1e3);
     cv::waitKey(MAX(1, mDelay - cost));

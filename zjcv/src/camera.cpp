@@ -1,4 +1,6 @@
 #include "camera.hpp"
+#include "utils/math.hpp"
+#include "utils/parallel.hpp"
 
 namespace camera {
 
@@ -134,15 +136,39 @@ float KannalaBrandt::solveWZ(float wx, float wy, size_t iterations) const {
 }
 
 
+void KannalaBrandt::stereoORBfeatures(Base *pCamRight,
+                                      ORB::Extractor *pExtractor0, ORB::Extractor *pExtractor1,
+                                      const cv::Mat &img0, const cv::Mat &img1,
+                                      ORB::KeyPoints &kps0, ORB::KeyPoints &kps1,
+                                      cv::Mat &desc0, cv::Mat &desc1, std::vector<cv::DMatch> &matches) {
+  ASSERT(pCamRight->get_type() == CameraType::KANNALA_BRANDT, "Camera type must be KannalaBrandt")
+  // 特征提取
+  int lapCnt0, lapCnt1;
+  STEREO_ORB_EXTRACT(lapCnt0, lapCnt1)
+  // 双目匹配
+  auto matcher = cv::DescriptorMatcher::create("BruteForce-Hamming");
+  // Lowe's ratio test
+  std::vector<std::vector<cv::DMatch>> knn_matches;
+  matcher->knnMatch(desc0.rowRange(0, lapCnt0), desc1.rowRange(0, lapCnt1), knn_matches, 2);
+#define LOWE_S_RADIO 0.7
+  for (auto it = knn_matches.begin(); it != knn_matches.end(); ++it) {
+    if (it->size() < 2) continue;
+    cv::DMatch &m0 = (*it)[0], &m1 = (*it)[1];
+    if (m0.distance < LOWE_S_RADIO * m1.distance) matches.push_back(m0);
+  }
+}
+
+
 void Pinhole::stereo_rectify(Pinhole *cam_right) {
   ASSERT(this->mImgSize == cam_right->mImgSize, "Image size must be the same")
   Sophus::SE3d Trl = this->T_cam_imu.inverse() * cam_right->T_cam_imu;
-  cv::Mat P1, P2;
+  cv::Mat P1, P2, Q;
+  // 双目矫正
   cv::stereoRectify(this->getK(), this->get_distcoeffs(), cam_right->getK(), cam_right->get_distcoeffs(), mImgSize,
-                     Eigen::toCvMat<double>(Trl.rotationMatrix()),
-                     Eigen::toCvMat<double>(Trl.translation()), this->mRectR, cam_right->mRectR, P1, P2, cv::Mat());
+                    Eigen::toCvMat<double>(Trl.rotationMatrix()), Eigen::toCvMat<double>(Trl.translation()),
+                    this->mRectR, cam_right->mRectR, P1, P2, Q);
   // 重新初始化畸变矫正映射
-  cv::initUndistortRectifyMap(this->getK(), this->get_distcoeffs(), this->mRectR, P1, mImgSize, CV_32FC1, mMap1, mMap2);
+  cv::initUndistortRectifyMap(this->getK(), this->get_distcoeffs(), this->mRectR, P1, mImgSize, CV_32FC1, this->mMap1, this->mMap2);
   cv::initUndistortRectifyMap(cam_right->getK(), cam_right->get_distcoeffs(), cam_right->mRectR, P2, mImgSize, CV_32FC1,
                               cam_right->mMap1, cam_right->mMap2);
   // 原地修改相机内参
@@ -157,6 +183,43 @@ void Pinhole::stereo_rectify(Pinhole *cam_right) {
       R2(cv::toEigen<double>(cam_right->mRectR), Eigen::Vector3d::Zero());
   this->T_cam_imu = R1 * this->T_cam_imu;
   cam_right->T_cam_imu = R2 * cam_right->T_cam_imu;
+}
+
+
+void Pinhole::stereoORBfeatures(Base *pCamRight,
+                                ORB::Extractor *pExtractor0, ORB::Extractor *pExtractor1,
+                                const cv::Mat &img0, const cv::Mat &img1,
+                                ORB::KeyPoints &kps0, ORB::KeyPoints &kps1,
+                                cv::Mat &desc0, cv::Mat &desc1, std::vector<cv::DMatch> &matches) {
+  ASSERT(pCamRight->get_type() == CameraType::PINHOLE, "Camera type must be Pinhole")
+  // 特征提取
+  int lapCnt0, lapCnt1;
+  STEREO_ORB_EXTRACT(lapCnt0, lapCnt1)
+  // 分配右相机特征到行
+  cv::Mat_<uchar> rowMask(img0.rows, lapCnt1, uchar(0)), matchMask(lapCnt0, lapCnt1, uchar(0));
+  for (int j = 0; j < lapCnt1; ++j) {
+    float y = kps1[j].pt.y, r = kps1[j].size / 2;
+    int t = MAX(0, cvFloor(y - r)), b = MIN(img0.rows - 1, cvCeil(y + r));
+    for (int i = t; i <= b; ++i) rowMask.at<uchar>(i, j) = uchar(1);
+  }
+  for (int i = 0; i < lapCnt0; ++i) {
+    int y = cvRound(kps0[i].pt.y);
+    rowMask.row(y).copyTo(matchMask.row(i));
+  }
+  // 双目匹配
+  auto matcher = cv::DescriptorMatcher::create("BruteForce-Hamming");
+  std::vector<cv::DMatch> tmp_matches;
+  matcher->match(desc0.rowRange(0, lapCnt0), desc1.rowRange(0, lapCnt1), tmp_matches, matchMask);
+  // Pauta Criterion
+  std::vector<float> dx;
+  for (auto &m: tmp_matches) dx.push_back(kps0[m.queryIdx].pt.x - kps1[m.trainIdx].pt.x);
+  math::PautaCriterion<float> is_inlier(dx, 1);
+  for (int i = 0; i < tmp_matches.size(); ++i) {
+    if (!is_inlier(dx[i])) continue;
+    matches.push_back(tmp_matches[i]);
+  }
+  matches.shrink_to_fit();
+  // todo: Subpixel refinement
 }
 
 }

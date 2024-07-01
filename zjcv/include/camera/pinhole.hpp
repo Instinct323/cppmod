@@ -22,6 +22,8 @@ class Pinhole : public Base {
 public:
     typedef std::shared_ptr<Pinhole> Ptr;
 
+    using Base::undistort;
+
     explicit Pinhole(const cv::Size imgSize, const Vectorf &intrinsics, const Vectorf &distCoeffs,
                      const Sophus::SE3d &T_cam_imu = Sophus::SE3d()
     ) : Base(imgSize, intrinsics, distCoeffs, T_cam_imu), mOrgK(getK()) {
@@ -53,6 +55,13 @@ public:
 
     // 立体校正
     void stereo_rectify(Pinhole *cam_right);
+
+    // ORB 特征
+    void stereoORBfeatures(Base *pCamRight,
+                           ORB::Extractor *pExtractor0, ORB::Extractor *pExtractor1,
+                           const cv::Mat &img0, const cv::Mat &img1,
+                           ORB::KeyPoints &kps0, ORB::KeyPoints &kps1,
+                           cv::Mat &desc0, cv::Mat &desc1, std::vector<cv::DMatch> &matches) override;
 };
 
 }

@@ -32,6 +32,8 @@ protected:
 public:
     typedef std::shared_ptr<KannalaBrandt> Ptr;
 
+    using Base::undistort;
+
     explicit KannalaBrandt(const cv::Size imgSize, const Vectorf &intrinsics, const Vectorf &distCoeffs,
                            const Sophus::SE3d &T_cam_imu = Sophus::SE3d()
     ) : Base(imgSize, intrinsics, distCoeffs, T_cam_imu), mUnprojectCache(mImgSize, CV_32FC2) {
@@ -65,6 +67,13 @@ public:
     void undistort(const VectorPt2f &src, VectorPt2f &dst) override { if (src.data() != dst.data()) dst = src; }
 
     void undistort(const VectorKp &src, VectorKp &dst) override { if (src.data() != dst.data()) dst = src; }
+
+    // ORB 特征
+    void stereoORBfeatures(Base *pCamRight,
+                           ORB::Extractor *pExtractor0, ORB::Extractor *pExtractor1,
+                           const cv::Mat &img0, const cv::Mat &img1,
+                           ORB::KeyPoints &kps0, ORB::KeyPoints &kps1,
+                           cv::Mat &desc0, cv::Mat &desc1, std::vector<cv::DMatch> &matches) override;
 };
 
 }

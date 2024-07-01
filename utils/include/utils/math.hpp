@@ -39,6 +39,38 @@ template<typename T>
 double std(const std::vector<T> &vec) { return std(vec, mean(vec)); }
 
 
+// 指数移动平均
+class EMA {
+    float mMotion;
+    float *mValue;
+
+public:
+    explicit EMA(float motion = 0.1) : mMotion(motion) {}
+
+    ~EMA() { if (mValue != nullptr) delete mValue; }
+
+    // 值更新
+    template<typename T>
+    void update(T value) {
+      static_assert(std::is_arithmetic<T>::value, "EMA: Invalid type");
+      if (mValue == nullptr) {
+        mValue = new float(value);
+      } else {
+        *mValue = mMotion * value + (1 - mMotion) * (*mValue);
+      }
+    }
+
+    // 值读取
+    float get() { return *mValue; }
+
+    template<typename T>
+    operator T() {
+      static_assert(std::is_floating_point<T>::value, "EMA: Invalid type");
+      return *mValue;
+    }
+};
+
+
 // 拉依达准则
 template<typename T>
 class PautaCriterion {

@@ -1,3 +1,4 @@
+#include <boost/format.hpp>
 #include <filesystem>
 
 #include "dataset/tum_vi.hpp"
@@ -43,20 +44,25 @@ int main(int argc, char **argv) {
     LOG(ERROR) << "Vocabulary not found: " << vocPath;
     LOG(INFO) << "Press any key to create a new vocabulary...";
     std::getchar();
-    fbow::createORBvocabulary(voc, system.mpTracker->mpExtractor0, grayloader, vImgLeft);
+    fbow::createORBvocabulary(voc, system.mpTracker->mpExtractor0.get(), grayloader, vImgLeft);
     voc.saveToFile(vocPath);
   }
 
   // main loop
   system.run();
   auto pbar = indicators::getProgressBar(vImgLeftTs.size());
+  glog::Timer timer;
+  boost::format fmt("Cost=%.1fms");
+
   while (!pbar.is_completed()) {
     int i = pbar.current();
     cv::Mat imgLeft = grayloader(vImgLeft[i]), imgRight = grayloader(vImgRight[i]);
     auto [j, k] = slicer(vImgLeftTs[i]);
 
+    timer.reset();
     system.grad_stereo(vImgLeftTs[i], imgLeft, imgRight,
                        dataset::IMUsamples(vImu.begin() + j, vImu.begin() + k));
+    indicators::set_desc(pbar, (fmt % (1e3 * timer.count())).str(), false);
     pbar.tick();
   }
   pbar.mark_as_completed();

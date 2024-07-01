@@ -5,7 +5,7 @@
 namespace fbow {
 
 void createORBvocabulary(Vocabulary &voc,
-                         ORB::Extractor::Ptr extractor,
+                         ORB::Extractor *extractor,
                          cv::GrayLoader &loader,
                          std::vector<std::string> &filenames,
                          Params params) {

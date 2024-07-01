@@ -21,7 +21,7 @@ typedef std::shared_ptr<fbow::Vocabulary> VocabularyPtr;
  * @param params - 词汇表创建参数
  */
 void createORBvocabulary(Vocabulary &voc,
-                         ORB::Extractor::Ptr extractor,
+                         ORB::Extractor *extractor,
                          cv::GrayLoader &loader,
                          std::vector<std::string> &filenames,
                          Params params = Params());

@@ -6,6 +6,7 @@
 #include <sophus/se3.hpp>
 
 #include "utils/glog.hpp"
+#include "utils/orb.hpp"
 
 namespace camera {
 
@@ -87,6 +88,30 @@ public:
 
     // 绘制归一化平面 (z=1)
     void draw_normalized_plane(const cv::Mat &src, cv::Mat &dst);
+
+    // ORB 特征
+    virtual void monoORBfeatures(ORB::Extractor *pExtractor, const cv::Mat &img,
+                                 ORB::KeyPoints &kps, cv::Mat &desc) {
+      pExtractor->detect_and_compute(img, cv::noArray(), kps, desc);
+      undistort(kps, kps);
+    }
+
+#define STEREO_ORB_EXTRACT(lapCnt0, lapCnt1) \
+  parallel::PriorityThread t0 = parallel::thread_pool.emplace( \
+      1, [&lapCnt0, this, pExtractor0, &img0, &kps0, &desc0]() { \
+          lapCnt0 = pExtractor0->detect_and_compute(img0, cv::noArray(), kps0, desc0); \
+          this->undistort(kps0, kps0); \
+      }); \
+  lapCnt1 = pExtractor1->detect_and_compute(img1, cv::noArray(), kps1, desc1); \
+  pCamRight->undistort(kps1, kps1); \
+  t0->join(); \
+  if (lapCnt1 == 0 || lapCnt0 == 0) return;
+
+    virtual void stereoORBfeatures(Base *pCamRight,
+                                   ORB::Extractor *pExtractor0, ORB::Extractor *pExtractor1,
+                                   const cv::Mat &img0, const cv::Mat &img1,
+                                   ORB::KeyPoints &kps0, ORB::KeyPoints &kps1,
+                                   cv::Mat &desc0, cv::Mat &desc1, std::vector<cv::DMatch> &matches) = 0;
 };
 
 }

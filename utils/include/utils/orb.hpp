@@ -43,14 +43,6 @@ public:
                            KeyPoints &keypoints, cv::OutputArray &desc);
 };
 
-
-// 特征匹配器
-namespace Matcher {
-
-
-
-}
-
 }
 
 #endif
