@@ -35,9 +35,9 @@ Tracker::Tracker(System *pSystem, YAML::Node cfg) :
   if (mpCam1) {
     ASSERT(mpCam0->get_type() == mpCam1->get_type(), "Camera0 and Camera1 must be the same type")
     // Pinhole: 立体矫正
-    if (mpCam0->get_type() == camera::CameraType::PINHOLE) {
+    /* if (mpCam0->get_type() == camera::CameraType::PINHOLE) {
       static_cast<camera::Pinhole *>(mpCam0.get())->stereo_rectify(static_cast<camera::Pinhole *>(mpCam1.get()));
-    }
+    } */
   }
 }
 

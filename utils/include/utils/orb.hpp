@@ -12,8 +12,14 @@ typedef std::vector<cv::KeyPoint> KeyPoints;
 
 
 // 亚像素级精化 (模板匹配)
-void matchesSubPix(cv::Mat &img0, cv::Mat &img1, cv::Point2f &kp0, cv::Point2f &kp1,
-                   int hRadius = 5, int vRadius = 5, int winSize = 5, int levelDiff = 1);
+bool matchesSubPix(const cv::Mat &img0, const cv::Mat &img1,
+                   const cv::Point2f &kp0, cv::Point2f &kp1,
+                   int winSize = 5, cv::Size slideSize = {5, 5});
+
+
+// Lowe's ratio test
+void lowes_filter(const std::vector<std::vector<cv::DMatch>> &knn_matches,
+                  std::vector<cv::DMatch> &matches, float ratio);
 
 
 // 特征提取器

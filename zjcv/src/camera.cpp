@@ -145,17 +145,11 @@ void KannalaBrandt::stereoORBfeatures(Base *pCamRight,
   // 特征提取
   int lapCnt0, lapCnt1;
   STEREO_ORB_EXTRACT(lapCnt0, lapCnt1)
-  // 双目匹配
+  // 双目匹配: Lowe's ratio test
   auto matcher = cv::DescriptorMatcher::create("BruteForce-Hamming");
-  // Lowe's ratio test
   std::vector<std::vector<cv::DMatch>> knn_matches;
   matcher->knnMatch(desc0.rowRange(0, lapCnt0), desc1.rowRange(0, lapCnt1), knn_matches, 2);
-#define LOWE_S_RADIO 0.7
-  for (auto it = knn_matches.begin(); it != knn_matches.end(); ++it) {
-    if (it->size() < 2) continue;
-    cv::DMatch &m0 = (*it)[0], &m1 = (*it)[1];
-    if (m0.distance < LOWE_S_RADIO * m1.distance) matches.push_back(m0);
-  }
+  ORB::lowes_filter(knn_matches, matches, 0.7);
 }
 
 
@@ -196,7 +190,7 @@ void Pinhole::stereoORBfeatures(Base *pCamRight,
   int lapCnt0, lapCnt1;
   STEREO_ORB_EXTRACT(lapCnt0, lapCnt1)
   // 分配右相机特征到行
-  cv::Mat_<uchar> rowMask(img0.rows, lapCnt1, uchar(0)), matchMask(lapCnt0, lapCnt1, uchar(0));
+  cv::Mat_<uchar> rowMask(img0.rows, lapCnt1, uchar(0)), matchMask(lapCnt0, lapCnt1);
   for (int j = 0; j < lapCnt1; ++j) {
     float y = kps1[j].pt.y, r = kps1[j].size / 2;
     int t = MAX(0, cvFloor(y - r)), b = MIN(img0.rows - 1, cvCeil(y + r));
@@ -215,11 +209,9 @@ void Pinhole::stereoORBfeatures(Base *pCamRight,
   for (auto &m: tmp_matches) dx.push_back(kps0[m.queryIdx].pt.x - kps1[m.trainIdx].pt.x);
   math::PautaCriterion<float> is_inlier(dx, 1);
   for (int i = 0; i < tmp_matches.size(); ++i) {
-    if (!is_inlier(dx[i])) continue;
-    matches.push_back(tmp_matches[i]);
+    if (is_inlier(dx[i])) matches.push_back(tmp_matches[i]);
   }
   matches.shrink_to_fit();
-  // todo: Subpixel refinement
 }
 
 }

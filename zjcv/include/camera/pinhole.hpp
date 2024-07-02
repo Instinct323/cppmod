@@ -53,7 +53,7 @@ public:
 
     void undistort(const VectorPt2f &src, VectorPt2f &dst) override { cv::undistortPoints(src, dst, mOrgK, get_distcoeffs(), mRectR, getK()); }
 
-    // 立体校正
+    // 立体校正: 调用后, 由 undistot 函数驱动
     void stereo_rectify(Pinhole *cam_right);
 
     // ORB 特征
