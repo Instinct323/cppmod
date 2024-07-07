@@ -1,7 +1,7 @@
 #ifndef ZJCV__SLAM__FRAME_HPP
 #define ZJCV__SLAM__FRAME_HPP
 
-#include "imu_type.hpp"
+#include "imu.hpp"
 #include "utils/orb.hpp"
 
 namespace slam {
@@ -19,7 +19,6 @@ public:
     // Origin Data
     double mTimestamp;
     cv::Mat mImg0, mImg1;
-    std::vector<IMU::Sample> mvImu;
 
     // Features
     ORB::KeyPoints mvKps0, mvKps1;
@@ -27,8 +26,7 @@ public:
     std::vector<cv::DMatch> mStereoMatches;
 
     Frame(Tracker *pTracker,
-          const double &timestamp, const cv::Mat &img0, const cv::Mat &img1,
-          const std::vector<IMU::Sample> &vImu);
+          const double &timestamp, const cv::Mat &img0, const cv::Mat &img1);
 
     Frame(const Frame &) = delete;
 };

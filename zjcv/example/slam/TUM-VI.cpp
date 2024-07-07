@@ -2,7 +2,7 @@
 #include <filesystem>
 
 #include "dataset/tum_vi.hpp"
-#include "imu_type.hpp"
+#include "imu.hpp"
 #include "slam/system.hpp"
 #include "utils/cv.hpp"
 #include "utils/fbow.hpp"
@@ -60,8 +60,10 @@ int main(int argc, char **argv) {
     auto [j, k] = slicer(vImgLeftTs[i]);
 
     timer.reset();
-    system.grad_stereo(vImgLeftTs[i], imgLeft, imgRight,
-                       dataset::IMUsamples(vImu.begin() + j, vImu.begin() + k));
+    system.grab_imu(vImgLeftTs[i],
+                    dataset::Timestamps(vImuTs.begin() + j, vImuTs.begin() + k),
+                    dataset::IMUsamples(vImu.begin() + j, vImu.begin() + k));
+    system.grab_stereo(vImgLeftTs[i], imgLeft, imgRight);
     indicators::set_desc(pbar, (fmt % (1e3 * timer.count())).str(), false);
     pbar.tick();
   }

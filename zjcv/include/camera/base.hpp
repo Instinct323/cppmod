@@ -39,6 +39,8 @@ public:
       mvParam.insert(mvParam.end(), distCoeffs.begin(), distCoeffs.end());
     }
 
+    Base(const Base &) = delete;
+
     virtual CameraType get_type() const = 0;
 
     // 参数读写

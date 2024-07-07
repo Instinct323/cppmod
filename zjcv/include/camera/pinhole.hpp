@@ -32,6 +32,8 @@ public:
       cv::initUndistortRectifyMap(mOrgK, distCoeffs, cv::Mat(), mOrgK, mImgSize, CV_32FC1, mMap1, mMap2);
     }
 
+    Pinhole(const Pinhole &) = delete;
+
     CameraType get_type() const override { return CameraType::PINHOLE; }
 
     // 3D -> 2D

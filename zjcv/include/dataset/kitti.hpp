@@ -22,6 +22,8 @@ public:
       mId = ss.str();
     }
 
+    Kitti(const Kitti &) = delete;
+
     // times.txt
     void load_timestamps(Timestamps &vTimestamps, const std::string &file = "times.txt") {
       assert(vTimestamps.empty());

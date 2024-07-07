@@ -41,6 +41,8 @@ public:
       make_unproject_cache();
     }
 
+    KannalaBrandt(const KannalaBrandt &) = delete;
+
     CameraType get_type() const override { return CameraType::KANNALA_BRANDT; }
 
     // 3D -> 2D

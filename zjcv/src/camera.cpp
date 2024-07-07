@@ -205,11 +205,14 @@ void Pinhole::stereoORBfeatures(Base *pCamRight,
   std::vector<cv::DMatch> tmp_matches;
   matcher->match(desc0.rowRange(0, lapCnt0), desc1.rowRange(0, lapCnt1), tmp_matches, matchMask);
   // Pauta Criterion
-  std::vector<float> dx;
-  for (auto &m: tmp_matches) dx.push_back(kps0[m.queryIdx].pt.x - kps1[m.trainIdx].pt.x);
-  math::PautaCriterion<float> is_inlier(dx, 1);
+  std::vector<float> dx, dy;
+  for (auto &m: tmp_matches) {
+    dx.push_back(kps0[m.queryIdx].pt.x - kps1[m.trainIdx].pt.x);
+    dy.push_back(kps0[m.queryIdx].pt.y - kps1[m.trainIdx].pt.y);
+  }
+  math::PautaCriterion<float> is_inlier_x(dx, 1), is_inlier_y(dy, 1);
   for (int i = 0; i < tmp_matches.size(); ++i) {
-    if (is_inlier(dx[i])) matches.push_back(tmp_matches[i]);
+    if (is_inlier_x(dx[i]) && is_inlier_y(dy[i])) matches.push_back(tmp_matches[i]);
   }
   matches.shrink_to_fit();
 }

@@ -5,7 +5,7 @@
 
 #include "camera.hpp"
 #include "frame.hpp"
-#include "imu_type.hpp"
+#include "imu.hpp"
 #include "utils/orb.hpp"
 
 namespace slam {
@@ -24,7 +24,6 @@ public:
 
     // Devices
     camera::Base::Ptr mpCam0, mpCam1;
-    IMU::Device::Ptr mpIMU;
     ORB::Extractor::Ptr mpExtractor0, mpExtractor1;
 
     // Frames
@@ -34,8 +33,7 @@ public:
 
     Tracker(const Tracker &) = delete;
 
-    void grad_image_and_imu(const double &timestamp, const cv::Mat &img0, const cv::Mat &img1 = cv::Mat(),
-                            const std::vector<IMU::Sample> &vImu = std::vector<IMU::Sample>());
+    void grab_image(const double &timestamp, const cv::Mat &img0, const cv::Mat &img1 = cv::Mat());
 };
 
 }

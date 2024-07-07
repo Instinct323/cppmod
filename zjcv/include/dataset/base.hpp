@@ -4,7 +4,7 @@
 #include <filesystem>
 #include <sophus/se3.hpp>
 
-#include "../imu_type.hpp"
+#include "../imu.hpp"
 #include "utils/file.hpp"
 
 namespace dataset {
@@ -23,6 +23,8 @@ protected:
 
 public:
     explicit Base(const std::string &path) : mPath(path + "/") {}
+
+    Base(const Base &) = delete;
 
     operator std::string() const { return mPath; }
 

@@ -6,7 +6,8 @@ namespace ORB {
 bool matchesSubPix(const cv::Mat &img0, const cv::Mat &img1,
                    const cv::Point2f &kp0, cv::Point2f &kp1,
                    int winSize, cv::Size slideSize) {
-  ASSERT(winSize & 1 && winSize > 1 && slideSize.width > 0 && slideSize.height > 0, "Invalid parameters")
+  ASSERT(1 & winSize & slideSize.width & slideSize.height &&
+         winSize > 1 && slideSize.width >= 1 && slideSize.height >= 1, "Invalid parameters")
   cv::Rect roi0(cvRound(kp0.x) - slideSize.width / 2, cvRound(kp0.y) - slideSize.height / 2, slideSize.width, slideSize.height);
   if (roi0.x < 0 || roi0.y < 0 || roi0.x + roi0.width >= img0.cols || roi0.y + roi0.height >= img0.rows) return false;
   // 模板尺寸相关参数
@@ -26,7 +27,7 @@ bool matchesSubPix(const cv::Mat &img0, const cv::Mat &img1,
         v2 = result.at<float>(bestLoc.y, bestLoc.x + 1);
     float delta = (v0 - v2) / (v0 + v2 - 2 * v1);
     if (std::abs(delta) < 1) {
-      kp1.x += float(bestLoc.x - xBias) + delta;
+      kp1.x = cvRound(kp1.x) + float(bestLoc.x - xBias) + delta;
       bestLoc.x = cvRound(float(bestLoc.x) + delta);
       cv::minMaxLoc(result.col(bestLoc.x), nullptr, nullptr, &bestLoc, nullptr);
     }
@@ -37,7 +38,7 @@ bool matchesSubPix(const cv::Mat &img0, const cv::Mat &img1,
         v1 = result.at<float>(bestLoc.y, bestLoc.x),
         v2 = result.at<float>(bestLoc.y + 1, bestLoc.x);
     float delta = (v0 - v2) / (v0 + v2 - 2 * v1);
-    if (std::abs(delta) < 1) kp1.y += float(bestLoc.y - yBias) + delta;
+    if (std::abs(delta) < 1) kp1.y = cvRound(kp1.y) + float(bestLoc.y - yBias) + delta;
   }
   return true;
 }

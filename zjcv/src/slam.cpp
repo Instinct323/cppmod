@@ -7,12 +7,10 @@ namespace slam {
 
 
 Frame::Frame(Tracker *pTracker,
-             const double &timestamp, const cv::Mat &img0, const cv::Mat &img1,
-             const std::vector<IMU::Sample> &vImu
-) : mpTracker(pTracker), mTimestamp(timestamp), mImg0(img0), mImg1(img1), mvImu(vImu) {
+             const double &timestamp, const cv::Mat &img0, const cv::Mat &img1
+) : mpTracker(pTracker), mTimestamp(timestamp), mImg0(img0), mImg1(img1) {
   // 设备与数据校验
   ASSERT((!mpTracker->mpCam1) == img1.empty(), "miss match between Camera1 and Image1")
-  ASSERT((!mpTracker->mpIMU) == vImu.empty(), "miss match between IMU device and IMU samples")
   // 特征点提取、去畸
   if (!mpTracker->mpExtractor1) {
     mpTracker->mpCam0->monoORBfeatures(mpTracker->mpExtractor0.get(), mImg0, mvKps0, mDesc0);
@@ -26,7 +24,6 @@ Frame::Frame(Tracker *pTracker,
 Tracker::Tracker(System *pSystem, YAML::Node cfg) :
     mpSystem(pSystem),
     mpCam0(camera::from_yaml(cfg["cam0"])), mpCam1(camera::from_yaml(cfg["cam1"])),
-    mpIMU(IMU::Device::from_yaml(cfg["imu"])),
     mpExtractor0(ORB::Extractor::from_yaml(cfg["orb0"])), mpExtractor1(ORB::Extractor::from_yaml(cfg["orb1"])) {
   // 至少需要一个相机, 相机与特征提取器校验
   ASSERT(mpCam0 && mpExtractor0, "Camera0 not found")
@@ -42,10 +39,9 @@ Tracker::Tracker(System *pSystem, YAML::Node cfg) :
 }
 
 
-void Tracker::grad_image_and_imu(const double &timestamp, const cv::Mat &img0, const cv::Mat &img1,
-                                 const std::vector<IMU::Sample> &vImu) {
+void Tracker::grab_image(const double &timestamp, const cv::Mat &img0, const cv::Mat &img1) {
   mpLastFrame = mpCurFrame;
-  mpCurFrame = Frame::Ptr(new Frame(this, timestamp, img0, img1, vImu));
+  mpCurFrame = Frame::Ptr(new Frame(this, timestamp, img0, img1));
 }
 
 
