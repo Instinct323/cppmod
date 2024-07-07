@@ -4,6 +4,7 @@
 #include <Eigen/Core>
 #include <memory>
 #include <opencv2/opencv.hpp>
+#include <Sophus/so3.hpp>
 #include <yaml-cpp/yaml.h>
 
 // IMU (加速度计, 陀螺仪)
@@ -81,7 +82,7 @@ public:
 
     double mtLastframe, it;
     Eigen::Vector3f iP, iV, iTheta;
-    Eigen::Matrix3f iR;
+    Sophus::SO3f iR;
 
     explicit Preintegration(Device *pDevice, double tStart, Sample bias = Sample()
     ) : mpDevice(pDevice), mBias(std::move(bias)) { reset(tStart); }

@@ -1,5 +1,4 @@
 #include "imu.hpp"
-#include "utils/eigen.hpp"
 #include "utils/glog.hpp"
 
 
@@ -52,13 +51,13 @@ void Preintegration::integrate(const double &tCurframe, const std::vector<double
 void Preintegration::integrate(const double &dt, const Sample &sample) {
   Sample M = sample - mBias;
   Sample dM = M * dt;
-  const Eigen::Vector3f &dV = dM.a, &dTheta = dM.w, dV_rot = iR * dV;
+  const Eigen::Vector3f &dV = dM.a, &dTheta = dM.w, dV_rot = iR.matrix() * dV;
   // 更新积分值
   it += dt;
   iP += (iV + 0.5f * dV_rot) * dt;
   iV += dV_rot;
   iTheta += dTheta;
-  iR = Sophus::SO3f::exp(iTheta).matrix();
+  iR = Sophus::SO3f::exp(iTheta);
 }
 
 }
