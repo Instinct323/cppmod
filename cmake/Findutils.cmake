@@ -14,7 +14,7 @@ if (NOT UTILS_FOUND)
   find_package(yaml-cpp REQUIRED)
 
   # all library
-  set(UTILS_LIBRARIES
+  set(UTILS_LIBS
           -lboost_chrono
           -lboost_system
           -lboost_thread

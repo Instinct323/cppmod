@@ -28,5 +28,5 @@ add_library(zjcv STATIC ${ZJCV_SRC} ${UTILS_SRC})
 add_subdirectory(ORBslam3)
 
 # test
-add_executable(test main.cpp ${UTILS_SRC})
-target_link_libraries(test utils ${UTILS_LIBRARIES})
+add_executable(test main.cpp)
+target_link_libraries(test utils ${UTILS_LIBS})
