@@ -4,7 +4,7 @@
 #include <Eigen/Core>
 #include <memory>
 #include <opencv2/opencv.hpp>
-#include <Sophus/so3.hpp>
+#include <sophus/so3.hpp>
 #include <yaml-cpp/yaml.h>
 
 // IMU (加速度计, 陀螺仪)
@@ -80,7 +80,8 @@ class Preintegration {
 public:
     typedef std::shared_ptr<Preintegration> Ptr;
 
-    double mtLastframe, it;
+    double mtStart, mtEnd;
+    double it;
     Eigen::Vector3f iP, iV, iTheta;
     Sophus::SO3f iR;
 

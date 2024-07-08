@@ -48,12 +48,12 @@ public:
     }
 
     void grab_mono(const double &timestamp, const cv::Mat &img0) {
-      assert(!mpImuPreint || timestamp <= mpImuPreint->mtLastframe);
+      assert(!mpImuPreint || timestamp <= mpImuPreint->mtEnd);
       mpTracker->grab_image(timestamp, img0);
     }
 
     void grab_stereo(const double &timestamp, const cv::Mat &img0, const cv::Mat &img1) {
-      assert(!mpImuPreint || timestamp <= mpImuPreint->mtLastframe);
+      assert(!mpImuPreint || timestamp <= mpImuPreint->mtEnd);
       mpTracker->grab_image(timestamp, img0, img1);
     }
 };
