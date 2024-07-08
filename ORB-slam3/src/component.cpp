@@ -1,7 +1,7 @@
-#include "component/frame.hpp"
-#include "component/system.hpp"
-#include "component/tracker.hpp"
-#include "component/viewer.hpp"
+#include "frame.hpp"
+#include "system.hpp"
+#include "tracker.hpp"
+#include "viewer.hpp"
 
 namespace slam {
 

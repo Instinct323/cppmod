@@ -1,5 +1,5 @@
-#ifndef ORBSLAM__SLAM__TRACKER_HPP
-#define ORBSLAM__SLAM__TRACKER_HPP
+#ifndef ORBSLAM__TRACKER_HPP
+#define ORBSLAM__TRACKER_HPP
 
 #include <yaml-cpp/yaml.h>
 

@@ -1,7 +1,7 @@
 #include <boost/format.hpp>
 #include <filesystem>
 
-#include "component/system.hpp"
+#include "system.hpp"
 #include "utils/cv.hpp"
 #include "utils/fbow.hpp"
 #include "utils/indicators.hpp"
@@ -15,7 +15,7 @@ int main(int argc, char **argv) {
   glog::Logger logger(argv);
 
   // config
-  YAML::Node cfg = YAML::LoadFile("/home/workbench/cppmod/ORBslam3/example/TUM-VI.yaml");
+  YAML::Node cfg = YAML::LoadFile("/home/workbench/cppmod/ORB-slam3/example/TUM-VI.yaml");
   slam::System system(cfg);
 
   // dataset

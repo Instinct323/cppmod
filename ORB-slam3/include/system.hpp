@@ -1,5 +1,5 @@
-#ifndef ORBSLAM__SLAM__SYSTEM_HPP
-#define ORBSLAM__SLAM__SYSTEM_HPP
+#ifndef ORBSLAM__SYSTEM_HPP
+#define ORBSLAM__SYSTEM_HPP
 
 #include <atomic>
 #include <memory>

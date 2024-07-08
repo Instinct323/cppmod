@@ -1,5 +1,5 @@
-#ifndef ORBSLAM__SLAM__FRAME_HPP
-#define ORBSLAM__SLAM__FRAME_HPP
+#ifndef ORBSLAM__FRAME_HPP
+#define ORBSLAM__FRAME_HPP
 
 #include "utils/orb.hpp"
 #include "zjcv/imu.hpp"
