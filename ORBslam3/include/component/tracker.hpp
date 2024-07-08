@@ -1,12 +1,12 @@
-#ifndef ZJCV__SLAM__TRACKER_HPP
-#define ZJCV__SLAM__TRACKER_HPP
+#ifndef ORBSLAM__SLAM__TRACKER_HPP
+#define ORBSLAM__SLAM__TRACKER_HPP
 
 #include <yaml-cpp/yaml.h>
 
-#include "camera.hpp"
 #include "frame.hpp"
-#include "imu.hpp"
 #include "utils/orb.hpp"
+#include "zjcv/camera.hpp"
+#include "zjcv/imu.hpp"
 
 namespace slam {
 

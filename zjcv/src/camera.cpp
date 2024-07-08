@@ -1,6 +1,6 @@
-#include "camera.hpp"
 #include "utils/math.hpp"
 #include "utils/parallel.hpp"
+#include "zjcv/camera.hpp"
 
 namespace camera {
 

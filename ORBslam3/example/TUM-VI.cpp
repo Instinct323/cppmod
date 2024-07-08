@@ -1,22 +1,21 @@
 #include <boost/format.hpp>
 #include <filesystem>
 
-#include "dataset/tum_vi.hpp"
-#include "imu.hpp"
-#include "slam/system.hpp"
+#include "component/system.hpp"
 #include "utils/cv.hpp"
 #include "utils/fbow.hpp"
 #include "utils/indicators.hpp"
 #include "utils/glog.hpp"
 #include "utils/math.hpp"
-
+#include "zjcv/dataset/tum_vi.hpp"
+#include "zjcv/imu.hpp"
 
 int main(int argc, char **argv) {
   putenv("DISPLAY=host.docker.internal:0");
   glog::Logger logger(argv);
 
   // config
-  YAML::Node cfg = YAML::LoadFile("/home/workbench/cppmod/ZJCV/example/slam/TUM-VI.yaml");
+  YAML::Node cfg = YAML::LoadFile("/home/workbench/cppmod/ORBslam3/example/TUM-VI.yaml");
   slam::System system(cfg);
 
   // dataset

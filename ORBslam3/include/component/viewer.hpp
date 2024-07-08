@@ -1,5 +1,5 @@
-#ifndef ZJCV__SLAM__VIEWER_HPP
-#define ZJCV__SLAM__VIEWER_HPP
+#ifndef ORBSLAM__SLAM__VIEWER_HPP
+#define ORBSLAM__SLAM__VIEWER_HPP
 
 #include "utils/glog.hpp"
 
