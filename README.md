@@ -18,10 +18,10 @@
 
 ## New Feature
 
-- 使用 yaml-cpp 替代 OpenCV 的 FileStorage, 支持最新的 YAML 文件格式
+- 使用 `yaml-cpp` 替代 `cv::FileStorage`, 支持最新的 YAML 文件格式
 - 引入全局优先级线程池, 自动限定线程总数
 - 为 Pinhole 的双目特征点匹配添加了基于视差的筛选 (Pauta Criterion)
 
 ## Change
 - 简化了 IMU 的预积分过程
-- 使用 fbow 替代 DBoW2, 以支持更快的运算
+- 使用 `fbow` 替代 `DBoW2`, 以支持更快的运算
