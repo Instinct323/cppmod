@@ -1,7 +1,6 @@
 #include <boost/format.hpp>
 #include <filesystem>
 
-#include "system.hpp"
 #include "utils/cv.hpp"
 #include "utils/fbow.hpp"
 #include "utils/indicators.hpp"
@@ -10,33 +9,63 @@
 #include "zjcv/dataset/tum_vi.hpp"
 #include "zjcv/imu.hpp"
 
+#include "frame.hpp"
+#include "tracker.hpp"
+#include "viewer.hpp"
+#include "zjcv/slam/system.hpp"
+
+typedef std::tuple<
+    dataset::Timestamps, dataset::Filenames,
+    dataset::Timestamps, dataset::Filenames,
+    dataset::Timestamps, dataset::IMUsamples> Storage;
+
+typedef slam::System<slam::Tracker, slam::Frame, slam::Viewer, Storage> System;
+
+
+template<typename System>
+void slam::Tracker<System>::run() {
+  auto pSystem = this->mpSystem;
+  Storage &storage = pSystem->mStorage;
+
+  glog::Timer timer;
+  boost::format fmt("Cost=%.1fms");
+  cv::GrayLoader grayloader;
+  math::ValueSlicer<double> slicer(std::get<4>(storage));
+  auto pbar = indicators::getProgressBar(std::get<0>(storage).size());
+
+  while (!pbar.is_completed()) {
+    int i = pbar.current();
+    cv::Mat imgLeft = grayloader(std::get<1>(storage)[i]), imgRight = grayloader(std::get<3>(storage)[i]);
+    auto [j, k] = slicer(std::get<0>(storage)[i]);
+
+    // 读入数据
+    timer.reset();
+    this->grab_imu(std::get<0>(storage)[i],
+                   dataset::Timestamps(std::get<4>(storage).begin() + j, std::get<4>(storage).begin() + k),
+                   dataset::IMUsamples(std::get<5>(storage).begin() + j, std::get<5>(storage).begin() + k));
+    this->grab_image(std::get<0>(storage)[i], imgLeft, imgRight);
+    indicators::set_desc(pbar, (fmt % (1e3 * timer.count())).str(), false);
+    pbar.tick();
+  }
+}
+
+
 int main(int argc, char **argv) {
   putenv("DISPLAY=host.docker.internal:0");
   glog::Logger logger(argv);
 
   // config
   YAML::Node cfg = YAML::LoadFile("/home/workbench/cppmod/ORB-slam3/example/TUM-VI.yaml");
-  slam::System system(cfg);
-
-  // dataset
-  dataset::Timestamps vImgLeftTs, vImgRightTs, vImuTs;
-  dataset::Filenames vImgLeft, vImgRight;
-  dataset::IMUsamples vImu;
+  System system(cfg);
+  Storage &storage = system.mStorage;
 
   // 载入并校验数据
   dataset::TumVI tum_vi(cfg["dataset"].as<std::string>());
-  tum_vi.load_image(vImgLeftTs, vImgLeft, "cam0");
-  tum_vi.load_image(vImgRightTs, vImgRight, "cam1");
-  tum_vi.load_imu(vImuTs, vImu);
-  assert(vImgLeftTs.size() == vImgRightTs.size());
-  LOG(INFO) << "Images: " << vImgLeftTs.size() << ", IMU: " << vImuTs.size();
-
-  system.run();
-  cv::GrayLoader grayloader;
-  math::ValueSlicer<double> slicer(vImuTs);
-  auto pbar = indicators::getProgressBar(vImgLeftTs.size());
-  glog::Timer timer;
-  boost::format fmt("Cost=%.1fms");
+  tum_vi.load_image(std::get<0>(storage), std::get<1>(storage), "cam0");
+  tum_vi.load_image(std::get<2>(storage), std::get<3>(storage), "cam1");
+  tum_vi.load_imu(std::get<4>(storage), std::get<5>(storage));
+  assert(std::get<0>(storage).size() == std::get<2>(storage).size());
+  LOG(INFO) << "Images: " << std::get<0>(storage).size() << ", IMU: " << std::get<4>(storage).size();
 
   // 载入词汇表
   std::string vocPath = cfg["vocabulary"].as<std::string>();
@@ -47,27 +76,13 @@ int main(int argc, char **argv) {
     LOG(ERROR) << "Vocabulary not found: " << vocPath;
     LOG(INFO) << "Press any key to create a new vocabulary...";
     std::getchar();
-    fbow::createORBvocabulary(voc, system.mpTracker->mpExtractor0.get(), grayloader, vImgLeft);
+    cv::GrayLoader grayloader;
+    fbow::createORBvocabulary(voc, system.mpTracker->mpExtractor0.get(), grayloader, std::get<1>(storage));
     voc.saveToFile(vocPath);
   }
 
-  // main loop
-  while (!pbar.is_completed()) {
-    int i = pbar.current();
-    cv::Mat imgLeft = grayloader(vImgLeft[i]), imgRight = grayloader(vImgRight[i]);
-    auto [j, k] = slicer(vImgLeftTs[i]);
-
-    // 读入数据
-    timer.reset();
-    system.grab_imu(vImgLeftTs[i],
-                    dataset::Timestamps(vImuTs.begin() + j, vImuTs.begin() + k),
-                    dataset::IMUsamples(vImu.begin() + j, vImu.begin() + k));
-    system.grab_image(vImgLeftTs[i], imgLeft, imgRight);
-    indicators::set_desc(pbar, (fmt % (1e3 * timer.count())).str(), false);
-    pbar.tick();
-  }
-  pbar.mark_as_completed();
+  system.run();
+  system.mThreads["track"]->join();
   system.stop();
-
   return 0;
 }

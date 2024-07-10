@@ -29,13 +29,13 @@ imu:
   gyro_walk: 0.000022   # rad/s^1.5
 
 orb0:
-  nfeatures: 1000
+  nfeatures: 500
   scaleFactor: 1.2
   nlevels: 8
   lappingArea: [ 0, 511 ]
 
 orb1:
-  nfeatures: 1000
+  nfeatures: 500
   scaleFactor: 1.2
   nlevels: 8
   lappingArea: [ 0, 511 ]

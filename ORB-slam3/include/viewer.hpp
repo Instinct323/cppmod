@@ -2,26 +2,45 @@
 #define ORBSLAM__VIEWER_HPP
 
 #include "utils/glog.hpp"
+#include "zjcv/slam/viewer.hpp"
 
 namespace slam {
 
-class System;
 
-
-class Viewer {
-    const int mDelay;
+template<typename System>
+class Viewer : ViewerBase<System> {
 
 public:
-    typedef std::shared_ptr<Viewer> Ptr;
+    using ViewerBase<System>::ViewerBase;
 
-    const System *mpSystem;
+    void run() {
+      glog::Timer timer;
+      auto &pSystem = this->mpSystem;
+      auto &pTracker = pSystem->mpTracker;
+      while (pSystem->mbRunning) {
+        timer.reset();
+        auto pFrame = pTracker->mpLastFrame;
+        if (pFrame) {
+          cv::Mat img0 = pFrame->mImg0.clone(), img1 = pFrame->mImg1.clone(), imgs;
+          // Image 0
+          pTracker->mpCam0->undistort(img0, img0);
+          cv::cvtColor(img0, img0, cv::COLOR_GRAY2BGR);
+          // cv::drawKeypoints(img0, pFrame->mvKps0, img0);
+          // Image 1
+          if (!img1.empty()) {
+            pTracker->mpCam1->undistort(img1, img1);
+            cv::cvtColor(img1, img1, cv::COLOR_GRAY2BGR);
+            // cv::drawKeypoints(img1, pFrame->mvKps1, img1);
+            // cv::hconcat(img0, img1, img0);
+          }
+          cv::drawMatches(img0, pFrame->mvKps0, img1, pFrame->mvKps1, pFrame->mStereoMatches, imgs);
 
-    Viewer(System *pSystem, int fps = 45
-    ) : mpSystem(pSystem), mDelay(1000 / fps) { ASSERT(fps > 0, "Viewer: The delay must be greater than 0")}
-
-    Viewer(const Viewer &) = delete;
-
-    void run();
+          cv::imshow("Image", imgs);
+        }
+        int cost = static_cast<int>(timer.count() * 1e3);
+        cv::waitKey(MAX(1, this->mDelay - cost));
+      }
+    }
 };
 
 }

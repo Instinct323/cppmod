@@ -2,32 +2,32 @@
 #define ORBSLAM__FRAME_HPP
 
 #include "utils/orb.hpp"
-#include "zjcv/imu.hpp"
+#include "zjcv/slam/frame.hpp"
 
 namespace slam {
 
-class Tracker;
-
-
-class Frame {
+template<typename System>
+class Frame : public FrameBase<System> {
 
 public:
-    typedef std::shared_ptr<Frame> Ptr;
-
-    const Tracker *mpTracker;
-
-    // Origin Data
-    const double mTimestamp;
-    const cv::Mat mImg0, mImg1;
+    using FrameBase<System>::FrameBase;
 
     // Features
     ORB::KeyPoints mvKps0, mvKps1;
     cv::Mat mDesc0, mDesc1;
     std::vector<cv::DMatch> mStereoMatches;
 
-    Frame(Tracker *pTracker, const double &timestamp, const cv::Mat &img0, const cv::Mat &img1);
+    virtual void process() override {
+      auto &pTracker = this->mpSystem->mpTracker;
+      // 特征点提取、去畸
+      if (pTracker->is_monocular()) {
+        pTracker->mpCam0->monoORBfeatures(pTracker->mpExtractor0.get(), this->mImg0, mvKps0, mDesc0);
+      } else {
+        pTracker->mpCam0->stereoORBfeatures(pTracker->mpCam1.get(), pTracker->mpExtractor0.get(), pTracker->mpExtractor1.get(),
+                                            this->mImg0, this->mImg1, mvKps0, mvKps1, mDesc0, mDesc1, mStereoMatches);
+      }
+    }
 
-    Frame(const Frame &) = delete;
 };
 
 }

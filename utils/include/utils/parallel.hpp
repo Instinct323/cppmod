@@ -45,6 +45,8 @@ public:
 
     size_t mTimestamp, mPriority;
 
+    PriorityThread() = default;
+
     template<typename Callable, typename... Args>
     explicit PriorityThread(size_t priority, Callable &&f, Args &&... args
     ): mTimestamp(++mCnt), mPriority(priority), ThreadPtr(new std::thread(f, args...)) {}
