@@ -5,23 +5,20 @@
 
 namespace slam {
 
-class System;
 
-
-class Viewer {
+template<typename System>
+class ViewerBase {
     const int mDelay;
 
 public:
-    typedef std::shared_ptr<Viewer> Ptr;
-
     const System *mpSystem;
 
-    Viewer(System *pSystem, int fps = 45
+    ViewerBase(System *pSystem, int fps = 45
     ) : mpSystem(pSystem), mDelay(1000 / fps) { ASSERT(fps > 0, "Viewer: The delay must be greater than 0")}
 
-    Viewer(const Viewer &) = delete;
+    ViewerBase(const ViewerBase &) = delete;
 
-    void run();
+    virtual void run() = 0;
 };
 
 }

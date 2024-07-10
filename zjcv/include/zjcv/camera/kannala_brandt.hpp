@@ -17,9 +17,10 @@ namespace camera {
 // 2D -> 3D
 #define KANNALA_BRANDT_UNPROJECT_PRECISION 1e-6
 
-#define KANNALA_BRANDT_UNPROJECT(cache, x, y) \
-  cv::Vec2f wxy = cache.at<cv::Vec2f>(y, x); \
-  return {wxy[0], wxy[1], 1};
+#define KANNALA_BRANDT_UNPROJECT(cache, p2D) \
+  cv::Mat wxy; \
+  cv::getRectSubPix(cache, {1, 1}, p2D, wxy); \
+  return {wxy.at<float>(0), wxy.at<float>(1), 1};
 
 
 class KannalaBrandt : public Base {
@@ -36,7 +37,7 @@ public:
 
     explicit KannalaBrandt(const cv::Size imgSize, const Vectorf &intrinsics, const Vectorf &distCoeffs,
                            const Sophus::SE3d &T_cam_imu = Sophus::SE3d()
-    ) : Base(imgSize, intrinsics, distCoeffs, T_cam_imu), mUnprojectCache(mImgSize, CV_32FC2) {
+    ) : Base(imgSize, intrinsics, distCoeffs, T_cam_imu), mUnprojectCache(mImgSize, CV_32FC3) {
       ASSERT(distCoeffs.size() == 4, "Distortion coefficients size must be 4")
       make_unproject_cache();
     }
@@ -59,9 +60,9 @@ public:
     // 2D -> 3D
     float solveWZ(float wx, float wy, size_t iterations = 10) const;
 
-    cv::Point3f unproject(const cv::Point2f &p2D) const override { KANNALA_BRANDT_UNPROJECT(mUnprojectCache, p2D.x, p2D.y) }
+    cv::Point3f unproject(const cv::Point2f &p2D) const override { KANNALA_BRANDT_UNPROJECT(mUnprojectCache, p2D) }
 
-    Eigen::Vector3f unproject_eig(const cv::Point2f &p2D) const override { KANNALA_BRANDT_UNPROJECT(mUnprojectCache, p2D.x, p2D.y) }
+    Eigen::Vector3f unproject_eig(const cv::Point2f &p2D) const override { KANNALA_BRANDT_UNPROJECT(mUnprojectCache, p2D) }
 
     // 去畸变
     void undistort(const cv::Mat &src, cv::Mat &dst) override { if (src.data != dst.data) dst = src.clone(); }

@@ -15,18 +15,14 @@ namespace slam {
 class System {
 
 public:
-    Tracker::Ptr mpTracker;
-    Viewer::Ptr mpViewer;
-
-    // IMU
-    IMU::Device::Ptr mpIMU;
-    IMU::Preintegration::Ptr mpImuPreint;
+    const Tracker::Ptr mpTracker;
+    const Viewer::Ptr mpViewer;
 
     // Status
     std::atomic_bool mbRunning = false;
 
     explicit System(YAML::Node cfg
-    ) : mpTracker(new Tracker(this, cfg)), mpViewer(new Viewer(this)), mpIMU(IMU::Device::from_yaml(cfg["imu"])) {};
+    ) : mpTracker(new Tracker(this, cfg)), mpViewer(new Viewer(this)) {};
 
     System(const System &) = delete;
 
@@ -42,20 +38,11 @@ public:
     }
 
     // Tracking
-    void grab_imu(const double &tCurframe, const std::vector<double> &vTimestamp, const std::vector<IMU::Sample> &vSample) {
-      if (!mpImuPreint) mpImuPreint = std::make_shared<IMU::Preintegration>(mpIMU.get(), vTimestamp.empty() ? tCurframe : vTimestamp[0]);
-      mpImuPreint->integrate(tCurframe, vTimestamp, vSample);
-    }
+    void grab_imu(const double &tCurframe, const std::vector<double> &vTimestamp,
+                  const std::vector<IMU::Sample> &vSample) { mpTracker->grab_imu(tCurframe, vTimestamp, vSample); }
 
-    void grab_mono(const double &timestamp, const cv::Mat &img0) {
-      assert(!mpImuPreint || timestamp <= mpImuPreint->mtEnd);
-      mpTracker->grab_image(timestamp, img0);
-    }
-
-    void grab_stereo(const double &timestamp, const cv::Mat &img0, const cv::Mat &img1) {
-      assert(!mpImuPreint || timestamp <= mpImuPreint->mtEnd);
-      mpTracker->grab_image(timestamp, img0, img1);
-    }
+    void grab_image(const double &timestamp, const cv::Mat &img0,
+                    const cv::Mat &img1 = cv::Mat()) { mpTracker->grab_image(timestamp, img0, img1); }
 };
 
 }

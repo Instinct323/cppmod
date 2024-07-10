@@ -14,19 +14,18 @@ class Frame {
 public:
     typedef std::shared_ptr<Frame> Ptr;
 
-    Tracker *mpTracker;
+    const Tracker *mpTracker;
 
     // Origin Data
-    double mTimestamp;
-    cv::Mat mImg0, mImg1;
+    const double mTimestamp;
+    const cv::Mat mImg0, mImg1;
 
     // Features
     ORB::KeyPoints mvKps0, mvKps1;
     cv::Mat mDesc0, mDesc1;
     std::vector<cv::DMatch> mStereoMatches;
 
-    Frame(Tracker *pTracker,
-          const double &timestamp, const cv::Mat &img0, const cv::Mat &img1);
+    Frame(Tracker *pTracker, const double &timestamp, const cv::Mat &img0, const cv::Mat &img1);
 
     Frame(const Frame &) = delete;
 };

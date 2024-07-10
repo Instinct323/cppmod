@@ -103,7 +103,7 @@ void KannalaBrandt::make_unproject_cache() {
     for (int c = 0; c < mImgSize.width; ++c) {
       wx = (c - mvParam[2]) / mvParam[0];
       wz = this->solveWZ(wx, wy);
-      mUnprojectCache.at<cv::Vec2f>(r, c) = {wx / wz, wy / wz};
+      mUnprojectCache.at<cv::Vec3f>(r, c) = {wx / wz, wy / wz, 1};
     }
   }
 }

@@ -31,8 +31,12 @@ int main(int argc, char **argv) {
   assert(vImgLeftTs.size() == vImgRightTs.size());
   LOG(INFO) << "Images: " << vImgLeftTs.size() << ", IMU: " << vImuTs.size();
 
+  system.run();
   cv::GrayLoader grayloader;
   math::ValueSlicer<double> slicer(vImuTs);
+  auto pbar = indicators::getProgressBar(vImgLeftTs.size());
+  glog::Timer timer;
+  boost::format fmt("Cost=%.1fms");
 
   // 载入词汇表
   std::string vocPath = cfg["vocabulary"].as<std::string>();
@@ -48,21 +52,17 @@ int main(int argc, char **argv) {
   }
 
   // main loop
-  system.run();
-  auto pbar = indicators::getProgressBar(vImgLeftTs.size());
-  glog::Timer timer;
-  boost::format fmt("Cost=%.1fms");
-
   while (!pbar.is_completed()) {
     int i = pbar.current();
     cv::Mat imgLeft = grayloader(vImgLeft[i]), imgRight = grayloader(vImgRight[i]);
     auto [j, k] = slicer(vImgLeftTs[i]);
 
+    // 读入数据
     timer.reset();
     system.grab_imu(vImgLeftTs[i],
                     dataset::Timestamps(vImuTs.begin() + j, vImuTs.begin() + k),
                     dataset::IMUsamples(vImu.begin() + j, vImu.begin() + k));
-    system.grab_stereo(vImgLeftTs[i], imgLeft, imgRight);
+    system.grab_image(vImgLeftTs[i], imgLeft, imgRight);
     indicators::set_desc(pbar, (fmt % (1e3 * timer.count())).str(), false);
     pbar.tick();
   }
