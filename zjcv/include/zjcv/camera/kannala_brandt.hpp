@@ -60,9 +60,7 @@ public:
     // 2D -> 3D
     float solveWZ(float wx, float wy, size_t iterations = 10) const;
 
-    cv::Point3f unproject(const cv::Point2f &p2D) const override { KANNALA_BRANDT_UNPROJECT(mUnprojectCache, p2D) }
-
-    Eigen::Vector3f unproject_eig(const cv::Point2f &p2D) const override { KANNALA_BRANDT_UNPROJECT(mUnprojectCache, p2D) }
+    Eigen::Vector3f unproject(const cv::Point2f &p2D) const override { KANNALA_BRANDT_UNPROJECT(mUnprojectCache, p2D) }
 
     // 去畸变
     void undistort(const cv::Mat &src, cv::Mat &dst) override { if (src.data != dst.data) dst = src.clone(); }

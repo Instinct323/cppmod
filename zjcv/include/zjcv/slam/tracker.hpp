@@ -25,14 +25,18 @@ public:
     // frames
     std::shared_ptr<Frame> mpLastFrame, mpCurFrame;
 
+    // Transform
+    Sophus::SE3d T_cam0_cam1;
+
     explicit TrackerBase(System *pSystem, const YAML::Node &cfg) :
         mpSystem(pSystem),
         mpCam0(camera::from_yaml(cfg["cam0"])), mpCam1(camera::from_yaml(cfg["cam1"])),
         mpIMU(IMU::Device::from_yaml(cfg["imu"])) {
       ASSERT(mpCam0, "Camera0 not found")
-      // 相机类型校验
-      if (mpCam1) {
+      // 双目模式
+      if (is_stereo()) {
         ASSERT(mpCam0->get_type() == mpCam1->get_type(), "Camera0 and Camera1 must be the same type")
+        T_cam0_cam1 = mpCam0->T_cam_imu * mpCam1->T_cam_imu.inverse();
         // Pinhole: 立体矫正
         /* if (mpCam0->get_type() == camera::CameraType::PINHOLE) {
           static_cast<camera::Pinhole *>(mpCam0.get())->stereo_rectify(static_cast<camera::Pinhole *>(mpCam1.get()));

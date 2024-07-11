@@ -75,8 +75,8 @@ void Base::draw_normalized_plane(const cv::Mat &src, cv::Mat &dst) {
   cv::Mat npMap1 = cv::Mat(mImgSize, CV_32FC1), npMap2 = npMap1.clone();
   // 获取归一化平面边界 (桶形畸变)
   float x, y, w, h, W = mImgSize.width - 1, H = mImgSize.height - 1;
-  x = this->unproject({0, H / 2}).x, y = this->unproject({W / 2, 0}).y,
-  w = this->unproject({W, H / 2}).x - x, h = this->unproject({W / 2, H}).y - y;
+  x = this->unproject({0, H / 2})[0], y = this->unproject({W / 2, 0})[1],
+  w = this->unproject({W, H / 2})[0] - x, h = this->unproject({W / 2, H})[1] - y;
   LOG(INFO) << "Normalized plane: " << cv::Vec4f(x, y, x + w, y + h);
   // 计算畸变矫正映射
   for (int r = 0; r < H; ++r) {

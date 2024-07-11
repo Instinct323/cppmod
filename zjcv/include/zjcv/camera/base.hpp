@@ -72,9 +72,7 @@ public:
     virtual Eigen::Vector2f project_eig(const cv::Point3f &p3D) const = 0;
 
     // 2D -> 3D
-    virtual cv::Point3f unproject(const cv::Point2f &p2D) const = 0;
-
-    virtual Eigen::Vector3f unproject_eig(const cv::Point2f &p2D) const = 0;
+    virtual Eigen::Vector3f unproject(const cv::Point2f &p2D) const = 0;
 
     // 去畸变
     virtual void undistort(const cv::Mat &src, cv::Mat &dst) = 0;

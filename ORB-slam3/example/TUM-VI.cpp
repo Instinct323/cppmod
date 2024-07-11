@@ -22,9 +22,10 @@ typedef std::tuple<
 typedef slam::System<slam::Tracker, slam::Frame, slam::Viewer, Storage> System;
 
 
+// Tracking
 template<typename System>
 void slam::Tracker<System>::run() {
-  auto pSystem = this->mpSystem;
+  System *pSystem = this->mpSystem;
   Storage &storage = pSystem->mStorage;
 
   glog::Timer timer;
