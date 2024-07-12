@@ -18,6 +18,13 @@ bool triangulation(std::vector<Eigen::Vector3d> &vP_cam,
                    float &reproj_error);
 
 
+// cosine
+template<typename T>
+T cos(Eigen::VectorX<T> &v1, Eigen::VectorX<T> &v2) {
+  return v1.dot(v2) / (v1.norm() * v2.norm());
+}
+
+
 // Eigen -> cv::Mat
 template<typename T>
 cv::Mat toCvMat(const Matrix<T, -1, -1> &m) {

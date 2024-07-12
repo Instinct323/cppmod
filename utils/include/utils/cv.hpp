@@ -9,6 +9,13 @@
 namespace cv {
 
 
+cv::Mat kps_grid_mask(const std::vector<KeyPoint> &queryKps, const std::vector<Point2f> &trainKps,
+                      const Size &imgSize, const Size &gridSize = {8, 8});
+
+
+cv::Mat kps_row_mask(int querySize, const std::vector<KeyPoint> &trainKps, int row);
+
+
 // Mat -> Eigen
 template<typename T>
 Eigen::Matrix<T, -1, -1> toEigen(const Mat &mat) {
@@ -29,6 +36,7 @@ Eigen::Matrix<T, -1, -1> toEigen(const Mat &mat) {
  * @param tileGridSize - 网格大小
  */
 class GrayLoader {
+
 public:
     float mScale = 1.f;
     Ptr<CLAHE> mClahe;

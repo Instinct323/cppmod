@@ -10,13 +10,16 @@ template<typename System>
 class ViewerBase {
 
 protected:
-    const int mDelay;
+    int mDelay;
 
 public:
     System *mpSystem;
 
-    ViewerBase(System *pSystem, int fps = 45
-    ) : mpSystem(pSystem), mDelay(1000 / fps) { ASSERT(fps > 0, "Viewer: The delay must be greater than 0")}
+    explicit ViewerBase(System *pSystem, const YAML::Node &cfg) : mpSystem(pSystem) {
+      int fps = cfg["viewer"]["fps"].as<int>();
+      ASSERT(fps > 0, "Viewer: The delay must be greater than 0")
+      mDelay = 1000 / fps;
+    }
 
     ViewerBase(const ViewerBase &) = delete;
 

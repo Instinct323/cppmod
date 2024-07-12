@@ -53,13 +53,13 @@ void lowes_filter(const std::vector<std::vector<cv::DMatch>> &knn_matches,
 }
 
 
-Extractor::Ptr Extractor::from_yaml(const YAML::Node &node) {
-  if (node.IsNull()) return nullptr;
-  auto area = YAML::toVec<int>(node["lappingArea"]);
+Extractor::Ptr Extractor::from_yaml(const YAML::Node &cfg) {
+  if (cfg.IsNull()) return nullptr;
+  auto area = YAML::toVec<int>(cfg["lappingArea"]);
   return Ptr(new Extractor(
-      node["nfeatures"].as<int>(),
-      node["scaleFactor"].as<float>(),
-      node["nlevels"].as<int>(),
+      cfg["nfeatures"].as<int>(),
+      cfg["scaleFactor"].as<float>(),
+      cfg["nlevels"].as<int>(),
       {area[0], area[1]}
   ));
 }
@@ -90,6 +90,27 @@ int Extractor::detect_and_compute(cv::InputArray img, cv::InputArray mask,
     }
   }
   return lapCnt;
+}
+
+
+void Matcher::search_by_index(const cv::Mat &queryDesc, const cv::Mat &trainDesc,
+                              std::vector<cv::DMatch> &matches, std::vector<std::vector<int> *> &mask) {
+  for (int i = 0; i < queryDesc.rows; i++) {
+    const std::vector<int> &m = *mask[i];
+    if (m.empty()) continue;
+    cv::Mat q = queryDesc.row(i);
+    cv::DMatch bestMatch(i, -1, FLT_MAX);
+    // 依次取出候选描述子, 进行匹配
+    for (int j: m) {
+      float dist = cv::norm(q, trainDesc.row(j), mNormType);
+      if (dist < bestMatch.distance) {
+        bestMatch.trainIdx = j;
+        bestMatch.distance = dist;
+      }
+    }
+    // 保存最佳匹配
+    if (bestMatch.trainIdx != -1) matches.push_back(bestMatch);
+  }
 }
 
 }

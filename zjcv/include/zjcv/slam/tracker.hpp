@@ -32,6 +32,7 @@ public:
         mpSystem(pSystem),
         mpCam0(camera::from_yaml(cfg["cam0"])), mpCam1(camera::from_yaml(cfg["cam1"])),
         mpIMU(IMU::Device::from_yaml(cfg["imu"])) {
+      ASSERT(!is_monocular(), "Not implemented")
       ASSERT(mpCam0, "Camera0 not found")
       // 双目模式
       if (is_stereo()) {

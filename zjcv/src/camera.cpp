@@ -5,15 +5,15 @@
 namespace camera {
 
 
-Base::Ptr from_yaml(const YAML::Node &node) {
+Base::Ptr from_yaml(const YAML::Node &cfg) {
   Base::Ptr pCam;
-  if (!node.IsNull()) {
+  if (!cfg.IsNull()) {
 
-    auto type = node["type"].as<std::string>();
-    auto imgSize = YAML::toVec<int>(node["resolution"]);
-    auto intrinsics = YAML::toVec<float>(node["intrinsics"]);
-    auto distCoeffs = YAML::toVec<float>(node["dist_coeffs"]);
-    auto T_cam_imu = YAML::toSE3d(node["T_cam_imu"]);
+    auto type = cfg["type"].as<std::string>();
+    auto imgSize = YAML::toVec<int>(cfg["resolution"]);
+    auto intrinsics = YAML::toVec<float>(cfg["intrinsics"]);
+    auto distCoeffs = YAML::toVec<float>(cfg["dist_coeffs"]);
+    auto T_cam_imu = YAML::toSE3d(cfg["T_cam_imu"]);
 
     if (type == "Pinhole") {
       pCam = static_cast<Base::Ptr>(

@@ -11,7 +11,7 @@ namespace ORB {
 typedef std::vector<cv::KeyPoint> KeyPoints;
 
 
-// 亚像素级精化 (模板匹配)
+// fixme: 亚像素级精化 (模板匹配), 目前效果不佳
 bool matchesSubPix(const cv::Mat &img0, const cv::Mat &img1,
                    const cv::Point2f &kp0, cv::Point2f &kp1,
                    int winSize = 5, cv::Size slideSize = {5, 5});
@@ -30,7 +30,7 @@ class Extractor {
 public:
     typedef std::shared_ptr<Extractor> Ptr;
 
-    static Ptr from_yaml(const YAML::Node &node);
+    static Ptr from_yaml(const YAML::Node &cfg);
 
     Extractor(int nfeatures = 1000,
               float scaleFactor = 1.2f,
@@ -47,6 +47,19 @@ public:
      */
     int detect_and_compute(cv::InputArray img, cv::InputArray mask,
                            KeyPoints &keypoints, cv::OutputArray &desc);
+};
+
+
+class Matcher {
+
+public:
+    cv::NormTypes mNormType;
+
+    explicit Matcher(cv::NormTypes normType = cv::NORM_HAMMING) : mNormType(normType) {}
+
+    // fixme: 根据索引搜索, 效率似乎过低
+    void search_by_index(const cv::Mat &queryDesc, const cv::Mat &trainDesc,
+                         std::vector<cv::DMatch> &matches, std::vector<std::vector<int> *> &mask);
 };
 
 }

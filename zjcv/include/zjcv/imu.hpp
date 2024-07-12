@@ -29,14 +29,14 @@ public:
 
     Device(const Device &) = delete;
 
-    static Ptr from_yaml(const YAML::Node &node) {
-      if (node.IsNull()) return nullptr;
+    static Ptr from_yaml(const YAML::Node &cfg) {
+      if (cfg.IsNull()) return nullptr;
       return std::make_shared<Device>(
-          node["acc_noise"].as<float>(),
-          node["acc_walk"].as<float>(),
-          node["gyro_noise"].as<float>(),
-          node["gyro_walk"].as<float>(),
-          node["frequency"].as<float>()
+          cfg["acc_noise"].as<float>(),
+          cfg["acc_walk"].as<float>(),
+          cfg["gyro_noise"].as<float>(),
+          cfg["gyro_walk"].as<float>(),
+          cfg["frequency"].as<float>()
       );
     }
 };

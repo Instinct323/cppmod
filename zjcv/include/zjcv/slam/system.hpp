@@ -41,7 +41,7 @@ public:
     std::atomic_bool mbRunning = false;
 
     explicit System(const YAML::Node &cfg
-    ) : mpTracker(new Tracker(this, cfg)), mpViewer(new Viewer(this)) {};
+    ) : mpTracker(new Tracker(this, cfg)), mpViewer(new Viewer(this, cfg)) {};
 
     System(const System &) = delete;
 
