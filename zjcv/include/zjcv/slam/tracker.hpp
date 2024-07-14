@@ -26,7 +26,7 @@ public:
     std::shared_ptr<Frame> mpLastFrame, mpCurFrame;
 
     // Transform
-    Sophus::SE3d T_cam0_cam1;
+    Sophus::SE3f T_cam0_cam1;
 
     explicit TrackerBase(System *pSystem, const YAML::Node &cfg) :
         mpSystem(pSystem),

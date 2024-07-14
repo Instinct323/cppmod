@@ -63,19 +63,4 @@ void assert_matrix(const Node &node) {
   if (!flag) LOG(FATAL) << "YAML: Invalid matrix format";
 }
 
-
-Sophus::SE3d toSE3d(const Node &node) {
-  Eigen::MatrixXd mat = toEigen<double>(node);
-  // tx ty tz qx qy qz qw
-  if (mat.size() == 7) {
-    return {Eigen::Quaterniond(mat(6), mat(3), mat(4), mat(5)),
-            Eigen::Vector3d(mat(0), mat(1), mat(2))};
-  } else if (mat.size() == 12 || mat.size() == 16) {
-    // Rotation + Translation
-    Eigen::MatrixXd matn4 = Eigen::reshape<double>(mat, -1, 4);
-    return {Eigen::Quaterniond(matn4.block<3, 3>(0, 0)), matn4.block<3, 1>(0, 3)};
-  }
-  LOG(FATAL) << "YAML: Invalid SE3d format";
-}
-
 }

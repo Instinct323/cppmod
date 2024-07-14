@@ -29,7 +29,6 @@ void slam::Tracker<System>::run() {
   Storage &storage = pSystem->mStorage;
 
   glog::Timer timer;
-  boost::format fmt("Cost=%.1fms");
   cv::GrayLoader grayloader;
   math::ValueSlicer<double> slicer(std::get<4>(storage));
   auto pbar = indicators::getProgressBar(std::get<0>(storage).size());
@@ -45,7 +44,9 @@ void slam::Tracker<System>::run() {
                    dataset::Timestamps(std::get<4>(storage).begin() + j, std::get<4>(storage).begin() + k),
                    dataset::IMUsamples(std::get<5>(storage).begin() + j, std::get<5>(storage).begin() + k));
     this->grab_image(std::get<0>(storage)[i], imgLeft, imgRight);
-    indicators::set_desc(pbar, (fmt % (1e3 * timer.count())).str(), false);
+    pSystem->set_desc("cost", (boost::format("%.1fms") % (1e3 * timer.count())).str());
+    
+    indicators::set_desc(pbar, pSystem->get_desc(), false);
     pbar.tick();
   }
 }

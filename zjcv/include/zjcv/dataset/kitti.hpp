@@ -13,7 +13,7 @@ class Kitti : public Base {
     std::string mId;
 
 public:
-    typedef Eigen::Matrix<double, 3, 4> Matrix34d;
+    typedef Eigen::Matrix<float, 3, 4> Matrix34f;
 
     // e.g., ~/dataset
     explicit Kitti(const std::string &path, int seqid) : Base(path) {
@@ -49,18 +49,18 @@ public:
           mPath + "poses/" + mId + ".txt",
           [&vPoses](const std::string &line) {
               std::istringstream iss(line);
-              Matrix34d pose = Matrix34d::Identity();
+              Matrix34f pose = Matrix34f::Identity();
               for (int i = 0; i < 3; i++) {
                 for (int j = 0; j < 4; j++) iss >> pose(i, j);
               }
-              vPoses.emplace_back(Eigen::Quaterniond(pose.block<3, 3>(0, 0)), pose.block<3, 1>(0, 3));
+              vPoses.emplace_back(Eigen::Quaternionf(pose.block<3, 3>(0, 0)), pose.block<3, 1>(0, 3));
           });
     }
 
     void save_poses(Poses &vPoses) {
       std::ofstream f(mPath + mId + ".txt");
       for (const auto &pose: vPoses) {
-        Matrix34d p = pose.matrix3x4();
+        Matrix34f p = pose.matrix3x4();
         for (int i = 0; i < p.size(); i++) {
           f << *(p.data() + i) << " ";
         }

@@ -28,12 +28,12 @@ protected:
     cv::Mat mMap1, mMap2;   // 畸变矫正映射
 
 public:
-    Sophus::SE3d T_cam_imu;
+    Sophus::SE3f T_cam_imu;
 
     typedef std::shared_ptr<Base> Ptr;
 
     explicit Base(const cv::Size imgSize, const Vectorf &intrinsics, const Vectorf &distCoeffs,
-                  const Sophus::SE3d &T_cam_imu = Sophus::SE3d()
+                  const Sophus::SE3f &T_cam_imu = Sophus::SE3f()
     ) : mImgSize(imgSize), mvParam(intrinsics), T_cam_imu(T_cam_imu) {
       ASSERT(intrinsics.size() == 4, "Intrinsics size must be 4")
       mvParam.insert(mvParam.end(), distCoeffs.begin(), distCoeffs.end());
@@ -63,11 +63,9 @@ public:
     virtual Eigen::Matrix3f getK_eig() const { return GETK(mvParam, Eigen::Matrix3f()).finished(); };
 
     // 3D -> 2D
-    virtual cv::Point2f project(const cv::Point3f &p3D) const = 0;
+    virtual cv::Point2f project(const Eigen::Vector3f &v3D) const = 0;
 
     virtual Eigen::Vector2d project(const Eigen::Vector3d &v3D) const = 0;
-
-    virtual Eigen::Vector2f project(const Eigen::Vector3f &v3D) const = 0;
 
     virtual Eigen::Vector2f project_eig(const cv::Point3f &p3D) const = 0;
 

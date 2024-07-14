@@ -13,7 +13,7 @@ Base::Ptr from_yaml(const YAML::Node &cfg) {
     auto imgSize = YAML::toVec<int>(cfg["resolution"]);
     auto intrinsics = YAML::toVec<float>(cfg["intrinsics"]);
     auto distCoeffs = YAML::toVec<float>(cfg["dist_coeffs"]);
-    auto T_cam_imu = YAML::toSE3d(cfg["T_cam_imu"]);
+    auto T_cam_imu = YAML::toSE3<float>(cfg["T_cam_imu"]);
 
     if (type == "Pinhole") {
       pCam = static_cast<Base::Ptr>(
@@ -81,7 +81,7 @@ void Base::draw_normalized_plane(const cv::Mat &src, cv::Mat &dst) {
   // 计算畸变矫正映射
   for (int r = 0; r < H; ++r) {
     for (int c = 0; c < W; ++c) {
-      cv::Point2f p2D = this->project(cv::Point3f(w * c / W + x, h * r / H + y, 1));
+      cv::Point2f p2D = this->project(Eigen::Vector3f(w * c / W + x, h * r / H + y, 1));
       npMap1.at<float>(r, c) = p2D.x;
       npMap2.at<float>(r, c) = p2D.y;
     }
@@ -155,11 +155,11 @@ void KannalaBrandt::stereoORBfeatures(Base *pCamRight,
 
 void Pinhole::stereo_rectify(Pinhole *cam_right) {
   ASSERT(this->mImgSize == cam_right->mImgSize, "Image size must be the same")
-  Sophus::SE3d Trl = this->T_cam_imu.inverse() * cam_right->T_cam_imu;
+  Sophus::SE3f Trl = this->T_cam_imu.inverse() * cam_right->T_cam_imu;
   cv::Mat P1, P2, Q;
   // 双目矫正
   cv::stereoRectify(this->getK(), this->get_distcoeffs(), cam_right->getK(), cam_right->get_distcoeffs(), mImgSize,
-                    Eigen::toCvMat<double>(Trl.rotationMatrix()), Eigen::toCvMat<double>(Trl.translation()),
+                    Eigen::toCvMat<float>(Trl.rotationMatrix()), Eigen::toCvMat<float>(Trl.translation()),
                     this->mRectR, cam_right->mRectR, P1, P2, Q);
   // 重新初始化畸变矫正映射
   cv::initUndistortRectifyMap(this->getK(), this->get_distcoeffs(), this->mRectR, P1, mImgSize, CV_32FC1, this->mMap1, this->mMap2);
@@ -169,12 +169,12 @@ void Pinhole::stereo_rectify(Pinhole *cam_right) {
   int paramPos[2][4] = {{0, 1, 0, 1},
                         {0, 1, 2, 2}};
   for (int i = 0; i < 4; i++) {
-    this->set_param(i, P1.at<double>(paramPos[0][i], paramPos[1][i]), true);
-    cam_right->set_param(i, P2.at<double>(paramPos[0][i], paramPos[1][i]), true);
+    this->set_param(i, P1.at<float>(paramPos[0][i], paramPos[1][i]), true);
+    cam_right->set_param(i, P2.at<float>(paramPos[0][i], paramPos[1][i]), true);
   }
   // 原地修改相机位姿
-  Sophus::SE3d R1(cv::toEigen<double>(this->mRectR), Eigen::Vector3d::Zero()),
-      R2(cv::toEigen<double>(cam_right->mRectR), Eigen::Vector3d::Zero());
+  Sophus::SE3f R1(cv::toEigen<float>(this->mRectR), Eigen::Vector3f::Zero()),
+      R2(cv::toEigen<float>(cam_right->mRectR), Eigen::Vector3f::Zero());
   this->T_cam_imu = R1 * this->T_cam_imu;
   cam_right->T_cam_imu = R2 * cam_right->T_cam_imu;
 }
@@ -193,11 +193,11 @@ void Pinhole::stereoORBfeatures(Base *pCamRight,
   cv::Mat_<uchar> rowMask(img0.rows, lapCnt1, uchar(0)), matchMask(lapCnt0, lapCnt1);
   for (int j = 0; j < lapCnt1; ++j) {
     float y = kps1[j].pt.y, r = kps1[j].size / 2;
-    int t = MAX(0, cvFloor(y - r)), b = MIN(img0.rows - 1, cvCeil(y + r));
+    int t = MAX(0, y - r), b = MIN(img0.rows - 1, y + r);
     for (int i = t; i <= b; ++i) rowMask.at<uchar>(i, j) = uchar(1);
   }
   for (int i = 0; i < lapCnt0; ++i) {
-    int y = cvRound(kps0[i].pt.y);
+    int y = kps0[i].pt.y;
     rowMask.row(y).copyTo(matchMask.row(i));
   }
   // 双目匹配

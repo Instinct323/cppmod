@@ -11,6 +11,12 @@ void Preintegration::reset(double tStart) {
   iV.setZero();
   iTheta.setZero();
   iR = Sophus::SO3f();
+
+  Jpa.setZero();
+  Jpg.setZero();
+  Jva.setZero();
+  Jvg.setZero();
+  JRg.setZero();
 }
 
 
@@ -48,14 +54,42 @@ void Preintegration::integrate(const double &tCurframe, const std::vector<double
 
 
 void Preintegration::integrate(const double &dt, const Sample &sample) {
-  Sample M = sample - mBias, dM = M * dt;
+  Sample M = sample - B, dM = M * dt;
   const Eigen::Vector3f &dV = dM.a, &dTheta = dM.w, dV_rot = iR.matrix() * dV;
+  // 更新雅可比矩阵
+  Eigen::Matrix3f a_hat = Sophus::SO3f::hat(dTheta).matrix();
+  Eigen::Matrix3f tmp = iR.matrix() * dt;
+  Jva -= tmp;
+  Jpa += Jva * dt - 0.5f * dt * tmp;
+  tmp *= a_hat * JRg;
+  Jvg -= tmp;
+  Jpg += Jvg * dt - 0.5f * dt * tmp;
+  // 旋转积分
+  Eigen::Matrix3f deltaR = Sophus::SO3f::exp(dTheta).matrix();
+  Eigen::Matrix3f rightJ = Eigen::Matrix3f::Identity() * 2 - Sophus::SO3f::leftJacobian(dTheta);
+  JRg = deltaR.transpose() * JRg - rightJ * dt;
   // 更新积分值
   it += dt;
   iP += (iV + 0.5f * dV_rot) * dt;
   iV += dV_rot;
   iTheta += dTheta;
   iR = Sophus::SO3f::exp(iTheta);
+}
+
+
+void MovingPose::predict_from(MovingPose &prev, Preintegration &preint, bool update) {
+  Sample deltaB = (update) ? preint.B : prev.B - preint.B;
+  double &it = preint.it;
+  Eigen::Vector3f dv(0, 0, -9.81 * it);
+
+  Sophus::SO3f &R0 = prev.T_world_imu.so3();
+  Eigen::Vector3f &t0 = prev.T_world_imu.translation();
+  Eigen::Vector3f &v0 = prev.v;
+
+  B = prev.B;
+  T_world_imu.so3() = R0 * preint.iR * Sophus::SO3f::exp(preint.JRg * deltaB.w);
+  T_world_imu.translation() = t0 + v0 * it + 0.5f * dv * it + R0 * (preint.iP + preint.Jpa * deltaB.a + preint.Jpg * deltaB.w);
+  v = v0 + dv + R0 * (preint.iV + preint.Jva * deltaB.a + preint.Jvg * deltaB.w);
 }
 
 }

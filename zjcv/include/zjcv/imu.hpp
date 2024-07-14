@@ -4,7 +4,7 @@
 #include <Eigen/Core>
 #include <memory>
 #include <opencv2/opencv.hpp>
-#include <sophus/so3.hpp>
+#include <sophus/se3.hpp>
 #include <yaml-cpp/yaml.h>
 
 // IMU (加速度计, 陀螺仪)
@@ -47,7 +47,7 @@ class Sample {
 
 public:
     // 线性加速度, 角速度
-    const Eigen::Vector3f a, w;
+    Eigen::Vector3f a, w;
 
     Sample() : a(0, 0, 0), w(0, 0, 0) {}
 
@@ -74,19 +74,22 @@ public:
 
 // 预积分
 class Preintegration {
-    Device *mpDevice;
-    Sample mBias;
 
 public:
     typedef std::shared_ptr<Preintegration> Ptr;
 
-    double mtStart, mtEnd;
-    double it;
+    Device *mpDevice;
+    double mtStart, mtEnd, it;
+
+    Sample B;
     Eigen::Vector3f iP, iV, iTheta;
     Sophus::SO3f iR;
 
+    // 修正偏置的雅可比矩阵
+    Eigen::Matrix3f Jpa, Jpg, Jva, Jvg, JRg;
+
     explicit Preintegration(Device *pDevice, double tStart, Sample bias = Sample()
-    ) : mpDevice(pDevice), mBias(std::move(bias)) { reset(tStart); }
+    ) : mpDevice(pDevice), B(std::move(bias)) { reset(tStart); }
 
     Preintegration(const Preintegration &) = delete;
 
@@ -97,6 +100,19 @@ public:
 
 private:
     void integrate(const double &dt, const Sample &sample);
+};
+
+
+class MovingPose {
+
+public:
+    Sample B;
+    Sophus::SE3f T_world_imu;
+    Eigen::Vector3f v;
+
+    MovingPose() = default;
+
+    void predict_from(MovingPose &prev, Preintegration &preint, bool update = false);
 };
 
 }

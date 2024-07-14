@@ -9,13 +9,6 @@
 namespace cv {
 
 
-cv::Mat kps_grid_mask(const std::vector<KeyPoint> &queryKps, const std::vector<Point2f> &trainKps,
-                      const Size &imgSize, const Size &gridSize = {8, 8});
-
-
-cv::Mat kps_row_mask(int querySize, const std::vector<KeyPoint> &trainKps, int row);
-
-
 // Mat -> Eigen
 template<typename T>
 Eigen::Matrix<T, -1, -1> toEigen(const Mat &mat) {
@@ -27,6 +20,25 @@ Eigen::Matrix<T, -1, -1> toEigen(const Mat &mat) {
   }
   return m;
 }
+
+
+// 关键点网格掩码
+class GridMask {
+    int mRows, mCols;
+    Size mGridSize;
+    Mat_<uchar> mMask;
+
+public:
+    explicit GridMask(const std::vector<KeyPoint> &trainKps, const Size &imgSize,
+                      const Size &gridSize = {16, 16}, int dilation = 1);
+
+    template<typename T>
+    Mat operator()(T x, T y) const {
+      static_assert(std::is_arithmetic<T>::value, "Invalid type");
+      int r = y / mGridSize.height, c = x / mGridSize.width;
+      return mMask.row(r * mCols + c);
+    }
+};
 
 
 /**

@@ -40,11 +40,11 @@ public:
           [&vTimestamps, &vPoses](const std::string &line) {
               std::istringstream iss(line);
               double timestamp;
-              double tx, ty, tz, qx, qy, qz, qw;
+              float tx, ty, tz, qx, qy, qz, qw;
               // timestamp tx ty tz qx qy qz qw
               iss >> timestamp >> tx >> ty >> tz >> qx >> qy >> qz >> qw;
               vTimestamps.push_back(timestamp);
-              vPoses.emplace_back(Eigen::Quaterniond(qw, qx, qy, qz), Eigen::Vector3d(tx, ty, tz));
+              vPoses.emplace_back(Eigen::Quaternionf(qw, qx, qy, qz), Eigen::Vector3f(tx, ty, tz));
           });
     }
 
@@ -56,7 +56,7 @@ public:
           [&vTimestamps, &vAccel](const std::string &line) {
               std::istringstream iss(line);
               double timestamp;
-              double ax, ay, az;
+              float ax, ay, az;
               // timestamp ax ay az
               iss >> timestamp >> ax >> ay >> az;
               vTimestamps.push_back(timestamp);

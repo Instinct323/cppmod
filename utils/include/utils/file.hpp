@@ -29,10 +29,6 @@ namespace YAML {
 // 矩阵判断
 void assert_matrix(const Node &node);
 
-// SE3d 转换
-Sophus::SE3d toSE3d(const Node &node);
-
-
 // std::vector 转换
 template<typename T>
 std::vector<T> toVec(const YAML::Node &node) {
@@ -66,9 +62,27 @@ MatrixT toMatrix(const Node &node) {
 template<typename T>
 Eigen::Matrix<T, -1, -1> toEigen(const Node &node) { return toMatrix<T, Eigen::Matrix<T, -1, -1>>(node); }
 
+
 // cv::Mat 转换
 template<typename T>
 cv::Mat toCvMat(const Node &node) { return toMatrix<T, cv::Mat_<T>>(node); }
+
+
+// SE3d 转换
+template<typename T>
+Sophus::SE3<T> toSE3(const Node &node) {
+  Eigen::MatrixX<T> mat = toEigen<T>(node);
+  // tx ty tz qx qy qz qw
+  if (mat.size() == 7) {
+    return {Eigen::Quaternion<T>(mat(6), mat(3), mat(4), mat(5)),
+            Eigen::Vector3<T>(mat(0), mat(1), mat(2))};
+  } else if (mat.size() == 12 || mat.size() == 16) {
+    // Rotation + Translation
+    Eigen::MatrixX<T> matn4 = Eigen::reshape<T>(mat, -1, 4);
+    return {Eigen::Quaternion<T>(matn4.template block<3, 3>(0, 0)), matn4.template block<3, 1>(0, 3)};
+  }
+  LOG(FATAL) << "YAML: Invalid SE3d format";
+}
 
 }
 

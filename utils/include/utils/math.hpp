@@ -19,24 +19,24 @@ Eigen::Vector<T, -1> toEigen(const std::vector<T> &vec) {
 
 // mean
 template<typename T>
-double mean(const std::vector<T> &vec) {
-  double sum = 0;
-  for (const T &value: vec) sum += static_cast<double>(value);
+float mean(const std::vector<T> &vec) {
+  float sum = 0;
+  for (const T &value: vec) sum += static_cast<float>(value);
   return sum / vec.size();
 }
 
 
 // standard deviation
 template<typename T>
-double std(const std::vector<T> &vec, double vMean) {
-  double var = 0;
-  for (const T &value: vec) var += pow(static_cast<double>(value) - vMean, 2);
+float std(const std::vector<T> &vec, float vMean) {
+  float var = 0;
+  for (const T &value: vec) var += pow(static_cast<float>(value) - vMean, 2);
   return sqrt(var / vec.size());
 }
 
 
 template<typename T>
-double std(const std::vector<T> &vec) { return std(vec, mean(vec)); }
+float std(const std::vector<T> &vec) { return std(vec, mean(vec)); }
 
 
 // 指数移动平均
@@ -74,13 +74,13 @@ public:
 // 拉依达准则
 template<typename T>
 class PautaCriterion {
-    double mMean, mScaledStd;
+    float mMean, mScaledStd;
 
 public:
-    explicit PautaCriterion(const std::vector<T> &vec, double sigmaFactor = 3
+    explicit PautaCriterion(const std::vector<T> &vec, float sigmaFactor = 3
     ) : mMean(mean(vec)), mScaledStd(sigmaFactor * std(vec, mMean)) {}
 
-    bool operator()(const T &value) { return abs(static_cast<double>(value) - mMean) < mScaledStd; }
+    bool operator()(const T &value) { return abs(static_cast<float>(value) - mMean) < mScaledStd; }
 };
 
 

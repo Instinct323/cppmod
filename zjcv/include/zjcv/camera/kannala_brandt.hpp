@@ -36,7 +36,7 @@ public:
     using Base::undistort;
 
     explicit KannalaBrandt(const cv::Size imgSize, const Vectorf &intrinsics, const Vectorf &distCoeffs,
-                           const Sophus::SE3d &T_cam_imu = Sophus::SE3d()
+                           const Sophus::SE3f &T_cam_imu = Sophus::SE3f()
     ) : Base(imgSize, intrinsics, distCoeffs, T_cam_imu), mUnprojectCache(mImgSize, CV_32FC3) {
       ASSERT(distCoeffs.size() == 4, "Distortion coefficients size must be 4")
       make_unproject_cache();
@@ -49,11 +49,9 @@ public:
     // 3D -> 2D
     float computeR(float theta) const;
 
-    cv::Point2f project(const cv::Point3f &p3D) const override { KANNALA_BRANDT_PROJECT(mvParam, p3D.x, p3D.y, p3D.z) }
+    cv::Point2f project(const Eigen::Vector3f &v3D) const override { KANNALA_BRANDT_PROJECT(mvParam, v3D[0], v3D[1], v3D[2]) }
 
     Eigen::Vector2d project(const Eigen::Vector3d &v3D) const override { KANNALA_BRANDT_PROJECT(mvParam, v3D[0], v3D[1], v3D[2]) }
-
-    Eigen::Vector2f project(const Eigen::Vector3f &v3D) const override { KANNALA_BRANDT_PROJECT(mvParam, v3D[0], v3D[1], v3D[2]) }
 
     Eigen::Vector2f project_eig(const cv::Point3f &p3D) const override { KANNALA_BRANDT_PROJECT(mvParam, p3D.x, p3D.y, p3D.z) }
 

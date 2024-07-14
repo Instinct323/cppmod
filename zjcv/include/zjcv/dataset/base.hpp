@@ -11,8 +11,8 @@ namespace dataset {
 
 typedef std::vector<double> Timestamps;
 typedef std::vector<std::string> Filenames;
-typedef std::vector<Sophus::SE3d> Poses;
-typedef std::vector<Eigen::Vector3d> Accels;
+typedef std::vector<Sophus::SE3f> Poses;
+typedef std::vector<Eigen::Vector3f> Accels;
 typedef std::vector<IMU::Sample> IMUsamples;
 
 

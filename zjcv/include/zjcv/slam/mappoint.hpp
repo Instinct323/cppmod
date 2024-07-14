@@ -12,14 +12,14 @@ template<typename System>
 class Mappoint {
 
 public:
-    typedef std::pair<Sophus::SE3d *, cv::Point2f *> Observation;
+    typedef std::pair<Sophus::SE3f *, cv::Point2f *> Observation;
 
-    Eigen::Vector3d mPos;
+    Eigen::Vector3f mPos;
     std::multimap<typename System::Frame *, Observation> mObservations;
 
-    explicit Mappoint(const Eigen::Vector3d &pos) : mPos(pos) {}
+    explicit Mappoint(const Eigen::Vector3f &pos) : mPos(pos) {}
 
-    void add_obs(typename System::Frame *pFrame, Sophus::SE3d *pPose, cv::Point2f *pKp) {
+    void add_obs(typename System::Frame *pFrame, Sophus::SE3f *pPose, cv::Point2f *pKp) {
       mObservations.insert({pFrame, std::make_pair(pPose, pKp)});
     }
 

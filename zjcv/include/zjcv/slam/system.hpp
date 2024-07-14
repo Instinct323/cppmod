@@ -39,6 +39,7 @@ public:
 
     // Status
     std::atomic_bool mbRunning = false;
+    std::map<std::string, std::string> mDescs;
 
     explicit System(const YAML::Node &cfg
     ) : mpTracker(new Tracker(this, cfg)), mpViewer(new Viewer(this, cfg)) {};
@@ -55,6 +56,16 @@ public:
     void stop() {
       mbRunning = false;
       parallel::thread_pool.join();
+    }
+
+    // Description
+    void set_desc(const std::string &key, const std::string &desc) { mDescs[key] = desc; }
+
+    std::string get_desc() {
+      std::string desc;
+      for (auto &kv: mDescs) desc += kv.first + "=" + kv.second + ", ";
+      desc.erase(desc.end() - 2, desc.end());
+      return desc;
     }
 };
 

@@ -17,8 +17,8 @@ namespace g2o {
 /** @brief g2o 优化器 */
 template<int p, int l,
     template<typename> class LinearSolverTp = LinearSolverDense,
-    typename AlgorithmT = OptimizationAlgorithmLevenberg>
-
+    typename AlgorithmT = OptimizationAlgorithmLevenberg
+>
 class Optimizer : public SparseOptimizer {
 public:
     typedef BlockSolverPL<p, l> BlockSolverType;
