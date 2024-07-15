@@ -25,8 +25,6 @@ std::tuple<
 
 // Tracking
 void slam::Tracker::run() {
-  System *pSystem = this->mpSystem;
-
   glog::Timer timer;
   cv::GrayLoader grayloader;
   math::ValueSlicer<double> slicer(std::get<4>(storage));
@@ -39,13 +37,13 @@ void slam::Tracker::run() {
 
     // 读入数据
     timer.reset();
-    this->grab_imu(std::get<0>(storage)[i],
+    grab_imu(std::get<0>(storage)[i],
                    dataset::Timestamps(std::get<4>(storage).begin() + j, std::get<4>(storage).begin() + k),
                    dataset::IMUsamples(std::get<5>(storage).begin() + j, std::get<5>(storage).begin() + k));
-    this->grab_image(std::get<0>(storage)[i], imgLeft, imgRight);
-    pSystem->set_desc("cost", (boost::format("%.1fms") % (1e3 * timer.count())).str());
+    grab_image(std::get<0>(storage)[i], imgLeft, imgRight);
+    mpSystem->set_desc("cost", (boost::format("%.1fms") % (1e3 * timer.count())).str());
 
-    indicators::set_desc(pbar, pSystem->get_desc(), false);
+    indicators::set_desc(pbar, mpSystem->get_desc(), false);
     pbar.tick();
   }
 }

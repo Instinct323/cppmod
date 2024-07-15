@@ -16,11 +16,10 @@ public:
 
     void run() {
       glog::Timer timer;
-      auto &pSystem = this->mpSystem;
-      auto &pTracker = pSystem->mpTracker;
-      while (pSystem->mbRunning) {
+      Tracker::Ptr pTracker = mpSystem->mpTracker;
+      while (mpSystem->mbRunning) {
         timer.reset();
-        auto pFrame = pTracker->mpLastFrame;
+        Frame::Ptr pFrame = pTracker->mpLastFrame;
         if (pFrame) {
           cv::Mat img0 = pFrame->mImg0.clone(), img1 = pFrame->mImg1.clone(), imgs;
           // Image 0
@@ -39,7 +38,7 @@ public:
           cv::imshow("Image", imgs);
         }
         int cost = static_cast<int>(timer.count() * 1e3);
-        cv::waitKey(MAX(1, this->mDelay - cost));
+        cv::waitKey(MAX(1, mDelay - cost));
       }
     }
 };
