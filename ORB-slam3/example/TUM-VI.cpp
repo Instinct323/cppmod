@@ -14,20 +14,18 @@
 #include "viewer.hpp"
 #include "zjcv/slam/system.hpp"
 
-typedef std::tuple<
+ZJCV_SLAM_SYSTEM_IMPL
+
+std::tuple<
     dataset::Timestamps, dataset::Filenames,
     dataset::Timestamps, dataset::Filenames,
     dataset::Timestamps, dataset::IMUsamples,
-    dataset::Timestamps, dataset::Poses> Storage;
-
-typedef slam::System<slam::Tracker, slam::Frame, slam::Viewer, Storage> System;
+    dataset::Timestamps, dataset::Poses> storage;
 
 
 // Tracking
-template<typename System>
-void slam::Tracker<System>::run() {
+void slam::Tracker::run() {
   System *pSystem = this->mpSystem;
-  Storage &storage = pSystem->mStorage;
 
   glog::Timer timer;
   cv::GrayLoader grayloader;
@@ -59,8 +57,7 @@ int main(int argc, char **argv) {
 
   // config
   YAML::Node cfg = YAML::LoadFile("/home/workbench/cppmod/ORB-slam3/example/TUM-VI.yaml");
-  System system(cfg);
-  Storage &storage = system.mStorage;
+  slam::System system(cfg);
 
   // 载入并校验数据
   dataset::TumVI tum_vi(cfg["dataset"].as<std::string>());

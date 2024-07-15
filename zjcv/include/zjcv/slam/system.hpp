@@ -11,47 +11,45 @@
 #include "utils/math.hpp"
 #include "viewer.hpp"
 
+#include "zjcv/slam/frame.hpp"
+#include "zjcv/slam/tracker.hpp"
+#include "zjcv/slam/viewer.hpp"
+
 namespace slam {
 
+class Frame;
+class MapPoint;
+class Tracker;
+class Viewer;
 
-template<
-    template<typename> typename TrackerTemplate,
-    template<typename> typename FrameTemplate,
-    template<typename> typename ViewerTemplate,
-    typename Storage = bool>
+
+#define ZJCV_SLAM_SYSTEM_IMPL \
+    slam::System::System(const YAML::Node &cfg) : mpTracker(new slam::Tracker(this, cfg)), mpViewer(new slam::Viewer(this, cfg)) {} \
+    void slam::System::run() { \
+      mbRunning = true; \
+      mThreads["track"] = parallel::thread_pool.emplace(0, &slam::Tracker::run, mpTracker); \
+      mThreads["view"] = parallel::thread_pool.emplace(0, &slam::Viewer::run, mpViewer); \
+    }
+
+
 class System {
 
 public:
-    typedef TrackerTemplate<System> Tracker;
-    typedef FrameTemplate<System> Frame;
-    typedef ViewerTemplate<System> Viewer;
-
-    // Type check
-    static_assert(std::is_base_of<TrackerBase<System>, Tracker>::value, "TrackerTemplate must be derived from TrackerBase<System>");
-    static_assert(std::is_base_of<FrameBase<System>, Frame>::value, "FrameTemplate must be derived from FrameBase<System>");
-    static_assert(std::is_base_of<ViewerBase<System>, Viewer>::value, "ViewerTemplate must be derived from ViewerBase<System>");
-
     // Subsystems
-    const typename std::shared_ptr<Tracker> mpTracker;
-    const typename std::shared_ptr<Viewer> mpViewer;
+    std::shared_ptr<Tracker> mpTracker;
+    std::shared_ptr<Viewer> mpViewer;
     std::map<std::string, parallel::PriorityThread> mThreads;
-    Storage mStorage;
 
     // Status
     std::atomic_bool mbRunning = false;
     std::map<std::string, std::string> mDescs;
 
-    explicit System(const YAML::Node &cfg
-    ) : mpTracker(new Tracker(this, cfg)), mpViewer(new Viewer(this, cfg)) {};
+    explicit System(const YAML::Node &cfg);
 
     System(const System &) = delete;
 
     // Daemons
-    void run() {
-      mbRunning = true;
-      mThreads["track"] = parallel::thread_pool.emplace(0, &Tracker::run, mpTracker);
-      mThreads["view"] = parallel::thread_pool.emplace(0, &Viewer::run, mpViewer);
-    }
+    void run();
 
     void stop() {
       mbRunning = false;

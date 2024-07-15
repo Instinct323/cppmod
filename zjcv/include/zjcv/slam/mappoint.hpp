@@ -7,31 +7,13 @@
 
 namespace slam {
 
-
-template<typename System>
-class Mappoint {
-
-public:
-    typedef std::pair<Sophus::SE3f *, cv::Point2f *> Observation;
-
-    Eigen::Vector3f mPos;
-    std::multimap<typename System::Frame *, Observation> mObservations;
-
-    explicit Mappoint(const Eigen::Vector3f &pos) : mPos(pos) {}
-
-    void add_obs(typename System::Frame *pFrame, Sophus::SE3f *pPose, cv::Point2f *pKp) {
-      mObservations.insert({pFrame, std::make_pair(pPose, pKp)});
-    }
-
-    void erase_obs(typename System::Frame *pFrame) {
-      while (true) {
-        auto it = mObservations.find(pFrame);
-        if (it == mObservations.end()) break;
-        mObservations.erase(it);
-      }
-    }
-};
+class MapPoint;
 
 }
+
+
+#define ZJCV_SLAM_MAPPOINT_MEMBER \
+  typedef std::shared_ptr<MapPoint> Ptr; \
+  Eigen::Vector3f mPos;
 
 #endif

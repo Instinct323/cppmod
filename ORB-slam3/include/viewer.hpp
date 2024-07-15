@@ -7,11 +7,12 @@
 namespace slam {
 
 
-template<typename System>
-class Viewer : ViewerBase<System> {
+class Viewer {
 
 public:
-    using ViewerBase<System>::ViewerBase;
+    ZJCV_SLAM_VIEWER_MEMBER
+
+    ZJCV_SLAM_VIEWER_CONSTRUCTOR
 
     void run() {
       glog::Timer timer;

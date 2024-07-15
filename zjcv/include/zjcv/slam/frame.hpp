@@ -7,28 +7,20 @@
 
 namespace slam {
 
-
-template<typename System>
-class FrameBase {
-
-public:
-    System *mpSystem;
-
-    // Origin Data
-    const double mTimestamp;
-    const cv::Mat mImg0, mImg1;
-
-    // Status
-    IMU::MovingPose mPose;
-
-    explicit FrameBase(System *pSystem, const double &timestamp, const cv::Mat &img0, const cv::Mat &img1
-    ) : mpSystem(pSystem), mTimestamp(timestamp), mImg0(img0), mImg1(img1) {};
-
-    FrameBase(const FrameBase &) = delete;
-
-    virtual void process() = 0;
-};
+class Frame;
 
 }
+
+#define ZJCV_SLAM_FRAME_MEMBER \
+    typedef std::shared_ptr<Frame> Ptr; \
+    System *mpSystem; \
+    const double mTimestamp; \
+    const cv::Mat mImg0, mImg1; \
+    IMU::MovingPose mPose;
+
+
+#define ZJCV_SLAM_FRAME_CONSTRUCTOR \
+    explicit Frame(System *pSystem, const double &timestamp, const cv::Mat &img0, const cv::Mat &img1 \
+    ) : mpSystem(pSystem), mTimestamp(timestamp), mImg0(img0), mImg1(img1) {} \
 
 #endif
