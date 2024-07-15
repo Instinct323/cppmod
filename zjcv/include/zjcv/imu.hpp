@@ -81,12 +81,12 @@ public:
     Device *mpDevice;
     double mtStart, mtEnd, it;
 
-    Sample B;
-    Eigen::Vector3f iP, iV, iTheta;
+    const Sample B;
+    Eigen::Vector3f iP, iV;
     Sophus::SO3f iR;
 
     // 修正偏置的雅可比矩阵
-    Eigen::Matrix3f Jpa, Jpg, Jva, Jvg, JRg;
+    Eigen::Matrix3f Jpa, Jpw, Jva, Jvw, JRw;
 
     explicit Preintegration(Device *pDevice, double tStart, Sample bias = Sample()
     ) : mpDevice(pDevice), B(std::move(bias)) { reset(tStart); }
@@ -107,12 +107,25 @@ class MovingPose {
 
 public:
     Sample B;
-    Sophus::SE3f T_world_imu;
+    Sophus::SE3f T_imu_world, T_world_imu;
     Eigen::Vector3f v;
 
     MovingPose() = default;
 
-    void predict_from(MovingPose &prev, Preintegration &preint, bool update = false);
+    void set_zero() {
+      B.a.setZero();
+      B.w.setZero();
+      T_imu_world = Sophus::SE3f();
+      T_world_imu = Sophus::SE3f();
+      v.setZero();
+    }
+
+    void set_pose(const Sophus::SE3f &T) {
+      T_imu_world = T;
+      T_world_imu = T.inverse();
+    }
+
+    void predict_from(MovingPose &prev, Preintegration *preint, bool update = false);
 };
 
 }

@@ -12,6 +12,8 @@ template<typename System>
 class Frame : public FrameBase<System> {
 
 public:
+    typedef std::shared_ptr<Frame> Ptr;
+
     using FrameBase<System>::FrameBase;
 
     // Features
@@ -21,7 +23,16 @@ public:
 
     virtual void process() override {
       auto &pTracker = this->mpSystem->mpTracker;
+      Frame::Ptr pLastFrame = pTracker->mpLastFrame;
       camera::Base::Ptr pCam0 = pTracker->mpCam0, pCam1 = pTracker->mpCam1;
+      // IMU 预测位姿
+      if (pTracker->is_inertial()) {
+        if (pLastFrame) {
+          this->mPose.predict_from(pTracker->mpLastFrame->mPose, pTracker->mpIMUpreint.get());
+        } else {
+          this->mPose.set_zero();
+        }
+      }
       // 特征点提取、去畸
       if (pTracker->is_monocular()) {
         pCam0->monoORBfeatures(pTracker->mpExtractor0.get(), this->mImg0, mvKps0, mDesc0);

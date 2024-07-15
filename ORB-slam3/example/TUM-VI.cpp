@@ -17,7 +17,8 @@
 typedef std::tuple<
     dataset::Timestamps, dataset::Filenames,
     dataset::Timestamps, dataset::Filenames,
-    dataset::Timestamps, dataset::IMUsamples> Storage;
+    dataset::Timestamps, dataset::IMUsamples,
+    dataset::Timestamps, dataset::Poses> Storage;
 
 typedef slam::System<slam::Tracker, slam::Frame, slam::Viewer, Storage> System;
 
@@ -45,7 +46,7 @@ void slam::Tracker<System>::run() {
                    dataset::IMUsamples(std::get<5>(storage).begin() + j, std::get<5>(storage).begin() + k));
     this->grab_image(std::get<0>(storage)[i], imgLeft, imgRight);
     pSystem->set_desc("cost", (boost::format("%.1fms") % (1e3 * timer.count())).str());
-    
+
     indicators::set_desc(pbar, pSystem->get_desc(), false);
     pbar.tick();
   }
@@ -66,8 +67,12 @@ int main(int argc, char **argv) {
   tum_vi.load_image(std::get<0>(storage), std::get<1>(storage), "cam0");
   tum_vi.load_image(std::get<2>(storage), std::get<3>(storage), "cam1");
   tum_vi.load_imu(std::get<4>(storage), std::get<5>(storage));
+  tum_vi.load_pose(std::get<6>(storage), std::get<7>(storage));
+
   assert(std::get<0>(storage).size() == std::get<2>(storage).size());
-  LOG(INFO) << "Images: " << std::get<0>(storage).size() << ", IMU: " << std::get<4>(storage).size();
+  LOG(INFO) << "Images: " << std::get<0>(storage).size()
+            << ", IMU: " << std::get<4>(storage).size()
+            << ", Poses: " << std::get<6>(storage).size();
 
   // 载入词汇表
   std::string vocPath = cfg["vocabulary"].as<std::string>();
