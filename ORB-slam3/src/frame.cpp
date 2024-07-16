@@ -1,6 +1,7 @@
 #include "frame.hpp"
 #include "tracker.hpp"
-
+#include "utils/eigen.hpp"
+#include "utils/orb.hpp"
 
 namespace slam {
 

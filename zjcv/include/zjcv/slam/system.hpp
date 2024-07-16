@@ -5,26 +5,34 @@
 #include <map>
 #include <memory>
 
-#include "frame.hpp"
-#include "tracker.hpp"
 #include "utils/parallel.hpp"
 #include "utils/math.hpp"
-#include "viewer.hpp"
 
-#include "zjcv/slam/frame.hpp"
-#include "zjcv/slam/tracker.hpp"
-#include "zjcv/slam/viewer.hpp"
+#include "frame.hpp"
+#include "mappoint.hpp"
+#include "tracker.hpp"
+#include "viewer.hpp"
 
 namespace slam {
 
 class Frame;
-class MapPoint;
+
+class Mappoint;
+
 class Tracker;
+
 class Viewer;
 
 
+// require definition of slam::Frame, slam::Tracker, slam::Viewer
 #define ZJCV_SLAM_SYSTEM_IMPL \
+    ZJCV_SLAM_FRAME_IMPL \
+    ZJCV_SLAM_MAPPOINT_IMPL \
+    ZJCV_SLAM_TRACKER_IMPL \
+    ZJCV_SLAM_VIEWER_IMPL \
+    \
     slam::System::System(const YAML::Node &cfg) : mpTracker(new slam::Tracker(this, cfg)), mpViewer(new slam::Viewer(this, cfg)) {} \
+    \
     void slam::System::run() { \
       mbRunning = true; \
       mThreads["track"] = parallel::thread_pool.emplace(0, &slam::Tracker::run, mpTracker); \

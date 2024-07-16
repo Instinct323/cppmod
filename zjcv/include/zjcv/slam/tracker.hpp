@@ -1,6 +1,7 @@
 #ifndef ZJCV__SLAM__TRACKER_HPP
 #define ZJCV__SLAM__TRACKER_HPP
 
+#include <sophus/se3.hpp>
 #include <yaml-cpp/yaml.h>
 
 #include "zjcv/camera.hpp"
@@ -8,22 +9,37 @@
 
 namespace slam {
 
+class Frame;
+
 class Tracker;
 
 }
 
 #define ZJCV_SLAM_TRACKER_MEMBER \
-    typedef std::shared_ptr<Tracker> Ptr; \
-    System *mpSystem; \
+    typedef std::shared_ptr<slam::Tracker> Ptr; \
+    slam::System *mpSystem; \
     const IMU::Device::Ptr mpIMU; \
     const camera::Base::Ptr mpCam0, mpCam1; \
     IMU::Preintegration::Ptr mpIMUpreint; \
-    std::shared_ptr<Frame> mpLastFrame, mpCurFrame; \
+    std::shared_ptr<slam::Frame> mpLastFrame, mpCurFrame; \
     Sophus::SE3f T_cam0_cam1;
 
 
-#define ZJCV_SLAM_TRACKER_CONSTRUCTOR \
-    explicit Tracker(System *pSystem, const YAML::Node &cfg) : \
+#define ZJCV_SLAM_TRACKER_FUNCDECL \
+    explicit Tracker(System *pSystem, const YAML::Node &cfg); \
+    inline bool is_inertial() const { return mpIMU != nullptr; } \
+    inline bool is_monocular() const { return mpCam1 == nullptr; } \
+    inline bool is_stereo() const { return mpCam1 != nullptr; } \
+    void grab_imu(const double &tCurframe, const std::vector<double> &vTimestamp, const std::vector<IMU::Sample> &vSample) { \
+      if (!mpIMUpreint) mpIMUpreint = std::make_shared<IMU::Preintegration>(mpIMU.get(), vTimestamp.empty() ? tCurframe : vTimestamp[0]); \
+      mpIMUpreint->integrate(tCurframe, vTimestamp, vSample); \
+    } \
+    void grab_image(const double &timestamp, const cv::Mat &img0, const cv::Mat &img1 = cv::Mat()); \
+    void run();
+
+
+#define ZJCV_SLAM_TRACKER_IMPL \
+     slam::Tracker::Tracker(System *pSystem, const YAML::Node &cfg) : \
         mpSystem(pSystem), mpIMU(IMU::Device::from_yaml(cfg["imu"])), \
         mpCam0(camera::from_yaml(cfg["cam0"])), mpCam1(camera::from_yaml(cfg["cam1"])) { \
       ASSERT(!is_monocular(), "Not implemented") \
@@ -32,27 +48,12 @@ class Tracker;
         ASSERT(mpCam0->get_type() == mpCam1->get_type(), "Camera0 and Camera1 must be the same type") \
         T_cam0_cam1 = mpCam0->T_cam_imu * mpCam1->T_cam_imu.inverse(); \
       } \
-    }
-
-
-#define ZJCV_SLAM_TRACKER_FLAGS \
-    inline bool is_inertial() const { return mpIMU != nullptr; } \
-    inline bool is_monocular() const { return mpCam1 == nullptr; } \
-    inline bool is_stereo() const { return mpCam1 != nullptr; }
-
-
-#define ZJCV_SLAM_TRACKER_GRAB_IMU \
-    void grab_imu(const double &tCurframe, const std::vector<double> &vTimestamp, const std::vector<IMU::Sample> &vSample) { \
-      if (!mpIMUpreint) mpIMUpreint = std::make_shared<IMU::Preintegration>(mpIMU.get(), vTimestamp.empty() ? tCurframe : vTimestamp[0]); \
-      mpIMUpreint->integrate(tCurframe, vTimestamp, vSample); \
-    }
-
-
-#define ZJCV_SLAM_TRACKER_GRAB_IMAGE \
-    void grab_image(const double &timestamp, const cv::Mat &img0, const cv::Mat &img1 = cv::Mat()) { \
+    } \
+    \
+    void slam::Tracker::grab_image(const double &timestamp, const cv::Mat &img0, const cv::Mat &img1) { \
       ASSERT(!is_inertial() || timestamp <= mpIMUpreint->mtEnd, "Grab image before IMU data is integrated") \
       ASSERT(is_monocular() == img1.empty(), "Invalid image pair") \
-      auto mpTmp = std::make_shared<Frame>(mpSystem, timestamp, img0, img1); \
+      auto mpTmp = std::make_shared<slam::Frame>(mpSystem, timestamp, img0, img1); \
       mpTmp->process(); \
       mpLastFrame = mpCurFrame; \
       mpCurFrame = mpTmp; \
