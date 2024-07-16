@@ -8,24 +8,19 @@
 #include "utils/parallel.hpp"
 #include "utils/math.hpp"
 
+#include "atlas.hpp"
 #include "frame.hpp"
+#include "map.hpp"
 #include "mappoint.hpp"
 #include "tracker.hpp"
 #include "viewer.hpp"
 
 namespace slam {
 
-class Frame;
-
-class Mappoint;
-
-class Tracker;
-
-class Viewer;
-
 
 // require definition of slam::Frame, slam::Tracker, slam::Viewer
 #define ZJCV_SLAM_SYSTEM_IMPL \
+    \
     ZJCV_SLAM_FRAME_IMPL \
     ZJCV_SLAM_MAPPOINT_IMPL \
     ZJCV_SLAM_TRACKER_IMPL \

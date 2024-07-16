@@ -5,11 +5,8 @@
 
 #include "utils/glog.hpp"
 
-namespace slam {
+namespace slam { class Viewer; }
 
-class Viewer;
-
-}
 
 #define ZJCV_SLAM_VIEWER_MEMBER \
     typedef std::shared_ptr<slam::Viewer> Ptr; \

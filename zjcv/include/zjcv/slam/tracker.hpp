@@ -7,33 +7,30 @@
 #include "zjcv/camera.hpp"
 #include "zjcv/imu.hpp"
 
-namespace slam {
+namespace slam { class Tracker; }
 
-class Frame;
-
-class Tracker;
-
-}
 
 #define ZJCV_SLAM_TRACKER_MEMBER \
     typedef std::shared_ptr<slam::Tracker> Ptr; \
-    slam::System *mpSystem; \
-    const IMU::Device::Ptr mpIMU; \
+    slam::System *mpSystem;      \
+    \
     const camera::Base::Ptr mpCam0, mpCam1; \
+    Sophus::SE3f T_cam0_cam1; \
+    \
+    const IMU::Device::Ptr mpIMU;\
     IMU::Preintegration::Ptr mpIMUpreint; \
+    \
     std::shared_ptr<slam::Frame> mpLastFrame, mpCurFrame; \
-    Sophus::SE3f T_cam0_cam1;
 
 
 #define ZJCV_SLAM_TRACKER_FUNCDECL \
     explicit Tracker(System *pSystem, const YAML::Node &cfg); \
+    \
     inline bool is_inertial() const { return mpIMU != nullptr; } \
     inline bool is_monocular() const { return mpCam1 == nullptr; } \
-    inline bool is_stereo() const { return mpCam1 != nullptr; } \
-    void grab_imu(const double &tCurframe, const std::vector<double> &vTimestamp, const std::vector<IMU::Sample> &vSample) { \
-      if (!mpIMUpreint) mpIMUpreint = std::make_shared<IMU::Preintegration>(mpIMU.get(), vTimestamp.empty() ? tCurframe : vTimestamp[0]); \
-      mpIMUpreint->integrate(tCurframe, vTimestamp, vSample); \
-    } \
+    inline bool is_stereo() const { return mpCam1 != nullptr; }  \
+    \
+    void grab_imu(const double &tCurframe, const std::vector<double> &vTimestamp, const std::vector<IMU::Sample> &vSample); \
     void grab_image(const double &timestamp, const cv::Mat &img0, const cv::Mat &img1 = cv::Mat()); \
     void run();
 
@@ -57,6 +54,11 @@ class Tracker;
       mpTmp->process(); \
       mpLastFrame = mpCurFrame; \
       mpCurFrame = mpTmp; \
+    } \
+    \
+    void slam::Tracker::grab_imu(const double &tCurframe, const std::vector<double> &vTimestamp, const std::vector<IMU::Sample> &vSample) { \
+      if (!mpIMUpreint) mpIMUpreint = std::make_shared<IMU::Preintegration>(mpIMU.get(), vTimestamp.empty() ? tCurframe : vTimestamp[0]); \
+      mpIMUpreint->integrate(tCurframe, vTimestamp, vSample); \
     }
 
 #endif

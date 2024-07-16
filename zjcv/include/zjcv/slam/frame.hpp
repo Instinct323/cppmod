@@ -5,21 +5,17 @@
 
 #include "zjcv/imu.hpp"
 
-namespace slam {
-
-class Frame;
-
-class Mappoint;
-
-}
+namespace slam { class Frame; }
 
 
 #define ZJCV_SLAM_FRAME_MEMBER \
     typedef std::shared_ptr<slam::Frame> Ptr; \
     slam::System *mpSystem; \
-    IMU::MovingPose mPose; \
+    \
     const double mTimestamp; \
-    const cv::Mat mImg0, mImg1; \
+    const cv::Mat mImg0, mImg1;\
+    \
+    IMU::MovingPose mPose; \
     std::vector<cv::KeyPoint> mvKps0, mvKps1; \
     std::vector<std::shared_ptr<slam::Mappoint>> mvpMappoints;
 
