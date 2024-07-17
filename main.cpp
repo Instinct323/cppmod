@@ -1,6 +1,7 @@
 #include <cstdlib>
 
 #include "utils/glog.hpp"
+#include "utils/pangolin.hpp"
 
 
 int main(int argc, char **argv) {

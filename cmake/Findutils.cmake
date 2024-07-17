@@ -11,18 +11,22 @@ if (NOT UTILS_FOUND)
   find_package(fbow REQUIRED)
   find_package(fmt REQUIRED)
   find_package(OpenCV REQUIRED)
+  find_package(Pangolin REQUIRED)
   find_package(yaml-cpp REQUIRED)
 
   # all library
   set(UTILS_LIBS
-          -lboost_chrono
-          -lboost_system
-          -lboost_thread
           glog::glog
           ${fbow_LIBS}
           fmt::fmt
           ${OpenCV_LIBS}
+          ${Pangolin_LIBRARIES}
           yaml-cpp
+
+          -lboost_chrono
+          -lboost_system
+          -lboost_thread
+
           ${G2O_CORE_LIBRARY}
           ${G2O_STUFF_LIBRARY}
           ${G2O_TYPES_SLAM3D}
