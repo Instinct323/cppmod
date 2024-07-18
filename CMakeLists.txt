@@ -23,6 +23,8 @@ find_package(zjcv REQUIRED)
 # my library
 add_library(utils STATIC ${UTILS_SRC})
 add_library(zjcv STATIC ${ZJCV_SRC} ${UTILS_SRC})
+target_link_libraries(utils ${UTILS_LIBS})
+target_link_libraries(zjcv ${UTILS_LIBS})
 
 # subdirectory
 add_subdirectory(ORB-slam3)

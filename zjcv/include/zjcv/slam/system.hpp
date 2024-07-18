@@ -17,7 +17,6 @@
 
 namespace slam {
 
-
 // require definition of slam::Frame, slam::Tracker, slam::Viewer
 #define ZJCV_SLAM_SYSTEM_IMPL \
     \
@@ -26,7 +25,9 @@ namespace slam {
     ZJCV_SLAM_TRACKER_IMPL \
     ZJCV_SLAM_VIEWER_IMPL \
     \
-    slam::System::System(const YAML::Node &cfg) : mpTracker(new slam::Tracker(this, cfg)), mpViewer(new slam::Viewer(this, cfg)) {} \
+    slam::System::System(const YAML::Node &cfg \
+    ) : mCfg(cfg), mpTracker(new slam::Tracker(this, cfg)), mpViewer(new slam::Viewer(this, cfg)), \
+        mpAtlas(new slam::Atlas(this, cfg)) {} \
     \
     void slam::System::run() { \
       mbRunning = true; \
@@ -41,9 +42,11 @@ public:
     // Subsystems
     std::shared_ptr<Tracker> mpTracker;
     std::shared_ptr<Viewer> mpViewer;
+    std::shared_ptr<Atlas> mpAtlas;
     std::map<std::string, parallel::PriorityThread> mThreads;
 
     // Status
+    YAML::Node mCfg;
     std::atomic_bool mbRunning = false;
     std::map<std::string, std::string> mDescs;
 

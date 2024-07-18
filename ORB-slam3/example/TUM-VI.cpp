@@ -27,7 +27,7 @@ std::tuple<
 void slam::Tracker::run() {
   glog::Timer timer;
   cv::GrayLoader grayloader;
-  math::ValueSlicer<double> slicer(std::get<4>(storage));
+  math::ValueSlicer<double> slicer(&std::get<4>(storage));
   auto pbar = indicators::getProgressBar(std::get<0>(storage).size());
 
   while (!pbar.is_completed()) {
@@ -38,9 +38,10 @@ void slam::Tracker::run() {
     // 读入数据
     timer.reset();
     grab_imu(std::get<0>(storage)[i],
-                   dataset::Timestamps(std::get<4>(storage).begin() + j, std::get<4>(storage).begin() + k),
-                   dataset::IMUsamples(std::get<5>(storage).begin() + j, std::get<5>(storage).begin() + k));
+             dataset::Timestamps(std::get<4>(storage).begin() + j, std::get<4>(storage).begin() + k),
+             dataset::IMUsamples(std::get<5>(storage).begin() + j, std::get<5>(storage).begin() + k));
     grab_image(std::get<0>(storage)[i], imgLeft, imgRight);
+    mpSystem->mpAtlas->mpCurMap->insert_keyframe(mpLastFrame);
 
     mpSystem->set_desc("track-cost", (boost::format("%.1fms") % (1e3 * timer.count())).str());
     indicators::set_desc(pbar, mpSystem->get_desc(), false);

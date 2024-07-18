@@ -1,4 +1,4 @@
-dataset: "/home/workbench/data/dataset-corridor4_512_16/dso"
+dataset: "/home/workbench/data/dataset-room4_512_16/dso"
 vocabulary: "/home/workbench/Repository/dbow2/ORBvoc.bin"
 
 cam0:
@@ -42,3 +42,11 @@ orb1:
 
 viewer:
   fps: 45
+  title: "ORB-SLAM3: TUM-VI"
+  resolution: [ 640, 480 ]
+  camera_focal: 400
+  view_point: [ 0., -3.5, 0. ]
+  view_up_axis: 6
+  imu_size: 0.1
+  queue_size: 100
+  sample_stride: 10

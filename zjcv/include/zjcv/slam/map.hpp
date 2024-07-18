@@ -5,17 +5,22 @@
 
 namespace slam {
 
+class Frame;
+
 class System;
 
 
 class Map {
 
 public:
-    typedef std::shared_ptr<Map> Ptr;
+    typedef std::shared_ptr<slam::Map> Ptr;
 
-    System *mpSystem;
+    slam::System *mpSystem;
+    std::vector<std::shared_ptr<slam::Frame>> mvpKeyFrames;
 
-    Map(System *pSystem, const YAML::Node &cfg) : mpSystem(pSystem) {}
+    Map(slam::System *pSystem) : mpSystem(pSystem) {}
+
+    void insert_keyframe(std::shared_ptr<slam::Frame> pKF) { mvpKeyFrames.push_back(pKF); }
 };
 
 }

@@ -3,7 +3,9 @@
 
 #include <yaml-cpp/yaml.h>
 
+#include "utils/file.hpp"
 #include "utils/glog.hpp"
+#include "utils/pangolin.hpp"
 
 namespace slam { class Viewer; }
 
@@ -11,7 +13,7 @@ namespace slam { class Viewer; }
 #define ZJCV_SLAM_VIEWER_MEMBER \
     typedef std::shared_ptr<slam::Viewer> Ptr; \
     slam::System *mpSystem; \
-    int mDelay;
+    int mDelay; \
 
 
 #define ZJCV_SLAM_VIEWER_FUNCDECL \
@@ -20,8 +22,10 @@ namespace slam { class Viewer; }
 
 
 #define ZJCV_SLAM_VIEWER_IMPL \
-    slam::Viewer::Viewer(slam::System *pSystem, const YAML::Node &cfg) : mpSystem(pSystem) { \
-      int fps = cfg["viewer"]["fps"].as<int>(); \
+    slam::Viewer::Viewer(slam::System *pSystem, const YAML::Node &cfg \
+    ) : mpSystem(pSystem) { \
+      YAML::Node cfgViewer = cfg["viewer"]; \
+      int fps = cfgViewer["fps"].as<int>(); \
       ASSERT(fps > 0, "Viewer: The delay must be greater than 0") \
       mDelay = 1000 / fps; \
     }
