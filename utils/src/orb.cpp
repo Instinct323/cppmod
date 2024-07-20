@@ -55,10 +55,10 @@ void lowes_filter(const std::vector<std::vector<cv::DMatch>> &knn_matches,
 
 Extractor::Ptr Extractor::from_yaml(const YAML::Node &cfg) {
   if (cfg.IsNull()) return nullptr;
-  auto area = YAML::toVec<int>(cfg["lappingArea"]);
+  auto area = YAML::toVec<int>(cfg["lapping_area"]);
   return Ptr(new Extractor(
       cfg["nfeatures"].as<int>(),
-      cfg["scaleFactor"].as<float>(),
+      cfg["scale_factor"].as<float>(),
       cfg["nlevels"].as<int>(),
       {area[0], area[1]}
   ));

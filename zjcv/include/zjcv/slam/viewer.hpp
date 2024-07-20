@@ -7,27 +7,30 @@
 #include "utils/glog.hpp"
 #include "utils/pangolin.hpp"
 
-namespace slam { class Viewer; }
+namespace slam {
 
 
-#define ZJCV_SLAM_VIEWER_MEMBER \
-    typedef std::shared_ptr<slam::Viewer> Ptr; \
-    slam::System *mpSystem; \
-    int mDelay; \
+class Viewer {
 
+public:
+    ZJCV_BUILTIN typedef std::shared_ptr<Viewer> Ptr;
 
-#define ZJCV_SLAM_VIEWER_FUNCDECL \
-    explicit Viewer(slam::System *pSystem, const YAML::Node &cfg); \
-    void run();
+    ZJCV_BUILTIN System *mpSystem;
 
+    ZJCV_CUSTOM explicit Viewer(System *pSystem, const YAML::Node &cfg);
 
-#define ZJCV_SLAM_VIEWER_IMPL \
-    slam::Viewer::Viewer(slam::System *pSystem, const YAML::Node &cfg \
-    ) : mpSystem(pSystem) { \
-      YAML::Node cfgViewer = cfg["viewer"]; \
-      int fps = cfgViewer["fps"].as<int>(); \
-      ASSERT(fps > 0, "Viewer: The delay must be greater than 0") \
-      mDelay = 1000 / fps; \
-    }
+    ZJCV_CUSTOM void run();
+
+#ifdef ZJCV_ORB_SLAM
+    int delay;
+    int sample_stride;
+    int trail_size;
+    float imu_size;
+    Eigen::Vector3f lead_color, trail_color;
+#endif
+
+};
+
+}
 
 #endif

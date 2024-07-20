@@ -1,7 +1,8 @@
-#include "frame.hpp"
-#include "tracker.hpp"
 #include "utils/eigen.hpp"
-#include "utils/orb.hpp"
+
+#define ZJCV_ORB_SLAM
+
+#include "zjcv/slam.hpp"
 
 namespace slam {
 
@@ -9,11 +10,12 @@ namespace slam {
 void Frame::process() {
   Tracker::Ptr pTracker = mpSystem->mpTracker;
   Ptr pLastFrame = pTracker->mpLastFrame;
+  Ptr pRefFrame = pTracker->mpRefFrame;
   camera::Base::Ptr pCam0 = pTracker->mpCam0, pCam1 = pTracker->mpCam1;
   // IMU 预测位姿
   if (pTracker->is_inertial()) {
-    if (pLastFrame) {
-      mPose.predict_from(pTracker->mpLastFrame->mPose, pTracker->mpIMUpreint.get());
+    if (pRefFrame) {
+      mPose.predict_from(pRefFrame->mPose, pTracker->mpIMUpreint.get());
     } else {
       mPose.set_zero();
     }
@@ -39,5 +41,22 @@ void Frame::process() {
   }
 }
 
+
+void Frame::draw() {
+  Tracker::Ptr pTracker = mpSystem->mpTracker;
+  cv::Mat img0 = mImg0.clone(), img1 = mImg1.clone(), toshow;
+  // Image 0
+  pTracker->mpCam0->undistort(img0, img0);
+  cv::cvtColor(img0, img0, cv::COLOR_GRAY2BGR);
+  if (img1.empty()) {
+    cv::drawKeypoints(img0, mvKps0, toshow);
+  } else {
+    // Image 1
+    pTracker->mpCam1->undistort(img1, img1);
+    cv::cvtColor(img1, img1, cv::COLOR_GRAY2BGR);
+    cv::drawMatches(img0, mvKps0, img1, mvKps1, mStereoMatches, toshow);
+  }
+  cv::imshow("Image", toshow);
+}
 
 }

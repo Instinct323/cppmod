@@ -4,8 +4,11 @@
 #include <yaml-cpp/yaml.h>
 
 #include "map.hpp"
+#include "zjcv/zjcv.hpp"
 
 namespace slam {
+
+using namespace feature;
 
 class System;
 
@@ -13,20 +16,19 @@ class System;
 class Atlas {
 
 public:
-    typedef std::shared_ptr<Atlas> Ptr;
+    ZJCV_BUILTIN typedef std::shared_ptr<Atlas> Ptr;
 
-    System *mpSystem;
+    ZJCV_BUILTIN System *mpSystem;
+    ZJCV_BUILTIN Map::Ptr mpCurMap;
+    ZJCV_BUILTIN std::vector<Map::Ptr> mvpMaps;
 
-    Map::Ptr mpCurMap;
-    std::vector<Map::Ptr> mvpMaps;
+    ZJCV_BUILTIN explicit Atlas(System *pSystem, const YAML::Node &cfg) : mpSystem(pSystem) { create_map(); }
 
-    Atlas(System *pSystem, const YAML::Node &cfg) : mpSystem(pSystem) { create_map(); }
+    ZJCV_BUILTIN Map::Ptr create_map();
 
-    Map::Ptr create_map() {
-      mpCurMap = std::make_shared<Map>(mpSystem);
-      mvpMaps.push_back(mpCurMap);
-      return mpCurMap;
-    }
+#ifdef ZJCV_ORB_SLAM
+#endif
+
 };
 
 }

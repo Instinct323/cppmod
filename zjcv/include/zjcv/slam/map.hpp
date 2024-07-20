@@ -3,25 +3,38 @@
 
 #include <yaml-cpp/yaml.h>
 
+#include "zjcv/zjcv.hpp"
+
 namespace slam {
 
-class Frame;
-
 class System;
+
+// 基于特征点
+namespace feature {
+
+class Frame;
 
 
 class Map {
 
 public:
-    typedef std::shared_ptr<slam::Map> Ptr;
+    ZJCV_BUILTIN typedef std::shared_ptr<Map> Ptr;
 
-    slam::System *mpSystem;
-    std::vector<std::shared_ptr<slam::Frame>> mvpKeyFrames;
+    ZJCV_BUILTIN System *mpSystem;
+    ZJCV_BUILTIN std::vector<std::shared_ptr<Frame>> mvpKeyFrames;
 
-    Map(slam::System *pSystem) : mpSystem(pSystem) {}
+    ZJCV_BUILTIN Map(System *pSystem) : mpSystem(pSystem) {}
 
-    void insert_keyframe(std::shared_ptr<slam::Frame> pKF) { mvpKeyFrames.push_back(pKF); }
+    ZJCV_BUILTIN void insert_keyframe(std::shared_ptr<Frame> pKF) { mvpKeyFrames.push_back(pKF); }
+
+    ZJCV_CUSTOM void draw();
+
+#ifdef ZJCV_ORB_SLAM
+#endif
+
 };
+
+}
 
 }
 

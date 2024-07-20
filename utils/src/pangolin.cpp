@@ -40,36 +40,20 @@ void draw_imu(OpenGlMatrix &Twc, float w) {
 
 void plot_trajectory(YAML::Node cfg,
                      std::vector<double> &vTsImg, std::vector<std::string> &vImgFiles,
-                     std::vector<double> &vTsPose, std::vector<Sophus::SE3f> &vPoses) {
+                     Trajectory &trace) {
   glog::Timer timer;
   cv::GrayLoader grayloader;
-  math::ValueSlicer<double> slicer(&vTsPose);
-
   int delay = 1000 / cfg["fps"].as<int>();
-  auto imu_size = cfg["imu_size"].as<float>();
-  auto queue_size = cfg["queue_size"].as<int>();
-  auto sample_stride = cfg["sample_stride"].as<int>();
 
   Figure::Ptr pgl_fig = Figure::from_yaml(cfg);
-  auto pbar = indicators::getProgressBar(vPoses.size());
+  auto pbar = indicators::getProgressBar(vTsImg.size());
 
-  for (int i = 0; i < vPoses.size(); i++) vPoses[i] = vPoses[i].inverse();
   for (int i = 0; i < vTsImg.size() && pgl_fig->is_running(); ++i) {
     timer.reset();
-    auto [_, j] = slicer(vTsImg[i]);
     pgl_fig->clear();
 
-    OpenGlMatrix T_world_imu(vPoses[j].matrix());
+    OpenGlMatrix &T_world_imu(trace.plot(vTsImg[i]));
     pgl_fig->follow(T_world_imu);
-    // 绘制关键帧
-    glColor3f(0.0, 1.0, 0.0);
-    for (int k = MAX(0, int(j) - queue_size * sample_stride); k < j; k += sample_stride) {
-      OpenGlMatrix T_wi(vPoses[k].matrix());
-      draw_imu(T_wi, imu_size);
-    }
-    // 绘制当前帧
-    glColor3f(0.0, 0.0, 1.0);
-    draw_imu(T_world_imu, imu_size);
 
     pgl_fig->draw();
     pbar.tick();

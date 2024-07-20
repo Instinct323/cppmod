@@ -8,13 +8,7 @@
 #include "utils/math.hpp"
 #include "zjcv/dataset/tum_vi.hpp"
 #include "zjcv/imu.hpp"
-
-#include "frame.hpp"
-#include "mappoint.hpp"
-#include "tracker.hpp"
-#include "viewer.hpp"
-
-ZJCV_SLAM_SYSTEM_IMPL
+#include "zjcv/slam.hpp"
 
 std::tuple<
     dataset::Timestamps, dataset::Filenames,
@@ -41,7 +35,7 @@ void slam::Tracker::run() {
              dataset::Timestamps(std::get<4>(storage).begin() + j, std::get<4>(storage).begin() + k),
              dataset::IMUsamples(std::get<5>(storage).begin() + j, std::get<5>(storage).begin() + k));
     grab_image(std::get<0>(storage)[i], imgLeft, imgRight);
-    mpSystem->mpAtlas->mpCurMap->insert_keyframe(mpLastFrame);
+    process();
 
     mpSystem->set_desc("track-cost", (boost::format("%.1fms") % (1e3 * timer.count())).str());
     indicators::set_desc(pbar, mpSystem->get_desc(), false);

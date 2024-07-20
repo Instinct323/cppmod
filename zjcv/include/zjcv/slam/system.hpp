@@ -6,7 +6,6 @@
 #include <memory>
 
 #include "utils/parallel.hpp"
-#include "utils/math.hpp"
 
 #include "atlas.hpp"
 #include "frame.hpp"
@@ -17,55 +16,34 @@
 
 namespace slam {
 
-// require definition of slam::Frame, slam::Tracker, slam::Viewer
-#define ZJCV_SLAM_SYSTEM_IMPL \
-    \
-    ZJCV_SLAM_FRAME_IMPL \
-    ZJCV_SLAM_MAPPOINT_IMPL \
-    ZJCV_SLAM_TRACKER_IMPL \
-    ZJCV_SLAM_VIEWER_IMPL \
-    \
-    slam::System::System(const YAML::Node &cfg \
-    ) : mCfg(cfg), mpTracker(new slam::Tracker(this, cfg)), mpViewer(new slam::Viewer(this, cfg)), \
-        mpAtlas(new slam::Atlas(this, cfg)) {} \
-    \
-    void slam::System::run() { \
-      mbRunning = true; \
-      mThreads["track"] = parallel::thread_pool.emplace(0, &slam::Tracker::run, mpTracker); \
-      mThreads["view"] = parallel::thread_pool.emplace(0, &slam::Viewer::run, mpViewer); \
-    }
-
 
 class System {
 
 public:
     // Subsystems
-    std::shared_ptr<Tracker> mpTracker;
-    std::shared_ptr<Viewer> mpViewer;
-    std::shared_ptr<Atlas> mpAtlas;
-    std::map<std::string, parallel::PriorityThread> mThreads;
+    ZJCV_BUILTIN std::shared_ptr<Tracker> mpTracker;
+    ZJCV_BUILTIN std::shared_ptr<Viewer> mpViewer;
+    ZJCV_BUILTIN std::shared_ptr<Atlas> mpAtlas;
+    ZJCV_BUILTIN std::map<std::string, parallel::PriorityThread> mThreads;
 
     // Status
-    YAML::Node mCfg;
-    std::atomic_bool mbRunning = false;
-    std::map<std::string, std::string> mDescs;
+    ZJCV_BUILTIN YAML::Node mCfg;
+    ZJCV_BUILTIN std::atomic_bool mbRunning = false;
+    ZJCV_BUILTIN std::map<std::string, std::string> mDescs;
 
-    explicit System(const YAML::Node &cfg);
+    ZJCV_BUILTIN explicit System(const YAML::Node &cfg);
 
-    System(const System &) = delete;
+    ZJCV_BUILTIN System(const System &) = delete;
 
     // Daemons
-    void run();
+    ZJCV_BUILTIN void run();
 
-    void stop() {
-      mbRunning = false;
-      parallel::thread_pool.join();
-    }
+    ZJCV_BUILTIN void stop();
 
     // Description
-    void set_desc(const std::string &key, const std::string &desc) { mDescs[key] = desc; }
+    ZJCV_BUILTIN void set_desc(const std::string &key, const std::string &desc) { mDescs[key] = desc; }
 
-    std::string get_desc() {
+    ZJCV_BUILTIN std::string get_desc() {
       std::string desc;
       for (auto &kv: mDescs) desc += kv.first + "=" + kv.second + ", ";
       desc.erase(desc.end() - 2, desc.end());

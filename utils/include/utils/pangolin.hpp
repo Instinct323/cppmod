@@ -8,8 +8,11 @@
 #include <yaml-cpp/yaml.h>
 
 #include "file.hpp"
+#include "math.hpp"
 
 namespace pangolin {
+
+class Trajectory;
 
 // 绘制相机模型
 void draw_imu(OpenGlMatrix &Twc, float w);
@@ -17,7 +20,39 @@ void draw_imu(OpenGlMatrix &Twc, float w);
 // 绘制轨迹
 void plot_trajectory(YAML::Node cfg,
                      std::vector<double> &vTsImg, std::vector<std::string> &vImgFiles,
-                     std::vector<double> &vTsPose, std::vector<Sophus::SE3f> &vPoses);
+                     Trajectory &trace);
+
+
+class Trajectory {
+
+public:
+    const float imu_size;
+    const int sample_stride;
+    const int trail_size;
+    const Eigen::Vector3f lead_color, trail_color;
+
+    std::vector<OpenGlMatrix> vTwc;
+    math::ValueSlicer<double> slicer;
+
+    explicit Trajectory(YAML::Node cfg, std::vector<double> &vTimestamp, std::vector<Sophus::SE3f> &vTcw
+    ) : slicer(&vTimestamp), imu_size(cfg["imu_size"].as<float>()),
+        sample_stride(cfg["sample_stride"].as<int>()), trail_size(cfg["trail_size"].as<int>()),
+        lead_color(YAML::toEigen<float>(cfg["lead_color"])), trail_color(YAML::toEigen<float>(cfg["trail_color"])) {
+      vTwc.reserve(vTcw.size());
+      for (int i = 0; i < vTcw.size(); ++i) vTwc.emplace_back(vTcw[i].inverse().matrix());
+    }
+
+    OpenGlMatrix &plot(double t) {
+      auto [_, i] = slicer(t);
+      // 绘制轨迹
+      glColor3f(trail_color[0], trail_color[1], trail_color[2]);
+      for (int j = MAX(0, i - trail_size * sample_stride); j < i; j += sample_stride) draw_imu(vTwc[j], imu_size);
+      // 绘制当前帧
+      glColor3f(lead_color[0], lead_color[1], lead_color[2]);
+      draw_imu(vTwc[i], imu_size);
+      return vTwc[i];
+    }
+};
 
 
 class Figure {

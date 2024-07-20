@@ -30,23 +30,30 @@ imu:
 
 orb0:
   nfeatures: 500
-  scaleFactor: 1.2
+  scale_factor: 1.2
   nlevels: 8
-  lappingArea: [ 0, 511 ]
+  lapping_area: [ 0, 511 ]
 
 orb1:
   nfeatures: 500
-  scaleFactor: 1.2
+  scale_factor: 1.2
   nlevels: 8
-  lappingArea: [ 0, 511 ]
+  lapping_area: [ 0, 511 ]
+
+tracker:
+  probable_fps: 20
+  min_matches: 15
 
 viewer:
   fps: 45
-  title: "ORB-SLAM3: TUM-VI"
+  title: "Feature Map"
   resolution: [ 640, 480 ]
   camera_focal: 400
   view_point: [ 0., -3.5, 0. ]
   view_up_axis: 6
   imu_size: 0.1
-  queue_size: 100
+  trail_size: 100
   sample_stride: 10
+  lead_color: [ 0.0, 0.0, 1.0 ]
+  trail_color: [ 0.0, 1.0, 0.0 ]
+
