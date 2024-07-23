@@ -1,22 +1,30 @@
 #include <boost/format.hpp>
 
 #include "utils/glog.hpp"
+#include "zjcv/dataset/base.hpp"
 #include "zjcv/slam.hpp"
+
+
+extern std::tuple<
+    dataset::Timestamps, dataset::Filenames,
+    dataset::Timestamps, dataset::Filenames,
+    dataset::Timestamps, dataset::IMUsamples,
+    dataset::Timestamps, dataset::Poses> storage;
+
 
 namespace slam {
 
 
 Viewer::Viewer(System *pSystem, const YAML::Node &cfg
 ) : mpSystem(pSystem) {
-  YAML::Node cfgViewer = cfg["viewer"];
-  int fps = cfgViewer["fps"].as<int>();
+  int fps = cfg["fps"].as<int>();
   ASSERT(fps > 0, "Viewer: The delay must be greater than 0")
   delay = 1000 / fps;
-  sample_stride = cfgViewer["sample_stride"].as<int>();
-  trail_size = cfgViewer["trail_size"].as<int>();
-  imu_size = cfgViewer["imu_size"].as<float>();
-  lead_color = YAML::toEigen<float>(cfgViewer["lead_color"]);
-  trail_color = YAML::toEigen<float>(cfgViewer["trail_color"]);
+  sample_stride = cfg["sample_stride"].as<int>();
+  trail_size = cfg["trail_size"].as<int>();
+  imu_size = cfg["imu_size"].as<float>();
+  lead_color = YAML::toEigen<float>(cfg["lead_color"]);
+  trail_color = YAML::toEigen<float>(cfg["trail_color"]);
 }
 
 
@@ -26,6 +34,7 @@ void Viewer::run() {
   glog::Timer timer;
   Tracker::Ptr pTracker = mpSystem->mpTracker;
   pangolin::Figure::Ptr pgl_fig = pangolin::Figure::from_yaml(cfg);
+  pangolin::Trajectory gt(cfg["imu_gt"], std::get<6>(storage), std::get<7>(storage));
 
   while (mpSystem->mbRunning) {
     timer.reset();
@@ -38,17 +47,11 @@ void Viewer::run() {
       // 绘制当前帧
       glColor3f(lead_color[0], lead_color[1], lead_color[2]);
       pangolin::draw_imu(T_world_imu, imu_size);
-      // 绘制关键帧 (末 100)
+      // 绘制关键帧
       glColor3f(trail_color[0], trail_color[1], trail_color[2]);
-      std::vector<Frame::Ptr> &mvpKf = mpSystem->mpAtlas->mpCurMap->mvpKeyFrames;
-      for (int i = MAX(0, int(mvpKf.size()) - trail_size * sample_stride);
-           i < mvpKf.size(); i += sample_stride) {
-        Frame::Ptr pKf = mvpKf[i];
-        if (pKf) {
-          pangolin::OpenGlMatrix T_wi(pKf->mPose.T_world_imu.matrix());
-          pangolin::draw_imu(T_wi, imu_size);
-        }
-      }
+      mpSystem->mpAtlas->mpCurMap->draw();
+      // 绘制真实轨迹
+      gt.plot(pFrame->mTimestamp);
       pgl_fig->draw();
       // ----- OpenCV -----
       pFrame->draw();

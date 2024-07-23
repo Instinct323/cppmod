@@ -72,9 +72,9 @@ cv::Mat toCvMat(const Node &node) { return toMatrix<T, cv::Mat_<T>>(node); }
 template<typename T>
 Sophus::SE3<T> toSE3(const Node &node) {
   Eigen::MatrixX<T> mat = toEigen<T>(node);
-  // tx ty tz qx qy qz qw
+  // tx ty tz qw qx qy qz
   if (mat.size() == 7) {
-    return {Eigen::Quaternion<T>(mat(6), mat(3), mat(4), mat(5)),
+    return {Eigen::Quaternion<T>(mat(3), mat(4), mat(5), mat(6)),
             Eigen::Vector3<T>(mat(0), mat(1), mat(2))};
   } else if (mat.size() == 12 || mat.size() == 16) {
     // Rotation + Translation

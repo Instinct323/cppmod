@@ -15,14 +15,14 @@ Map::Ptr Atlas::create_map() {
 
 // System
 System::System(const YAML::Node &cfg
-) : mCfg(cfg), mpTracker(new Tracker(this, cfg)), mpViewer(new Viewer(this, cfg)),
-    mpAtlas(new Atlas(this, cfg)) {}
+) : mCfg(cfg), mpAtlas(new Atlas(this, cfg["atlas"])), mpTracker(new Tracker(this, cfg["tracker"])),
+    mpViewer(new Viewer(this, cfg["viewer"])) {}
 
 
 void System::run() {
   mbRunning = true;
-  mThreads["track"] = parallel::thread_pool.emplace(0, &Tracker::run, mpTracker);
-  mThreads["view"] = parallel::thread_pool.emplace(0, &Viewer::run, mpViewer);
+  mThreads["tracker"] = parallel::thread_pool.emplace(0, &Tracker::run, mpTracker);
+  mThreads["viewer"] = parallel::thread_pool.emplace(0, &Viewer::run, mpViewer);
 }
 
 
@@ -39,6 +39,7 @@ Tracker::Tracker(System *pSystem, const YAML::Node &cfg
   ASSERT(!is_monocular(), "Not implemented")
   ASSERT(mpCam0, "Camera0 not found")
   if (is_stereo()) {
+    // 校对相机类型
     ASSERT(mpCam0->get_type() == mpCam1->get_type(), "Camera0 and Camera1 must be the same type")
     T_cam0_cam1 = mpCam0->T_cam_imu * mpCam1->T_cam_imu.inverse();
   }
@@ -48,10 +49,15 @@ Tracker::Tracker(System *pSystem, const YAML::Node &cfg
 void Tracker::grab_image(const double &timestamp, const cv::Mat &img0, const cv::Mat &img1) {
   ASSERT(!is_inertial() || timestamp <= mpIMUpreint->mtEnd, "Grab image before IMU data is integrated")
   ASSERT(is_monocular() == img1.empty(), "Invalid image pair")
-  auto mpTmp = std::make_shared<Frame>(mpSystem, timestamp, img0, img1);
-  mpTmp->process();
   mpLastFrame = mpCurFrame;
-  mpCurFrame = mpTmp;
+  mpCurFrame = std::make_shared<Frame>(mpSystem, timestamp, img0, img1);
+  // 如果是第一帧, 补充位姿
+  if (!mpLastFrame) {
+    mpCurFrame->mPose.set_zero();
+    YAML::Node pose = mpSystem->mCfg["T_imu_world"];
+    if (!pose.IsNull()) mpCurFrame->mPose.set_pose(YAML::toSE3<float>(pose));
+  }
+  mpCurFrame->process();
 }
 
 

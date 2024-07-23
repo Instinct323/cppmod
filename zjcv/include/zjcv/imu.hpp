@@ -7,6 +7,8 @@
 #include <sophus/se3.hpp>
 #include <yaml-cpp/yaml.h>
 
+#include "utils/file.hpp"
+
 // IMU (加速度计, 陀螺仪)
 namespace IMU {
 
@@ -80,8 +82,9 @@ public:
 
     Device *mpDevice;
     double mtStart, mtEnd, it;
+    std::vector<std::pair<double, Sample>> mMeasurements;
 
-    const Sample B;
+    Sample B;
     Eigen::Vector3f iP, iV;
     Sophus::SO3f iR;
 

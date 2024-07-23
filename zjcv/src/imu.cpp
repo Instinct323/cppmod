@@ -26,28 +26,31 @@ void Preintegration::integrate(const double &tCurframe, const std::vector<double
   if (n > 0) {
     ASSERT(mtEnd <= vTimestamp[0] && vTimestamp[n - 1] <= tCurframe,
            "Preintegration: timestamp must be in ascending order")
+    int cnt = mMeasurements.size();
     if (n == 1) {
-      integrate(tCurframe - mtEnd, vSample[0]);
+      mMeasurements.emplace_back(tCurframe - mtEnd, vSample[0]);
     } else {
+      mMeasurements.reserve(cnt + n + 1);
       // 初始段
       {
         double t0 = vTimestamp[0], t1 = vTimestamp[1];
         const Sample &s0 = vSample[0], &s1 = vSample[1];
         Sample interp = s0 + (s0 - s1) * static_cast<float>((mtEnd - t0) / (t0 - t1) / 2);
-        integrate(t0 - mtEnd, interp);
+        mMeasurements.emplace_back(t0 - mtEnd, interp);
       }
       // 中间段
       for (int i = 0; i < n - 1; ++i) {
-        integrate(vTimestamp[i + 1] - vTimestamp[i], (vSample[i + 1] + vSample[i]) * 0.5f);
+        mMeasurements.emplace_back(vTimestamp[i + 1] - vTimestamp[i], (vSample[i + 1] + vSample[i]) * 0.5f);
       }
       // 结束段
       {
         double t0 = vTimestamp[n - 1], t1 = vTimestamp[n - 2];
         const Sample &s0 = vSample[n - 1], &s1 = vSample[n - 2];
         Sample interp = s0 + (s0 - s1) * static_cast<float>((tCurframe - t0) / (t0 - t1) / 2);
-        integrate(tCurframe - t0, interp);
+        mMeasurements.emplace_back(tCurframe - t0, interp);
       }
     }
+    for (auto iter = mMeasurements.begin() + cnt; iter != mMeasurements.end(); ++iter) integrate(iter->first, iter->second);
   }
   mtEnd = tCurframe;
 }

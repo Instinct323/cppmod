@@ -9,16 +9,13 @@ namespace slam {
 
 void Frame::process() {
   Tracker::Ptr pTracker = mpSystem->mpTracker;
-  Ptr pLastFrame = pTracker->mpLastFrame;
-  Ptr pRefFrame = pTracker->mpRefFrame;
+  Ptr &pLastFrame = pTracker->mpLastFrame;
+  Ptr &pCurFrame = pTracker->mpCurFrame;
+  Ptr &pRefFrame = pTracker->mpRefFrame;
   camera::Base::Ptr pCam0 = pTracker->mpCam0, pCam1 = pTracker->mpCam1;
   // IMU 预测位姿
   if (pTracker->is_inertial()) {
-    if (pRefFrame) {
-      mPose.predict_from(pRefFrame->mPose, pTracker->mpIMUpreint.get());
-    } else {
-      mPose.set_zero();
-    }
+    if (pRefFrame) mPose.predict_from(pRefFrame->mPose, pTracker->mpIMUpreint.get());
   }
   // 特征点提取、去畸
   if (pTracker->is_monocular()) {
@@ -39,6 +36,9 @@ void Frame::process() {
       }
     }
   }
+  // 插入关键帧
+  mpSystem->mpAtlas->mpCurMap->insert_keyframe(pCurFrame);
+  if (!pRefFrame) pTracker->mpRefFrame = pCurFrame;
 }
 
 

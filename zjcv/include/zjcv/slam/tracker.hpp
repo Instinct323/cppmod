@@ -37,8 +37,6 @@ public:
 
     ZJCV_BUILTIN void grab_image(const double &timestamp, const cv::Mat &img0, const cv::Mat &img1 = cv::Mat());
 
-    ZJCV_CUSTOM void process();
-
     ZJCV_CUSTOM void run();
 
 #ifdef ZJCV_ORB_SLAM
