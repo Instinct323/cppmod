@@ -73,11 +73,11 @@ public:
     virtual Eigen::Vector3f unproject(const cv::Point2f &p2D) const = 0;
 
     // 去畸变
-    virtual void undistort(const cv::Mat &src, cv::Mat &dst) = 0;
+    virtual void undistort(const cv::Mat &src, cv::Mat &dst) const = 0;
 
-    virtual void undistort(const VectorPt2f &src, VectorPt2f &dst) = 0;
+    virtual void undistort(const VectorPt2f &src, VectorPt2f &dst) const = 0;
 
-    virtual void undistort(const VectorKp &src, VectorKp &dst) {
+    virtual void undistort(const VectorKp &src, VectorKp &dst) const {
       VectorPt2f pts;
       for (const auto &kp: src) pts.push_back(kp.pt);
       undistort(pts, pts);
@@ -85,11 +85,11 @@ public:
     }
 
     // 绘制归一化平面 (z=1)
-    void draw_normalized_plane(const cv::Mat &src, cv::Mat &dst);
+    void draw_normalized_plane(const cv::Mat &src, cv::Mat &dst) const;
 
     // ORB 特征
     virtual void monoORBfeatures(ORB::Extractor *pExtractor, const cv::Mat &img,
-                                 ORB::KeyPoints &kps, cv::Mat &desc) {
+                                 ORB::KeyPoints &kps, cv::Mat &desc) const {
       pExtractor->detect_and_compute(img, cv::noArray(), kps, desc);
       undistort(kps, kps);
     }
@@ -109,7 +109,7 @@ public:
                                    ORB::Extractor *pExtractor0, ORB::Extractor *pExtractor1,
                                    const cv::Mat &img0, const cv::Mat &img1,
                                    ORB::KeyPoints &kps0, ORB::KeyPoints &kps1,
-                                   cv::Mat &desc0, cv::Mat &desc1, std::vector<cv::DMatch> &matches) = 0;
+                                   cv::Mat &desc0, cv::Mat &desc1, std::vector<cv::DMatch> &matches) const = 0;
 };
 
 }

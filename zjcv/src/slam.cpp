@@ -52,11 +52,7 @@ void Tracker::grab_image(const double &timestamp, const cv::Mat &img0, const cv:
   mpLastFrame = mpCurFrame;
   mpCurFrame = std::make_shared<Frame>(mpSystem, timestamp, img0, img1);
   // 如果是第一帧, 补充位姿
-  if (!mpLastFrame) {
-    mpCurFrame->mPose.set_zero();
-    YAML::Node pose = mpSystem->mCfg["T_imu_world"];
-    if (!pose.IsNull()) mpCurFrame->mPose.set_pose(YAML::toSE3<float>(pose));
-  }
+  if (!mpLastFrame) mpCurFrame->mPose.set_zero();
   mpCurFrame->process();
 }
 

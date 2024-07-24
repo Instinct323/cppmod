@@ -47,9 +47,9 @@ public:
     Eigen::Vector3f unproject(const cv::Point2f &p2D) const override { PINHOLE_UNPROJECT(mvParam, p2D.x, p2D.y) }
 
     // 去畸变
-    void undistort(const cv::Mat &src, cv::Mat &dst) override { cv::remap(src, dst, mMap1, mMap2, cv::INTER_LINEAR); }
+    void undistort(const cv::Mat &src, cv::Mat &dst) const override { cv::remap(src, dst, mMap1, mMap2, cv::INTER_LINEAR); }
 
-    void undistort(const VectorPt2f &src, VectorPt2f &dst) override { cv::undistortPoints(src, dst, mOrgK, get_distcoeffs(), mRectR, getK()); }
+    void undistort(const VectorPt2f &src, VectorPt2f &dst) const override { cv::undistortPoints(src, dst, mOrgK, get_distcoeffs(), mRectR, getK()); }
 
     // 立体校正: 调用后, 由 undistot 函数驱动
     void stereo_rectify(Pinhole *cam_right);
@@ -59,7 +59,7 @@ public:
                            ORB::Extractor *pExtractor0, ORB::Extractor *pExtractor1,
                            const cv::Mat &img0, const cv::Mat &img1,
                            ORB::KeyPoints &kps0, ORB::KeyPoints &kps1,
-                           cv::Mat &desc0, cv::Mat &desc1, std::vector<cv::DMatch> &matches) override;
+                           cv::Mat &desc0, cv::Mat &desc1, std::vector<cv::DMatch> &matches) const override;
 };
 
 }

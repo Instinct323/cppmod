@@ -43,8 +43,8 @@ std::vector<T> toVec(const YAML::Node &node) {
 template<typename T, typename MatrixT>
 MatrixT toMatrix(const Node &node) {
   assert_matrix(node);
-  size_t rows = node.size(), cols = node[0].size();
-  MatrixT mat(rows, MAX(1, cols));
+  int rows = node.size(), cols = node[0].size();
+  MatrixT mat(rows, std::max(1, cols));
   // 向量形式
   if (cols == 0) {
     for (int i = 0; i < rows; ++i) mat(i) = node[i].as<T>();

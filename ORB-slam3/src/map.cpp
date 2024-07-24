@@ -4,11 +4,11 @@ namespace slam {
 
 namespace feature {
 
-void Map::draw() {
+void Map::draw() const {
   Viewer &viewer = *mpSystem->mpViewer;
   int n = mvpKeyFrames.size();
   int &stride = viewer.sample_stride;
-  for (int i = MAX(0, n - viewer.trail_size * stride); i < n; i += stride) {
+  for (int i = std::max(0, n - viewer.trail_size * stride); i < n; i += stride) {
     Frame::Ptr pKf = mvpKeyFrames[i];
     if (pKf) {
       pangolin::OpenGlMatrix T_wi(pKf->mPose.T_world_imu.matrix());

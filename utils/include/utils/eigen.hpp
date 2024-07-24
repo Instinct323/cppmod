@@ -9,14 +9,6 @@
 
 namespace Eigen {
 
-/** @brief 基于 SVD 的线性三角剖分
- *  @param vP_cam - 相机坐标系下的关键点
- *  @param vT_cam_ref - 相机位姿 (相对于参考坐标系) */
-bool triangulation(std::vector<Eigen::Vector3f> &vP_cam,
-                   std::vector<Sophus::SE3f> &vT_cam_ref,
-                   Eigen::Vector3f &P_ref,
-                   float &reproj_error);
-
 
 // cosine
 template<typename T, int dim>

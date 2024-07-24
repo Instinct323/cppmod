@@ -70,7 +70,7 @@ void calib_by_chessboard(std::vector<std::string> &filenames, cv::Mat &distCoeff
 }
 
 
-void Base::draw_normalized_plane(const cv::Mat &src, cv::Mat &dst) {
+void Base::draw_normalized_plane(const cv::Mat &src, cv::Mat &dst) const {
   undistort(src, dst);
   cv::Mat npMap1 = cv::Mat(mImgSize, CV_32FC1), npMap2 = npMap1.clone();
   // 获取归一化平面边界 (桶形畸变)
@@ -140,7 +140,7 @@ void KannalaBrandt::stereoORBfeatures(Base *pCamRight,
                                       ORB::Extractor *pExtractor0, ORB::Extractor *pExtractor1,
                                       const cv::Mat &img0, const cv::Mat &img1,
                                       ORB::KeyPoints &kps0, ORB::KeyPoints &kps1,
-                                      cv::Mat &desc0, cv::Mat &desc1, std::vector<cv::DMatch> &matches) {
+                                      cv::Mat &desc0, cv::Mat &desc1, std::vector<cv::DMatch> &matches) const {
   ASSERT(pCamRight->get_type() == CameraType::KANNALA_BRANDT, "Camera type must be KannalaBrandt")
   // 特征提取
   int lapCnt0, lapCnt1;
@@ -184,7 +184,7 @@ void Pinhole::stereoORBfeatures(Base *pCamRight,
                                 ORB::Extractor *pExtractor0, ORB::Extractor *pExtractor1,
                                 const cv::Mat &img0, const cv::Mat &img1,
                                 ORB::KeyPoints &kps0, ORB::KeyPoints &kps1,
-                                cv::Mat &desc0, cv::Mat &desc1, std::vector<cv::DMatch> &matches) {
+                                cv::Mat &desc0, cv::Mat &desc1, std::vector<cv::DMatch> &matches) const {
   ASSERT(pCamRight->get_type() == CameraType::PINHOLE, "Camera type must be Pinhole")
   // 特征提取
   int lapCnt0, lapCnt1;
@@ -193,7 +193,7 @@ void Pinhole::stereoORBfeatures(Base *pCamRight,
   cv::Mat_<uchar> rowMask(img0.rows, lapCnt1, uchar(0)), matchMask(lapCnt0, lapCnt1);
   for (int j = 0; j < lapCnt1; ++j) {
     float y = kps1[j].pt.y, r = kps1[j].size / 2;
-    int t = MAX(0, y - r), b = MIN(img0.rows - 1, y + r);
+    int t = std::max(0, int(y - r)), b = std::min(img0.rows - 1, int(y + r));
     for (int i = t; i <= b; ++i) rowMask.at<uchar>(i, j) = uchar(1);
   }
   for (int i = 0; i < lapCnt0; ++i) {

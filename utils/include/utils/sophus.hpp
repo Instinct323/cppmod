@@ -2,8 +2,27 @@
 #define UTILS__SOPHUS_HPP
 
 #include <sophus/se3.hpp>
+#include <sophus/sim3.hpp>
 
 namespace Sophus {
+
+/** @brief 基于 SVD 的线性三角剖分
+ *  @param vP_cam - 相机坐标系下的关键点
+ *  @param vT_cam_ref - 相机位姿 (相对于参考坐标系) */
+bool triangulation(const std::vector<Eigen::Vector3f> &vP_cam,
+                   const std::vector<Sophus::SE3f> &vT_cam_ref,
+                   Eigen::Vector3f &P_ref,
+                   float &reproj_error);
+
+/** @brief 基于单位四元数的轨迹对齐
+ *  @return 适用于 pts1 的相似变换 Sim3 */
+Sophus::Sim3f align_trajectory(const std::vector<Eigen::Vector3f> &pts1,
+                               const std::vector<Eigen::Vector3f> &pts2);
+
+// 绝对位移误差 (RMSE)
+double abs_trans_error(const std::vector<Eigen::Vector3f> &pts1,
+                       const std::vector<Eigen::Vector3f> &pts2);
+
 
 template<typename T>
 Eigen::Matrix3<T> rightJacobian(const Eigen::Vector3<T> &omega) {

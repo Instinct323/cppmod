@@ -1,8 +1,6 @@
 dataset: "/home/workbench/data/dataset-room4_512_16/dso"
 vocabulary: "/home/workbench/Repository/dbow2/ORBvoc.bin"
 
-T_imu_world: [ 0.808244011, -0.23390652, 1.268850369, 0.999964321, 0.007513812, -0.003708576, -0.00107093 ]
-
 
 tracker:
   probable_fps: 20
@@ -52,10 +50,10 @@ viewer:
   fps: 45
   title: "Feature Map"
   resolution: [ 640, 480 ]
-  camera_focal: 400
+  camera_focal: 200
   view_point: [ 0., -3.5, 0. ]
   view_up_axis: 6
-  imu_size: 0.1
+  imu_size: 0.5
   trail_size: 100
   sample_stride: 10
   lead_color: [ 0.0, 0.0, 1.0 ]

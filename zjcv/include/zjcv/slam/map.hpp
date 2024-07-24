@@ -27,7 +27,7 @@ public:
 
     ZJCV_BUILTIN void insert_keyframe(std::shared_ptr<Frame> pKF) { mvpKeyFrames.push_back(pKF); }
 
-    ZJCV_CUSTOM void draw();
+    ZJCV_CUSTOM void draw() const;
 
 #ifdef ZJCV_ORB_SLAM
 #endif

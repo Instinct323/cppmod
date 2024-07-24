@@ -34,7 +34,6 @@ void Viewer::run() {
   glog::Timer timer;
   Tracker::Ptr pTracker = mpSystem->mpTracker;
   pangolin::Figure::Ptr pgl_fig = pangolin::Figure::from_yaml(cfg);
-  pangolin::Trajectory gt(cfg["imu_gt"], std::get<6>(storage), std::get<7>(storage));
 
   while (mpSystem->mbRunning) {
     timer.reset();
@@ -50,8 +49,6 @@ void Viewer::run() {
       // 绘制关键帧
       glColor3f(trail_color[0], trail_color[1], trail_color[2]);
       mpSystem->mpAtlas->mpCurMap->draw();
-      // 绘制真实轨迹
-      gt.plot(pFrame->mTimestamp);
       pgl_fig->draw();
       // ----- OpenCV -----
       pFrame->draw();
@@ -59,8 +56,8 @@ void Viewer::run() {
     // 检查系统状态
     if (!pgl_fig->is_running()) mpSystem->mbRunning = false;
     int cost = static_cast<int>(timer.count() * 1e3);
-    mpSystem->set_desc("view-FPS", std::to_string(1000 / MAX(delay, cost)));
-    cv::waitKey(MAX(1, delay - cost));
+    mpSystem->set_desc("view-FPS", std::to_string(1000 / std::max(delay, cost)));
+    cv::waitKey(std::max(1, delay - cost));
   }
 }
 

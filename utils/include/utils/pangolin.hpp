@@ -46,7 +46,7 @@ public:
       auto [_, i] = slicer(t);
       // 绘制轨迹
       glColor3f(trail_color[0], trail_color[1], trail_color[2]);
-      for (int j = MAX(0, i - trail_size * sample_stride); j < i; j += sample_stride) draw_imu(vTwc[j], imu_size);
+      for (int j = std::max(0, i - trail_size * sample_stride); j < i; j += sample_stride) draw_imu(vTwc[j], imu_size);
       // 绘制当前帧
       glColor3f(lead_color[0], lead_color[1], lead_color[2]);
       draw_imu(vTwc[i], imu_size);

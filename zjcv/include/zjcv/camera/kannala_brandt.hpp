@@ -61,18 +61,18 @@ public:
     Eigen::Vector3f unproject(const cv::Point2f &p2D) const override { KANNALA_BRANDT_UNPROJECT(mUnprojectCache, p2D) }
 
     // 去畸变
-    void undistort(const cv::Mat &src, cv::Mat &dst) override { if (src.data != dst.data) dst = src.clone(); }
+    void undistort(const cv::Mat &src, cv::Mat &dst) const override { if (src.data != dst.data) dst = src.clone(); }
 
-    void undistort(const VectorPt2f &src, VectorPt2f &dst) override { if (src.data() != dst.data()) dst = src; }
+    void undistort(const VectorPt2f &src, VectorPt2f &dst) const override { if (src.data() != dst.data()) dst = src; }
 
-    void undistort(const VectorKp &src, VectorKp &dst) override { if (src.data() != dst.data()) dst = src; }
+    void undistort(const VectorKp &src, VectorKp &dst) const override { if (src.data() != dst.data()) dst = src; }
 
     // ORB 特征
     void stereoORBfeatures(Base *pCamRight,
                            ORB::Extractor *pExtractor0, ORB::Extractor *pExtractor1,
                            const cv::Mat &img0, const cv::Mat &img1,
                            ORB::KeyPoints &kps0, ORB::KeyPoints &kps1,
-                           cv::Mat &desc0, cv::Mat &desc1, std::vector<cv::DMatch> &matches) override;
+                           cv::Mat &desc0, cv::Mat &desc1, std::vector<cv::DMatch> &matches) const override;
 };
 
 }

@@ -43,7 +43,7 @@ public:
     // Description
     ZJCV_BUILTIN void set_desc(const std::string &key, const std::string &desc) { mDescs[key] = desc; }
 
-    ZJCV_BUILTIN std::string get_desc() {
+    ZJCV_BUILTIN std::string get_desc() const {
       std::string desc;
       for (auto &kv: mDescs) desc += kv.first + "=" + kv.second + ", ";
       desc.erase(desc.end() - 2, desc.end());
