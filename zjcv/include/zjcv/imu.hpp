@@ -32,7 +32,7 @@ public:
     Device(const Device &) = delete;
 
     static Ptr from_yaml(const YAML::Node &cfg) {
-      if (cfg.IsNull()) return nullptr;
+      if (YAML::is_invalid(cfg)) return nullptr;
       return std::make_shared<Device>(
           cfg["acc_noise"].as<float>(),
           cfg["acc_walk"].as<float>(),
@@ -110,8 +110,7 @@ class MovingPose {
 
 public:
     Sample B;
-    Sophus::SE3f T_imu_world, T_world_imu;
-    Eigen::Vector3f v;
+    Sophus::SE3f T_imu_world, T_world_imu, v;
 
     MovingPose() = default;
 
@@ -120,7 +119,7 @@ public:
       B.w.setZero();
       T_imu_world = Sophus::SE3f();
       T_world_imu = Sophus::SE3f();
-      v.setZero();
+      v = Sophus::SE3f();
     }
 
     void set_pose(const Sophus::SE3f &T) {
@@ -128,7 +127,10 @@ public:
       T_world_imu = T.inverse();
     }
 
-    void predict_from(MovingPose &prev, Preintegration *preint, bool update = false);
+    // T_cur_last
+    void update_velocity(const MovingPose &prev) { v = T_world_imu * prev.T_imu_world; }
+
+    void predict_from(const MovingPose &prev, const Preintegration *preint = nullptr, bool update = false);
 };
 
 }

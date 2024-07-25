@@ -47,6 +47,15 @@ void row_mapping(const std::string &file, const std::function<void(std::string &
 
 namespace YAML {
 
+bool is_invalid(const Node &node) {
+  try {
+    return node.IsNull();
+  } catch (YAML::InvalidNode &e) {
+    return true;
+  }
+}
+
+
 void assert_matrix(const Node &node) {
   bool flag = node.IsSequence();
   if (flag) {

@@ -7,7 +7,7 @@ namespace camera {
 
 Base::Ptr from_yaml(const YAML::Node &cfg) {
   Base::Ptr pCam;
-  if (!cfg.IsNull()) {
+  if (!YAML::is_invalid(cfg)) {
 
     auto type = cfg["type"].as<std::string>();
     auto imgSize = YAML::toVec<int>(cfg["resolution"]);

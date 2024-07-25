@@ -17,13 +17,17 @@ public:
 
     ZJCV_BUILTIN System *mpSystem;
 
+    // 配置参数
+    ZJCV_BUILTIN const int MIN_MATCHES, MAX_MATCHES;
+
+    // 设备信息
     ZJCV_BUILTIN const camera::Base::Ptr mpCam0, mpCam1;
     ZJCV_BUILTIN Sophus::SE3f T_cam0_cam1;
-
     ZJCV_BUILTIN const IMU::Device::Ptr mpIMU;
-    ZJCV_BUILTIN IMU::Preintegration::Ptr mpIMUpreint;
 
+    // 帧信息
     ZJCV_BUILTIN std::shared_ptr<Frame> mpLastFrame, mpCurFrame, mpRefFrame;
+    ZJCV_BUILTIN IMU::Preintegration::Ptr mpIMUpreint;
 
     ZJCV_BUILTIN explicit Tracker(System *pSystem, const YAML::Node &cfg);
 

@@ -27,13 +27,13 @@ void slam::Tracker::run() {
   while (!pbar.is_completed()) {
     int i = pbar.current();
     cv::Mat imgLeft = grayloader(std::get<1>(storage)[i]), imgRight = grayloader(std::get<3>(storage)[i]);
-    auto [j, k] = slicer(std::get<0>(storage)[i]);
+    // auto [j, k] = slicer(std::get<0>(storage)[i]);
 
     // 读入数据
     timer.reset();
-    grab_imu(std::get<0>(storage)[i],
-             dataset::Timestamps(std::get<4>(storage).begin() + j, std::get<4>(storage).begin() + k),
-             dataset::IMUsamples(std::get<5>(storage).begin() + j, std::get<5>(storage).begin() + k));
+    // grab_imu(std::get<0>(storage)[i],
+    //          dataset::Timestamps(std::get<4>(storage).begin() + j, std::get<4>(storage).begin() + k),
+    //          dataset::IMUsamples(std::get<5>(storage).begin() + j, std::get<5>(storage).begin() + k));
     grab_image(std::get<0>(storage)[i], imgLeft, imgRight);
 
     mpSystem->set_desc("track-cost", (boost::format("%.1fms") % (1e3 * timer.count())).str());

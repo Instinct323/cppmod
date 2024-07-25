@@ -5,6 +5,7 @@ vocabulary: "/home/workbench/Repository/dbow2/ORBvoc.bin"
 tracker:
   probable_fps: 20
   min_matches: 15
+  max_matches: 100
 
   cam0:
     type: "KannalaBrandt"
@@ -26,7 +27,7 @@ tracker:
       - [ 0.008104079263822521, 0.012511643720192351, -0.9998888851620987, -0.046131737923635924 ]
       - [ -0.030199136245891378, -0.9994625667418545, -0.012751072573940885, -0.07149261284195751 ]
 
-  imu:
+  imu (discard):
     frequency: 200.0    # Hz
     acc_noise: 0.0028   # m/s^1.5
     acc_walk: 0.00086   # m/s^2.5

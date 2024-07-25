@@ -79,20 +79,25 @@ void Preintegration::integrate(const double &dt, const Sample &sample) {
 }
 
 
-void MovingPose::predict_from(MovingPose &prev, Preintegration *preint, bool update) {
-  Sample deltaB = (update) ? preint->B : prev.B - preint->B;
-  float it = preint->it;
-  Eigen::Vector3f iV(0, 0, -9.81f * it);
+void MovingPose::predict_from(const MovingPose &prev, const Preintegration *preint, bool update) {
+  if (preint) {
+    Sample deltaB = (update) ? preint->B : prev.B - preint->B;
+    float it = preint->it;
+    Eigen::Vector3f iV(0, 0, -9.81f * it);
 
-  Sophus::SO3f &R0 = prev.T_world_imu.so3();
-  Eigen::Vector3f &t0 = prev.T_world_imu.translation();
-  Eigen::Vector3f &v0 = prev.v;
+    const Sophus::SO3f &R0 = prev.T_world_imu.so3();
+    const Eigen::Vector3f &t0 = prev.T_world_imu.translation();
+    const Eigen::Vector3f &v0 = prev.v.translation();
 
-  B = prev.B;
-  T_world_imu.so3() = R0 * preint->iR * Sophus::SO3f::exp(preint->JRw * deltaB.w);
-  T_world_imu.translation() = t0 + v0 * it + 0.5f * it * iV + R0 * (preint->iP + preint->Jpa * deltaB.a + preint->Jpw * deltaB.w);
-  T_imu_world = T_world_imu.inverse();
-  v = v0 + iV + R0 * (preint->iV + preint->Jva * deltaB.a + preint->Jvw * deltaB.w);
+    B = prev.B;
+    T_world_imu.so3() = R0 * preint->iR * Sophus::SO3f::exp(preint->JRw * deltaB.w);
+    T_world_imu.translation() = t0 + v0 * it + 0.5f * it * iV + R0 * (preint->iP + preint->Jpa * deltaB.a + preint->Jpw * deltaB.w);
+    T_imu_world = T_world_imu.inverse();
+    v.translation() = v0 + iV + R0 * (preint->iV + preint->Jva * deltaB.a + preint->Jvw * deltaB.w);
+
+  } else {
+    set_pose(prev.T_imu_world * prev.v);
+  }
 }
 
 }

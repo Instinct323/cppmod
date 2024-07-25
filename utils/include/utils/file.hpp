@@ -26,6 +26,9 @@ void row_mapping(const std::string &file, const std::function<void(std::string &
 
 namespace YAML {
 
+// 结点有效性
+bool is_invalid(const Node &node);
+
 // 矩阵判断
 void assert_matrix(const Node &node);
 
