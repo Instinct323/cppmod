@@ -34,7 +34,7 @@ public:
           });
     }
 
-    // fixme: e.g., image_0
+    // e.g., image_0
     void load_image(Filenames &vFilename, const std::string &folder = "image_0") {
       assert(vFilename.empty());
       std::string img_path = mPath + "sequences/" + mId + "/" + folder;

@@ -10,6 +10,13 @@
 namespace slam {
 
 
+enum TrackState {
+    OK = 0,
+    RECENTLY_LOST = 1,
+    LOST = 2,
+};
+
+
 class Tracker {
 
 public:
@@ -18,7 +25,8 @@ public:
     ZJCV_BUILTIN System *mpSystem;
 
     // 配置参数
-    ZJCV_BUILTIN const int MIN_MATCHES, MAX_MATCHES;
+    ZJCV_BUILTIN const int MIN_MATCHES, MAX_MATCHES, KEY_MATCHES;
+    ZJCV_BUILTIN const double LOST_TIMEOUT;
 
     // 设备信息
     ZJCV_BUILTIN const camera::Base::Ptr mpCam0, mpCam1;
@@ -28,6 +36,7 @@ public:
     // 帧信息
     ZJCV_BUILTIN std::shared_ptr<Frame> mpLastFrame, mpCurFrame, mpRefFrame;
     ZJCV_BUILTIN IMU::Preintegration::Ptr mpIMUpreint;
+    ZJCV_BUILTIN TrackState mState = LOST;
 
     ZJCV_BUILTIN explicit Tracker(System *pSystem, const YAML::Node &cfg);
 
@@ -41,18 +50,23 @@ public:
 
     ZJCV_BUILTIN void grab_image(const double &timestamp, const cv::Mat &img0, const cv::Mat &img1 = cv::Mat());
 
+    ZJCV_BUILTIN void switch_state(TrackState state);
+
     ZJCV_CUSTOM void run();
 
 #ifdef ZJCV_ORB_SLAM
     // Extractors
     ORB::Extractor::Ptr mpExtractor0, mpExtractor1;
+    ORB::Matcher::Ptr mpMatcher;
 
     void reload(const YAML::Node &cfg) {
       mpExtractor0 = ORB::Extractor::from_yaml(cfg["orb0"]);
       mpExtractor1 = ORB::Extractor::from_yaml(cfg["orb1"]);
+      mpMatcher = ORB::Matcher::from_yaml(cfg["matcher"]);
       ASSERT(mpExtractor0, "Extractor0 not found")
       ASSERT((!mpCam1) == (!mpExtractor1), "miss match between Camera1 and Extractor1")
     }
+
 #endif
 
 };

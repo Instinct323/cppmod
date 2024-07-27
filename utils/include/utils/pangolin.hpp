@@ -5,7 +5,6 @@
 
 #include <pangolin/pangolin.h>
 #include <sophus/se3.hpp>
-#include <yaml-cpp/yaml.h>
 
 #include "file.hpp"
 #include "math.hpp"

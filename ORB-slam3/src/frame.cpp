@@ -7,12 +7,56 @@
 namespace slam {
 
 
-void Frame::process() {
+void Frame::unproject_kps() {
   Tracker::Ptr pTracker = mpSystem->mpTracker;
+  camera::Base::Ptr pCam0 = pTracker->mpCam0, pCam1 = pTracker->mpCam1;
+
+  assert(mvUnprojs0.empty() && mvUnprojs1.empty());
+  mvUnprojs0.reserve(mvKps0.size());
+  mvUnprojs1.reserve(mvKps1.size());
+
+  for (auto &i: mvKps0) {
+    mvUnprojs0.push_back(pCam0->unproject(i.pt));
+  }
+  for (auto &i: mvKps1) {
+    mvUnprojs1.push_back(pCam1->unproject(i.pt));
+  }
+}
+
+
+void Frame::stereo_features(std::vector<cv::DMatch> &matches) {
+  Tracker::Ptr &pTracker = mpSystem->mpTracker;
+  int lapCnt0, lapCnt1;
+  parallel::PriorityThread t0 = parallel::thread_pool.emplace(
+      1, [&lapCnt0, this, &pTracker]() {
+          lapCnt0 = pTracker->mpExtractor0->detect_and_compute(mImg0, cv::noArray(), mvKps0, mDesc0); \
+          pTracker->mpCam0->undistort(mvKps0, mvKps0);
+      });
+  lapCnt1 = pTracker->mpExtractor1->detect_and_compute(mImg1, cv::noArray(), mvKps1, mDesc1);
+  pTracker->mpCam1->undistort(mvKps1, mvKps1);
+  t0->join();
+  if (lapCnt1 == 0 || lapCnt0 == 0) return;
+  // 分配右相机特征到行
+  cv::Mat mask;
+  if (pTracker->mpCam0->get_type() == camera::PINHOLE) {
+    cv::HoriDict hori_dict(mvKps1.begin(), mvKps1.begin() + lapCnt1, mImg1.rows, 2);
+    mask = cv::Mat_<uchar>(lapCnt0, lapCnt1);
+    for (int i = 0; i < lapCnt0; ++i) hori_dict(mvKps0[i].pt.y).copyTo(mask.row(i));
+  }
+  // Lowe's ratio test
+  pTracker->mpMatcher->search_with_lowe(mDesc0.rowRange(0, lapCnt0), mDesc1.rowRange(0, lapCnt1), cv::Mat(), matches, 0.7);
+}
+
+
+void Frame::process() {
+  Tracker::Ptr &pTracker = mpSystem->mpTracker;
   Ptr &pLastFrame = pTracker->mpLastFrame;
   Ptr &pCurFrame = pTracker->mpCurFrame;
   Ptr &pRefFrame = pTracker->mpRefFrame;
   camera::Base::Ptr pCam0 = pTracker->mpCam0, pCam1 = pTracker->mpCam1;
+
+  bool is_keyframe = pRefFrame == nullptr;
+  mpSystem->set_desc("id", pCurFrame->mId);
 
   // motion model, 初始化位姿
   if (pTracker->is_inertial()) {
@@ -21,37 +65,95 @@ void Frame::process() {
     mPose.predict_from(pLastFrame->mPose);
   }
 
-  // 特征点提取、去畸
+  // ORB 特征点提取、去畸
   if (pTracker->is_monocular()) {
-    pCam0->monoORBfeatures(pTracker->mpExtractor0.get(), mImg0, mvKps0, mDesc0);
+    pTracker->mpExtractor0->detect_and_compute(mImg0, cv::noArray(), mvKps0, mDesc0);
+    pCam0->undistort(mvKps0, mvKps0);
+    unproject_kps();
+
   } else {
-    pCam0->stereoORBfeatures(pTracker->mpCam1.get(), pTracker->mpExtractor0.get(), pTracker->mpExtractor1.get(),
-                             mImg0, mImg1, mvKps0, mvKps1, mDesc0, mDesc1, mStereoMatches);
+    stereo_features(mStereoMatches);
+    unproject_kps();
+    // 水平对齐约束, 离群点筛除
+    cv::dy_filter(mvUnprojs0, mvUnprojs1, mStereoMatches, 1.5);
+    cv::drop_last(mStereoMatches, 0.1);
+    mStereoMatches.shrink_to_fit();
+    init_mappoints(pCurFrame, mStereoMatches);
+    mpSystem->set_desc("stereo-matches", mStereoMatches.size());
   }
-  init_mappoints();
+  // RECENTLY_LOST: 关键点过少
+  if (mvKps0.size() < pTracker->MIN_MATCHES) {
+    pTracker->switch_state(TrackState::RECENTLY_LOST);
+    return;
+  }
 
-  // 与关键帧进行匹配
+  // LOST: 重定位
+  if (pTracker->mState == TrackState::LOST) {
+    // todo: 重定位
+  }
+
   if (pRefFrame) {
-    std::vector<cv::DMatch> match_ref;
-    auto matcher = cv::DescriptorMatcher::create("BruteForce-Hamming");
-    cv::Mat_<uchar> mask(mvKps0.size(), pRefFrame->mvKps0.size());
-    for (int i = 0; i < mvKps0.size(); i++) {
-      cv::Point2f &pt = mvKps0[i].pt;
-      pRefFrame->mpGridMask->operator()(pt.x, pt.y).copyTo(mask.row(i));
+    pRefFrame->prune();
+    // 与关键帧进行匹配: 仅当地图点准确时
+    auto &refMappts = pRefFrame->mvpMappts;
+    if (!refMappts.empty()) {
+      mpGridDict = std::make_unique<cv::GridDict>(mvKps0.begin(), mvKps0.end(), mImg0.size());
+      std::vector<cv::DMatch> ref_matches;
+      cv::Mat_<uchar> mask(pRefFrame->mvKps0.size(), mvKps0.size(), uchar(0));
+
+      // 将地图点投影到当前帧
+      Sophus::SE3f T_cam0_world = pCam0->T_cam_imu * mPose.T_imu_world;
+      for (int i = 0; i < refMappts.size(); ++i) {
+        if (!refMappts[i] || refMappts[i]->is_invalid()) continue;
+        cv::Point2f pt = pCam0->project(T_cam0_world * refMappts[i]->mPos);
+        if (pt.x < 0 || pt.x >= mImg0.cols || pt.y < 0 || pt.y >= mImg0.rows) continue;
+        mpGridDict->operator()(pt.x, pt.y).copyTo(mask.row(i));
+      }
+
+      // 余弦相似度筛选
+      pTracker->mpMatcher->search(pRefFrame->mDesc0, mDesc0, mask, ref_matches);
+      float n = ref_matches.size() + 1e-4;
+      cv::cosine_filter(pRefFrame->mvUnprojs0, mvUnprojs0, ref_matches, 0.8);
+
+      mpSystem->set_desc("ref-matches", ref_matches.size());
+      mpSystem->set_desc("ref-filter", float(ref_matches.size()) / n);
+      cv::drop_last(ref_matches, 0.1);
+
+      // RECENTLY_LOST: 匹配点过少
+      if (ref_matches.size() < pTracker->MIN_MATCHES) {
+        pTracker->switch_state(TrackState::RECENTLY_LOST);
+      }
+
+      // Keyframe: 匹配点衰减到临界
+      if (ref_matches.size() <= pTracker->KEY_MATCHES) {
+        is_keyframe = true;
+      }
+
+      // 为地图点添加观测
+      connect_frame(pCurFrame, pRefFrame, ref_matches);
+      // todo: 优化位姿 (确定地图点的位置, e.g., 三角化), 然后更新速度
+      mPose.update_velocity(pLastFrame->mPose);
+
+    } else {
+      // Monocular: 第一帧, 未初始化
+      pRefFrame->init_mappoints(pCurFrame);
     }
-    matcher->match(mDesc0, pRefFrame->mDesc0, match_ref, mask);
-    // 为地图点添加观测
-    std::sort(match_ref.begin(), match_ref.end(),
-              [](const cv::DMatch &a, const cv::DMatch &b) { return a.distance < b.distance; });
-    connect_frame(pRefFrame, match_ref);
-    // todo: 优化位姿, 然后更新速度
-    mPose.update_velocity(pLastFrame->mPose);
+  } else {
+    // Stereo: 第一帧, 三角化确定地图点位姿
+    for (auto &mpt: mvpMappts) {
+      if (!mpt) continue;
+      mpt->triangulation();
+    }
   }
 
-  // fixme: 仅在关键帧调用
-  mpGridMask = std::make_unique<cv::GridMask>(mvKps0, mImg0.size());
-  mpSystem->mpAtlas->mpCurMap->insert_keyframe(pCurFrame);
-  if (!pRefFrame) pTracker->mpRefFrame = pCurFrame;
+  // 标记为关键帧
+  if (is_keyframe) {
+    mark_keyframe();
+    pTracker->mpRefFrame = pCurFrame;
+    mpSystem->mpAtlas->mpCurMap->insert_keyframe(pCurFrame);
+    mpSystem->set_desc("id-key", pCurFrame->mIdKey);
+  }
+  pTracker->switch_state(TrackState::OK);
 }
 
 

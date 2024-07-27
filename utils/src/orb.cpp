@@ -1,3 +1,8 @@
+#include <memory>
+
+#include "utils/cv.hpp"
+#include "utils/file.hpp"
+#include "utils/math.hpp"
 #include "utils/orb.hpp"
 
 namespace ORB {
@@ -44,15 +49,7 @@ bool matchesSubPix(const cv::Mat &img0, const cv::Mat &img1,
 }
 
 
-void lowes_filter(const std::vector<std::vector<cv::DMatch>> &knn_matches,
-                  std::vector<cv::DMatch> &matches, float ratio) {
-  ASSERT(matches.empty() && ratio > 0 && ratio < 1, "Invalid parameters")
-  for (const auto &km: knn_matches) {
-    if (km.size() == 1 || (km.size() >= 2 && km[0].distance < ratio * km[1].distance)) matches.push_back(km[0]);
-  }
-}
-
-
+// Extractor
 Extractor::Ptr Extractor::from_yaml(const YAML::Node &cfg) {
   if (YAML::is_invalid(cfg)) return nullptr;
   auto area = YAML::toVec<int>(cfg["lapping_area"]);
@@ -93,24 +90,26 @@ int Extractor::detect_and_compute(cv::InputArray img, cv::InputArray mask,
 }
 
 
-void Matcher::search_by_index(const cv::Mat &queryDesc, const cv::Mat &trainDesc,
-                              std::vector<cv::DMatch> &matches, std::vector<std::vector<int> *> &mask) {
-  for (int i = 0; i < queryDesc.rows; i++) {
-    const std::vector<int> &m = *mask[i];
-    if (m.empty()) continue;
-    cv::Mat q = queryDesc.row(i);
-    cv::DMatch bestMatch(i, -1, FLT_MAX);
-    // 依次取出候选描述子, 进行匹配
-    for (int j: m) {
-      float dist = cv::norm(q, trainDesc.row(j), mNormType);
-      if (dist < bestMatch.distance) {
-        bestMatch.trainIdx = j;
-        bestMatch.distance = dist;
-      }
-    }
-    // 保存最佳匹配
-    if (bestMatch.trainIdx != -1) matches.push_back(bestMatch);
-  }
+// Matcher
+Matcher::Ptr Matcher::from_yaml(const YAML::Node &cfg) {
+  if (YAML::is_invalid(cfg)) return nullptr;
+  return Ptr(new Matcher());
+}
+
+
+void Matcher::search(const cv::Mat &desc0, const cv::Mat &desc1,
+                     const cv::Mat &mask, std::vector<cv::DMatch> &matches) {
+  mpMatcher->match(desc0, desc1, matches, mask);
+  cv::make_one2one(matches);
+}
+
+
+void Matcher::search_with_lowe(const cv::Mat &desc0, const cv::Mat &desc1,
+                               const cv::Mat &mask, std::vector<cv::DMatch> &matches, float ratio) {
+  std::vector<std::vector<cv::DMatch>> knn_matches;
+  mpMatcher->knnMatch(desc0, desc1, knn_matches, 2, mask);
+  cv::lowes_filter(knn_matches, matches, ratio);
+  cv::make_one2one(matches);
 }
 
 }

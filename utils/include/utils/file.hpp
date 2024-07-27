@@ -37,7 +37,7 @@ template<typename T>
 std::vector<T> toVec(const YAML::Node &node) {
   ASSERT(node.IsSequence(), "YAML: Invalid vector format")
   std::vector<T> vec;
-  for (int i = 0; i < node.size(); ++i) vec.push_back(node[i].as<T>());
+  for (const auto &x: node) vec.push_back(x.as<T>());
   return vec;
 }
 
@@ -73,7 +73,7 @@ cv::Mat toCvMat(const Node &node) { return toMatrix<T, cv::Mat_<T>>(node); }
 
 // SE3d 转换
 template<typename T>
-Sophus::SE3<T> toSE3(const Node &node) {
+Sophus::SE3 <T> toSE3(const Node &node) {
   Eigen::MatrixX<T> mat = toEigen<T>(node);
   // tx ty tz qw qx qy qz
   if (mat.size() == 7) {

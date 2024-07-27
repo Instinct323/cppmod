@@ -15,7 +15,7 @@ namespace feature {
 
 class Frame;
 
-typedef std::pair<Frame *, int> Observation;
+typedef std::pair<std::weak_ptr<Frame>, int> Observation;
 
 
 class Mappoint {
@@ -23,22 +23,27 @@ class Mappoint {
 public:
     ZJCV_BUILTIN typedef std::shared_ptr<Mappoint> Ptr;
 
+    ZJCV_BUILTIN System *mpSystem;
+
+    ZJCV_BUILTIN float mReprErr = -1;
     ZJCV_BUILTIN Eigen::Vector3f mPos;
     ZJCV_BUILTIN std::vector<Observation> mObs;
 
-    ZJCV_BUILTIN int frame_count() const {
-      std::set<Frame *> frames;
-      for (auto &obs: mObs) frames.insert(obs.first);
-      return frames.size();
-    }
+    ZJCV_BUILTIN explicit Mappoint(System *pSystem) : mpSystem(pSystem) {}
 
-    ZJCV_BUILTIN void add_obs(Frame *pFrame, const int &idx);
+    ZJCV_BUILTIN bool is_invalid() const { return mReprErr < 0; }
 
-    ZJCV_BUILTIN void erase_obs(Frame *pFrame);
+    ZJCV_BUILTIN int frame_count();
 
-    ZJCV_BUILTIN Mappoint& operator+=(const Mappoint& other);
+    ZJCV_BUILTIN void prune();
 
-    ZJCV_CUSTOM void process();
+    ZJCV_BUILTIN void add_obs(const Frame::Ptr& pFrame, const int &idx, bool is_right = false);
+
+    ZJCV_BUILTIN void clear();
+
+    ZJCV_BUILTIN Mappoint &operator+=(const Mappoint &other);
+
+    ZJCV_BUILTIN void triangulation();
 
 #ifdef ZJCV_ORB_SLAM
 #endif

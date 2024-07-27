@@ -136,23 +136,6 @@ float KannalaBrandt::solveWZ(float wx, float wy, size_t iterations) const {
 }
 
 
-void KannalaBrandt::stereoORBfeatures(Base *pCamRight,
-                                      ORB::Extractor *pExtractor0, ORB::Extractor *pExtractor1,
-                                      const cv::Mat &img0, const cv::Mat &img1,
-                                      ORB::KeyPoints &kps0, ORB::KeyPoints &kps1,
-                                      cv::Mat &desc0, cv::Mat &desc1, std::vector<cv::DMatch> &matches) const {
-  ASSERT(pCamRight->get_type() == CameraType::KANNALA_BRANDT, "Camera type must be KannalaBrandt")
-  // 特征提取
-  int lapCnt0, lapCnt1;
-  STEREO_ORB_EXTRACT(lapCnt0, lapCnt1)
-  // 双目匹配: Lowe's ratio test
-  auto matcher = cv::DescriptorMatcher::create("BruteForce-Hamming");
-  std::vector<std::vector<cv::DMatch>> knn_matches;
-  matcher->knnMatch(desc0.rowRange(0, lapCnt0), desc1.rowRange(0, lapCnt1), knn_matches, 2);
-  ORB::lowes_filter(knn_matches, matches, 0.7);
-}
-
-
 void Pinhole::stereo_rectify(Pinhole *cam_right) {
   ASSERT(this->mImgSize == cam_right->mImgSize, "Image size must be the same")
   Sophus::SE3f Trl = this->T_cam_imu.inverse() * cam_right->T_cam_imu;
@@ -177,43 +160,6 @@ void Pinhole::stereo_rectify(Pinhole *cam_right) {
       R2(cv::toEigen<float>(cam_right->mRectR), Eigen::Vector3f::Zero());
   this->T_cam_imu = R1 * this->T_cam_imu;
   cam_right->T_cam_imu = R2 * cam_right->T_cam_imu;
-}
-
-
-void Pinhole::stereoORBfeatures(Base *pCamRight,
-                                ORB::Extractor *pExtractor0, ORB::Extractor *pExtractor1,
-                                const cv::Mat &img0, const cv::Mat &img1,
-                                ORB::KeyPoints &kps0, ORB::KeyPoints &kps1,
-                                cv::Mat &desc0, cv::Mat &desc1, std::vector<cv::DMatch> &matches) const {
-  ASSERT(pCamRight->get_type() == CameraType::PINHOLE, "Camera type must be Pinhole")
-  // 特征提取
-  int lapCnt0, lapCnt1;
-  STEREO_ORB_EXTRACT(lapCnt0, lapCnt1)
-  // 分配右相机特征到行
-  cv::Mat_<uchar> rowMask(img0.rows, lapCnt1, uchar(0)), matchMask(lapCnt0, lapCnt1);
-  for (int j = 0; j < lapCnt1; ++j) {
-    float y = kps1[j].pt.y, r = kps1[j].size / 2;
-    int t = std::max(0, int(y - r)), b = std::min(img0.rows - 1, int(y + r));
-    for (int i = t; i <= b; ++i) rowMask.at<uchar>(i, j) = uchar(1);
-  }
-  for (int i = 0; i < lapCnt0; ++i) {
-    int y = kps0[i].pt.y;
-    rowMask.row(y).copyTo(matchMask.row(i));
-  }
-  // 双目匹配
-  auto matcher = cv::DescriptorMatcher::create("BruteForce-Hamming");
-  std::vector<cv::DMatch> tmp_matches;
-  matcher->match(desc0.rowRange(0, lapCnt0), desc1.rowRange(0, lapCnt1), tmp_matches, matchMask);
-  // Pauta Criterion
-  std::vector<float> dy;
-  for (auto &m: tmp_matches) {
-    dy.push_back(kps0[m.queryIdx].pt.y - kps1[m.trainIdx].pt.y);
-  }
-  math::PautaCriterion<float> is_inlier_y(dy, 1);
-  for (int i = 0; i < tmp_matches.size(); ++i) {
-    if (is_inlier_y(dy[i])) matches.push_back(tmp_matches[i]);
-  }
-  matches.shrink_to_fit();
 }
 
 }

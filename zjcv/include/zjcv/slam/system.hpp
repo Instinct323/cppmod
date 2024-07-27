@@ -43,6 +43,9 @@ public:
     // Description
     ZJCV_BUILTIN void set_desc(const std::string &key, const std::string &desc) { mDescs[key] = desc; }
 
+    template<class T>
+    ZJCV_BUILTIN void set_desc(const std::string &key, const T &desc) { set_desc(key, std::to_string(desc)); }
+
     ZJCV_BUILTIN std::string get_desc() const {
       std::string desc;
       for (auto &kv: mDescs) desc += kv.first + "=" + kv.second + ", ";

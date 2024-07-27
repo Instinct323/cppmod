@@ -2,8 +2,9 @@
 #define UTILS__ORB_HPP
 
 #include <opencv2/opencv.hpp>
+#include <utility>
+#include <yaml-cpp/yaml.h>
 
-#include "file.hpp"
 #include "glog.hpp"
 
 namespace ORB {
@@ -15,11 +16,6 @@ typedef std::vector<cv::KeyPoint> KeyPoints;
 bool matchesSubPix(const cv::Mat &img0, const cv::Mat &img1,
                    const cv::Point2f &kp0, cv::Point2f &kp1,
                    int winSize = 5, cv::Size slideSize = {5, 5});
-
-
-// Lowe's ratio test
-void lowes_filter(const std::vector<std::vector<cv::DMatch>> &knn_matches,
-                  std::vector<cv::DMatch> &matches, float ratio);
 
 
 // 特征提取器
@@ -36,7 +32,7 @@ public:
               float scaleFactor = 1.2f,
               int nlevels = 8,
               std::pair<int, int> lappingArea = {-1, -1}
-    ) : mpExtractor(cv::ORB::create(nfeatures, scaleFactor, nlevels)), mLappingArea(lappingArea) {
+    ) : mpExtractor(cv::ORB::create(nfeatures, scaleFactor, nlevels)), mLappingArea(std::move(lappingArea)) {
       ASSERT((mLappingArea.first == -1 && mLappingArea.second == -1) ||
              (0 <= mLappingArea.first < mLappingArea.second), "Invalid lapping area")
     }
@@ -51,15 +47,22 @@ public:
 
 
 class Matcher {
+    cv::Ptr<cv::DescriptorMatcher> mpMatcher;
 
 public:
-    cv::NormTypes mNormType;
+    typedef std::shared_ptr<Matcher> Ptr;
 
-    explicit Matcher(cv::NormTypes normType = cv::NORM_HAMMING) : mNormType(normType) {}
+    static Ptr from_yaml(const YAML::Node &cfg);
 
-    // fixme: 根据索引搜索, 效率似乎过低
-    void search_by_index(const cv::Mat &queryDesc, const cv::Mat &trainDesc,
-                         std::vector<cv::DMatch> &matches, std::vector<std::vector<int> *> &mask);
+    explicit Matcher() : mpMatcher(cv::DescriptorMatcher::create("BruteForce-Hamming")) {}
+
+    // common
+    void search(const cv::Mat &desc0, const cv::Mat &desc1,
+                const cv::Mat &mask, std::vector<cv::DMatch> &matches);
+
+    // Lowe's ratio test
+    void search_with_lowe(const cv::Mat &desc0, const cv::Mat &desc1,
+                          const cv::Mat &mask, std::vector<cv::DMatch> &matches, float ratio);
 };
 
 }

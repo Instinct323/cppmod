@@ -8,6 +8,28 @@
 
 namespace cv {
 
+// 删除 distance 偏大的匹配
+void drop_last(std::vector<cv::DMatch> &matches, float radio);
+
+// 使匹配一对一
+void make_one2one(std::vector<cv::DMatch> &matches);
+
+// Lowe's ratio test
+void lowes_filter(const std::vector<std::vector<cv::DMatch>> &knn_matches,
+                  std::vector<cv::DMatch> &matches, float ratio);
+
+// 通过余弦相似度过滤匹配
+void cosine_filter(const std::vector<Eigen::Vector3f> &unprojs0,
+                   const std::vector<Eigen::Vector3f> &unprojs1,
+                   std::vector<cv::DMatch> &matches,
+                   float sigma_factor);
+
+// dy Pauta Criterion
+void dy_filter(const std::vector<Eigen::Vector3f> &unprojs0,
+               const std::vector<Eigen::Vector3f> &unprojs1,
+               std::vector<cv::DMatch> &matches,
+               float sigma_factor);
+
 
 // Mat -> Eigen
 template<typename T>
@@ -22,21 +44,39 @@ Eigen::Matrix<T, -1, -1> toEigen(const Mat &mat) {
 }
 
 
-// 关键点网格掩码
-class GridMask {
+// 关键点网格字典
+class GridDict {
     int mRows, mCols;
     Size mGridSize;
     Mat_<uchar> mMask;
 
 public:
-    explicit GridMask(const std::vector<KeyPoint> &trainKps, const Size &imgSize,
-                      const Size &gridSize = {16, 16}, int dilation = 1);
+    explicit GridDict(std::vector<KeyPoint>::iterator begin, std::vector<KeyPoint>::iterator end,
+                      const Size &imgSize, const Size &gridSize = {16, 16}, int dilation = 1);
 
     template<typename T>
     Mat operator()(T x, T y) const {
       static_assert(std::is_arithmetic<T>::value, "Invalid type");
       int r = y / mGridSize.height, c = x / mGridSize.width;
       return mMask.row(r * mCols + c);
+    }
+};
+
+
+// 关键点水平字典
+class HoriDict {
+    int mRows;
+    int mStride;
+    Mat_<uchar> mMask;
+
+public:
+    explicit HoriDict(std::vector<KeyPoint>::iterator begin, std::vector<KeyPoint>::iterator end,
+                      const int &imgRow, const int &stride);
+
+    template<typename T>
+    Mat operator()(T y) const {
+      static_assert(std::is_arithmetic<T>::value, "Invalid type");
+      return mMask.row(y / mStride);
     }
 };
 

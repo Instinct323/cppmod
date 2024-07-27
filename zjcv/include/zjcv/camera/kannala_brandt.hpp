@@ -66,13 +66,6 @@ public:
     void undistort(const VectorPt2f &src, VectorPt2f &dst) const override { if (src.data() != dst.data()) dst = src; }
 
     void undistort(const VectorKp &src, VectorKp &dst) const override { if (src.data() != dst.data()) dst = src; }
-
-    // ORB 特征
-    void stereoORBfeatures(Base *pCamRight,
-                           ORB::Extractor *pExtractor0, ORB::Extractor *pExtractor1,
-                           const cv::Mat &img0, const cv::Mat &img1,
-                           ORB::KeyPoints &kps0, ORB::KeyPoints &kps1,
-                           cv::Mat &desc0, cv::Mat &desc1, std::vector<cv::DMatch> &matches) const override;
 };
 
 }

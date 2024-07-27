@@ -28,9 +28,9 @@ class atomic_ptr : public std::unique_ptr<T>, public std::mutex {
 public:
     atomic_ptr() : std::unique_ptr<T>(new T) {};
 
-    atomic_ptr(const T &value) : std::unique_ptr<T>(new T(value)) {};
+    explicit atomic_ptr(const T &value) : std::unique_ptr<T>(new T(value)) {};
 
-    atomic_ptr(const T *pValue) : std::unique_ptr<T>(pValue) {};
+    explicit atomic_ptr(const T *pValue) : std::unique_ptr<T>(pValue) {};
 };
 
 

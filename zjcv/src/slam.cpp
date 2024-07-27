@@ -1,3 +1,4 @@
+#include "utils/sophus.hpp"
 #include "zjcv/slam.hpp"
 
 namespace slam {
@@ -34,9 +35,13 @@ void System::stop() {
 
 // Tracker
 Tracker::Tracker(System *pSystem, const YAML::Node &cfg
-) : mpSystem(pSystem), MIN_MATCHES(cfg["min_matches"].as<int>()), MAX_MATCHES(cfg["max_matches"].as<int>()),
+) : mpSystem(pSystem),
+    MIN_MATCHES(cfg["min_matches"].as<int>()), MAX_MATCHES(cfg["max_matches"].as<int>()),
+    KEY_MATCHES(cfg["key_matches"].as<int>()), LOST_TIMEOUT(cfg["lost_timeout"].as<double>()),
+
     mpCam0(camera::from_yaml(cfg["cam0"])), mpCam1(camera::from_yaml(cfg["cam1"])),
     mpIMU(IMU::Device::from_yaml(cfg["imu"])) {
+
   ASSERT(!is_monocular() || !is_inertial(), "Not implemented")
   ASSERT(mpCam0, "Camera0 not found")
   if (is_stereo()) {
@@ -67,70 +72,79 @@ void Tracker::grab_imu(const double &tCurframe, const std::vector<double> &vTime
 }
 
 
+void Tracker::switch_state(TrackState state) {
+  mState = state;
+  if (mState == TrackState::RECENTLY_LOST) {
+    if (!mpRefFrame || !mpCurFrame || (mpCurFrame->mTimestamp - mpRefFrame->mTimestamp > LOST_TIMEOUT)) mState = TrackState::LOST;
+  }
+  if (mState == TrackState::LOST) {
+    mpLastFrame = nullptr;
+    mpCurFrame = nullptr;
+    mpRefFrame = nullptr;
+    // todo: 切换地图
+  }
+}
+
+
 // 基于特征点
 namespace feature {
 
 
 // Frame
+size_t Frame::FRAME_COUNT = 0;
+size_t Frame::KEY_COUNT = 0;
+
+
 Frame::Frame(System *pSystem, const double &timestamp,
              const cv::Mat &img0, const cv::Mat &img1
-) : mpSystem(pSystem), mTimestamp(timestamp), mImg0(img0), mImg1(img1) {}
+) : mpSystem(pSystem), mId(++FRAME_COUNT), mTimestamp(timestamp), mImg0(img0), mImg1(img1) {}
 
 
-Frame::~Frame() {
-  for (auto &m: mvpMappts) if (m) m->erase_obs(this);
-}
-
-
-int Frame::init_mappoints(const std::vector<cv::DMatch> &matches) {
-  int n = mvKps0.size();
+int Frame::init_mappoints(Frame::Ptr &shared_this, const std::vector<cv::DMatch> &matches) {
+  int cnt = 0, n = mvUnprojs0.size();
   mvpMappts = std::vector<std::shared_ptr<Mappoint>>(n, nullptr);
 
   if (!matches.empty()) {
     Sophus::SE3f &T_cam0_cam1 = mpSystem->mpTracker->T_cam0_cam1;
-    const camera::Base::Ptr &pCam0 = mpSystem->mpTracker->mpCam0, &pCam1 = mpSystem->mpTracker->mpCam1;
-
-    bool is_fisheye = pCam0->get_type() == camera::KANNALA_BRANDT;
     for (auto m: matches) {
       int i = m.queryIdx, j = m.trainIdx;
-      Eigen::Vector3f P0_cam0 = pCam0->unproject(mvKps0[i].pt),
-          P1_cam1 = pCam1->unproject(mvKps1[j].pt);
-      // 鱼眼相机余弦判断
-      if (is_fisheye) {
-        Eigen::Vector3f P1_cam0 = T_cam0_cam1 * P1_cam1;
-        if (Eigen::cos(P0_cam0, P1_cam0) > 0.9998) continue;
-      }
+      // 余弦判断
+      const Eigen::Vector3f &P0_cam0 = mvUnprojs0[i], &P1_cam1 = mvUnprojs1[j];
+      Eigen::Vector3f P1_cam0 = T_cam0_cam1 * P1_cam1;
+      if (Eigen::cos(P0_cam0, P1_cam0) > 0.9998) continue;
       // 创建地图点
-      mvpMappts[i] = std::make_shared<Mappoint>();
-      mvpMappts[i]->add_obs(this, i);
-      mvpMappts[i]->add_obs(this, n + j);
+      cnt += 1;
+      mvpMappts[i] = std::make_shared<Mappoint>(mpSystem);
+      mvpMappts[i]->add_obs(shared_this, i);
+      mvpMappts[i]->add_obs(shared_this, j, true);
     }
   }
-  return n;
+  return cnt;
 }
 
 
-int Frame::connect_frame(Frame::Ptr &other, const std::vector<cv::DMatch> &matches) {
+int Frame::connect_frame(Frame::Ptr &shared_this, Frame::Ptr &other, std::vector<cv::DMatch> &matches) {
+  // matches: 参考帧 -> 当前帧
   int n = std::min(int(matches.size()), mpSystem->mpTracker->MAX_MATCHES);
   for (int i = 0; i < n; ++i) {
     const cv::DMatch &m = matches[i];
-    auto mpit_cur = mvpMappts.begin() + m.queryIdx;
-    auto mpit_ref = other->mvpMappts.begin() + m.trainIdx;
+    auto mpit_ref = other->mvpMappts.begin() + m.queryIdx;
+    auto mpit_cur = mvpMappts.begin() + m.trainIdx;
     // 合并: 当前帧 -> 参考帧
     if (*mpit_ref) {
       if (*mpit_cur) {
         **mpit_ref += **mpit_cur;
       } else {
-        (*mpit_ref)->add_obs(this, m.queryIdx);
+        (*mpit_ref)->add_obs(shared_this, m.trainIdx);
       }
       *mpit_cur = *mpit_ref;
     } else {
       // 合并: 参考帧 -> 当前帧
       if (!*mpit_cur) {
-        *mpit_cur = std::make_shared<Mappoint>();
-        (*mpit_cur)->add_obs(this, m.queryIdx);
+        *mpit_cur = std::make_shared<Mappoint>(mpSystem);
+        (*mpit_cur)->add_obs(shared_this, m.trainIdx);
       }
-      (*mpit_cur)->add_obs(other.get(), m.trainIdx);
+      (*mpit_cur)->add_obs(other, m.queryIdx);
       *mpit_ref = *mpit_cur;
     }
   }
@@ -138,20 +152,74 @@ int Frame::connect_frame(Frame::Ptr &other, const std::vector<cv::DMatch> &match
 }
 
 
+void Frame::prune() {
+  for (Mappoint::Ptr &m: mvpMappts) if (m) m->prune();
+}
+
+
+void Frame::mark_keyframe() {
+  mIdKey = ++KEY_COUNT;
+  // for (auto &m: mvpMappts) if (m) m->triangulation();
+}
+
+
 // Mappoint
-void Mappoint::add_obs(Frame *pFrame, const int &idx) { mObs.emplace_back(pFrame, idx); }
+int Mappoint::frame_count() {
+  prune();
+  std::set<Frame *> sFrames;
+  for (auto &obs: mObs) sFrames.insert(obs.first.lock().get());
+  return sFrames.size();
+}
 
 
-void Mappoint::erase_obs(Frame *pFrame) {
-  mObs.erase(std::remove_if(
+void Mappoint::prune() {
+  auto begit = std::remove_if(
       mObs.begin(), mObs.end(),
-      [pFrame](const Observation &obs) { return obs.first == pFrame; }), mObs.end());
+      [](const Observation &obs) { return obs.first.expired(); });
+  mObs.erase(begit, mObs.end());
+}
+
+
+void Mappoint::add_obs(const Frame::Ptr &pFrame, const int &idx, bool is_right) {
+  mObs.emplace_back(pFrame, is_right ? (idx + pFrame->mvUnprojs0.size()) : idx);
+}
+
+
+void Mappoint::clear() {
+  for (auto [wpf, i]: mObs) {
+    if (wpf.expired()) continue;
+    Frame::Ptr spf = wpf.lock();
+    if (i < spf->mvUnprojs0.size()) spf->mvpMappts[i] = nullptr;
+  }
+  mObs.clear();
 }
 
 
 Mappoint &Mappoint::operator+=(const Mappoint &other) {
   mObs.insert(mObs.end(), other.mObs.begin(), other.mObs.end());
   return *this;
+}
+
+
+void Mappoint::triangulation() {
+  const camera::Base::Ptr &pCam0 = mpSystem->mpTracker->mpCam0, &pCam1 = mpSystem->mpTracker->mpCam1;
+  std::vector<Eigen::Vector3f> vP_cam;
+  std::vector<Sophus::SE3f> vT_cam_ref;
+
+  prune();
+  for (auto &obs: mObs) {
+    if (obs.first.expired()) continue;
+    Frame::Ptr pFrame = obs.first.lock();
+    int i = obs.second;
+    int n = pFrame->mvUnprojs0.size();
+
+    bool is_left = i < n;
+    const camera::Base::Ptr &pCam = is_left ? pCam0 : pCam1;
+
+    vP_cam.push_back(is_left ? pFrame->mvUnprojs0[i] : pFrame->mvUnprojs1[i - n]);
+    vT_cam_ref.push_back(pCam->T_cam_imu * pFrame->mPose.T_imu_world);
+  }
+  mReprErr = Sophus::triangulation(vP_cam, vT_cam_ref, mPos);
 }
 
 }

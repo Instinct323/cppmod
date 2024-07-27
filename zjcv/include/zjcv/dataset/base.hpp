@@ -26,7 +26,7 @@ public:
 
     Base(const Base &) = delete;
 
-    operator std::string() const { return mPath; }
+    explicit operator std::string() const { return mPath; }
 
     friend std::ostream &operator<<(std::ostream &os, const Base &dataset) { return os << dataset.mPath; }
 };

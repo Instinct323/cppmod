@@ -37,6 +37,8 @@ void slam::Tracker::run() {
     grab_image(std::get<0>(storage)[i], imgLeft, imgRight);
 
     mpSystem->set_desc("track-cost", (boost::format("%.1fms") % (1e3 * timer.count())).str());
+    mpSystem->set_desc("state", mState);
+
     indicators::set_desc(pbar, mpSystem->get_desc(), false);
     pbar.tick();
   }

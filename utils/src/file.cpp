@@ -1,8 +1,6 @@
 #include <fstream>
-#include <sophus/se3.hpp>
 #include <yaml-cpp/yaml.h>
 
-#include "utils/eigen.hpp"
 #include "utils/file.hpp"
 #include "utils/glog.hpp"
 

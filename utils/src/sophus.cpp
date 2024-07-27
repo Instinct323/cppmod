@@ -4,12 +4,11 @@
 namespace Sophus {
 
 
-bool triangulation(const std::vector<Eigen::Vector3f> &vP_cam,
-                   const std::vector<Sophus::SE3f> &vT_cam_ref,
-                   Eigen::Vector3f &P_ref,
-                   float &reproj_error) {
+float triangulation(const std::vector<Eigen::Vector3f> &vP_cam,
+                    const std::vector<Sophus::SE3f> &vT_cam_ref,
+                    Eigen::Vector3f &P_ref) {
   size_t n = vP_cam.size();
-  if (n < 2) return false;
+  if (n < 2) return -1;
   Eigen::MatrixXf equ_set(2 * n, 4);
   for (int i = 0; i < n; ++i) {
     // T_cam_ref * P_ref = z * P_cam 等价:
@@ -25,15 +24,14 @@ bool triangulation(const std::vector<Eigen::Vector3f> &vP_cam,
   Eigen::Vector4f P_homo = svd.matrixV().col(3);
   P_homo /= P_homo[3];
   P_ref = P_homo.head(3);
-  // if (svd.singularValues()[3] / svd.singularValues()[2] > 1e-2) return false;
   // 检验点在相机平面上的深度
-  reproj_error = 0;
+  float reproj_error = 0;
   for (int i = 0; i < n; ++i) {
     Eigen::Vector3f P_cam = vT_cam_ref[i] * P_ref;
-    if (P_cam[2] < 1e-4) return false;
+    if (P_cam[2] < 1e-4) return -1;
     reproj_error = std::max(reproj_error, ((P_cam.head(2) / P_cam[2]) - vP_cam[i].head(2)).squaredNorm());
   }
-  return true;
+  return reproj_error;
 }
 
 

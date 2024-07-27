@@ -25,7 +25,7 @@ public:
 
     ZJCV_BUILTIN Map(System *pSystem) : mpSystem(pSystem) {}
 
-    ZJCV_BUILTIN void insert_keyframe(std::shared_ptr<Frame> pKF) { mvpKeyFrames.push_back(pKF); }
+    ZJCV_BUILTIN void insert_keyframe(const std::shared_ptr<Frame>& pKF) { mvpKeyFrames.push_back(pKF); }
 
     ZJCV_CUSTOM void draw() const;
 

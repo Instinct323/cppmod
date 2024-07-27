@@ -24,5 +24,6 @@
 - 为 Pinhole 的双目特征点匹配添加了基于视差的筛选 (Pauta Criterion)
 
 ## Change
+
 - 简化了 IMU 的预积分过程
 - 使用运算速度更快的 `fbow` 替代 `DBoW2`

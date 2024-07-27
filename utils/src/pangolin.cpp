@@ -1,7 +1,6 @@
 #include "utils/cv.hpp"
 #include "utils/glog.hpp"
 #include "utils/indicators.hpp"
-#include "utils/math.hpp"
 #include "utils/pangolin.hpp"
 
 namespace pangolin {

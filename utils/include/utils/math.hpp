@@ -20,8 +20,17 @@ Eigen::Vector<T, -1> toEigen(const std::vector<T> &vec) {
 // mean
 template<typename T>
 float mean(const std::vector<T> &vec) {
-  float sum = 0;
-  for (const T &value: vec) sum += static_cast<float>(value);
+  long double sum = 0;
+  for (const T &value: vec) sum += value;
+  return sum / vec.size();
+}
+
+
+// mean square
+template<typename T>
+float mean_square(const std::vector<T> &vec) {
+  long double sum = 0;
+  for (const T &value: vec) sum += value * value;
   return sum / vec.size();
 }
 
@@ -29,7 +38,7 @@ float mean(const std::vector<T> &vec) {
 // standard deviation
 template<typename T>
 float std(const std::vector<T> &vec, float vMean) {
-  float var = 0;
+  long double var = 0;
   for (const T &value: vec) var += pow(static_cast<float>(value) - vMean, 2);
   return sqrt(var / vec.size());
 }
@@ -47,7 +56,7 @@ class EMA {
 public:
     explicit EMA(float motion = 0.1) : mMotion(motion) {}
 
-    ~EMA() { if (mValue != nullptr) delete mValue; }
+    ~EMA() { delete mValue; }
 
     // 值更新
     template<typename T>
@@ -64,7 +73,7 @@ public:
     float get() { return *mValue; }
 
     template<typename T>
-    operator T() {
+    explicit operator T() {
       static_assert(std::is_floating_point<T>::value, "EMA: Invalid type");
       return *mValue;
     }
@@ -77,8 +86,8 @@ class PautaCriterion {
     float mMean, mScaledStd;
 
 public:
-    explicit PautaCriterion(const std::vector<T> &vec, float sigmaFactor = 3
-    ) : mMean(mean(vec)), mScaledStd(sigmaFactor * std(vec, mMean)) {}
+    explicit PautaCriterion(const std::vector<T> &vec, float sigma_factor = 3
+    ) : mMean(mean(vec)), mScaledStd(sigma_factor * std(vec, mMean)) {}
 
     bool operator()(const T &value) { return abs(static_cast<float>(value) - mMean) < mScaledStd; }
 };

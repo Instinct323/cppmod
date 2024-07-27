@@ -12,7 +12,7 @@ namespace Eigen {
 
 // cosine
 template<typename T, int dim>
-T cos(Eigen::Matrix<T, dim, 1> &v1, Eigen::Matrix<T, dim, 1> &v2) {
+T cos(const Eigen::Matrix<T, dim, 1> &v1, const Eigen::Matrix<T, dim, 1> &v2) {
   return v1.dot(v2) / (v1.norm() * v2.norm());
 }
 

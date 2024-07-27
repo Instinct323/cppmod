@@ -81,7 +81,7 @@ void Preintegration::integrate(const double &dt, const Sample &sample) {
 
 void MovingPose::predict_from(const MovingPose &prev, const Preintegration *preint, bool update) {
   if (preint) {
-    Sample deltaB = (update) ? preint->B : prev.B - preint->B;
+    Sample deltaB = update ? preint->B : prev.B - preint->B;
     float it = preint->it;
     Eigen::Vector3f iV(0, 0, -9.81f * it);
 
