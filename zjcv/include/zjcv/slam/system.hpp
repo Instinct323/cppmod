@@ -11,6 +11,7 @@
 #include "frame.hpp"
 #include "map.hpp"
 #include "mappoint.hpp"
+#include "optimize.hpp"
 #include "tracker.hpp"
 #include "viewer.hpp"
 

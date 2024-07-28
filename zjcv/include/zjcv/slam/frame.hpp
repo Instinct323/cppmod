@@ -6,9 +6,7 @@
 #include "utils/cv.hpp"
 #include "zjcv/imu.hpp"
 
-namespace slam {
-
-namespace feature {
+namespace slam::feature {
 
 class Mappoint;
 
@@ -33,6 +31,10 @@ public:
 
     ZJCV_BUILTIN explicit Frame(System *pSystem, const double &timestamp, const cv::Mat &img0, const cv::Mat &img1);
 
+    ZJCV_BUILTIN bool is_keyframe() { return mIdKey > 0; }
+
+    ZJCV_BUILTIN void mark_keyframe();
+
     // 根据匹配, 初始化对应左图关键点的地图点
     ZJCV_BUILTIN int init_mappoints(Ptr &shared_this, const std::vector<cv::DMatch> &matches = {});
 
@@ -40,8 +42,6 @@ public:
     ZJCV_BUILTIN int connect_frame(Ptr &shared_this, Ptr &other, std::vector<cv::DMatch> &matches);
 
     ZJCV_BUILTIN void prune();
-
-    ZJCV_BUILTIN void mark_keyframe();
 
     ZJCV_CUSTOM void process();
 
@@ -51,16 +51,14 @@ public:
     std::vector<cv::KeyPoint> mvKps0, mvKps1;
     cv::Mat mDesc0, mDesc1;
     std::vector<cv::DMatch> mStereoMatches;
-    std::unique_ptr<cv::GridDict> mpGridDict;
 
     void stereo_features(std::vector<cv::DMatch> &matches);
 
     void unproject_kps();
+
 #endif
 
 };
-
-}
 
 }
 

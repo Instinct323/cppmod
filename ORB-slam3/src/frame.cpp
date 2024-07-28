@@ -1,3 +1,5 @@
+#include <boost/format.hpp>
+
 #include "utils/eigen.hpp"
 
 #define ZJCV_ORB_SLAM
@@ -56,31 +58,31 @@ void Frame::process() {
   camera::Base::Ptr pCam0 = pTracker->mpCam0, pCam1 = pTracker->mpCam1;
 
   bool is_keyframe = pRefFrame == nullptr;
-  mpSystem->set_desc("id", pCurFrame->mId);
+  mpSystem->set_desc("id", mId);
 
-  // motion model, 初始化位姿
+  // motion model: 初始化位姿
   if (pTracker->is_inertial()) {
     if (pRefFrame) mPose.predict_from(pRefFrame->mPose, pTracker->mpIMUpreint.get());
   } else if (pLastFrame) {
     mPose.predict_from(pLastFrame->mPose);
   }
 
-  // ORB 特征点提取、去畸
+  // Monocular: ORB 特征点提取, 去畸, 反投影
   if (pTracker->is_monocular()) {
     pTracker->mpExtractor0->detect_and_compute(mImg0, cv::noArray(), mvKps0, mDesc0);
     pCam0->undistort(mvKps0, mvKps0);
     unproject_kps();
 
   } else {
+    // Stereo
     stereo_features(mStereoMatches);
     unproject_kps();
     // 水平对齐约束, 离群点筛除
     cv::dy_filter(mvUnprojs0, mvUnprojs1, mStereoMatches, 1.5);
     cv::drop_last(mStereoMatches, 0.1);
     mStereoMatches.shrink_to_fit();
-    init_mappoints(pCurFrame, mStereoMatches);
-    mpSystem->set_desc("stereo-matches", mStereoMatches.size());
   }
+
   // RECENTLY_LOST: 关键点过少
   if (mvKps0.size() < pTracker->MIN_MATCHES) {
     pTracker->switch_state(TrackState::RECENTLY_LOST);
@@ -92,66 +94,64 @@ void Frame::process() {
     // todo: 重定位
   }
 
+  // 初始化地图点
+  init_mappoints(pCurFrame, mStereoMatches);
+  mpSystem->set_desc("stereo-matches", mStereoMatches.size());
   if (pRefFrame) {
     pRefFrame->prune();
-    // 与关键帧进行匹配: 仅当地图点准确时
     auto &refMappts = pRefFrame->mvpMappts;
-    if (!refMappts.empty()) {
-      mpGridDict = std::make_unique<cv::GridDict>(mvKps0.begin(), mvKps0.end(), mImg0.size());
-      std::vector<cv::DMatch> ref_matches;
-      cv::Mat_<uchar> mask(pRefFrame->mvKps0.size(), mvKps0.size(), uchar(0));
 
-      // 将地图点投影到当前帧
-      Sophus::SE3f T_cam0_world = pCam0->T_cam_imu * mPose.T_imu_world;
-      for (int i = 0; i < refMappts.size(); ++i) {
-        if (!refMappts[i] || refMappts[i]->is_invalid()) continue;
-        cv::Point2f pt = pCam0->project(T_cam0_world * refMappts[i]->mPos);
-        if (pt.x < 0 || pt.x >= mImg0.cols || pt.y < 0 || pt.y >= mImg0.rows) continue;
-        mpGridDict->operator()(pt.x, pt.y).copyTo(mask.row(i));
-      }
+    // 利用已有地图点进行匹配
+    cv::GridDict grid_dict(mvKps0.begin(), mvKps0.end(), mImg0.size());
+    std::vector<cv::DMatch> ref_matches;
+    cv::Mat_<uchar> mask(pRefFrame->mvKps0.size(), mvKps0.size(), uchar(0));
 
-      // 余弦相似度筛选
-      pTracker->mpMatcher->search(pRefFrame->mDesc0, mDesc0, mask, ref_matches);
-      float n = ref_matches.size() + 1e-4;
-      cv::cosine_filter(pRefFrame->mvUnprojs0, mvUnprojs0, ref_matches, 0.8);
-
-      mpSystem->set_desc("ref-matches", ref_matches.size());
-      mpSystem->set_desc("ref-filter", float(ref_matches.size()) / n);
-      cv::drop_last(ref_matches, 0.1);
-
-      // RECENTLY_LOST: 匹配点过少
-      if (ref_matches.size() < pTracker->MIN_MATCHES) {
-        pTracker->switch_state(TrackState::RECENTLY_LOST);
-      }
-
-      // Keyframe: 匹配点衰减到临界
-      if (ref_matches.size() <= pTracker->KEY_MATCHES) {
-        is_keyframe = true;
-      }
-
-      // 为地图点添加观测
-      connect_frame(pCurFrame, pRefFrame, ref_matches);
-      // todo: 优化位姿 (确定地图点的位置, e.g., 三角化), 然后更新速度
-      mPose.update_velocity(pLastFrame->mPose);
-
-    } else {
-      // Monocular: 第一帧, 未初始化
-      pRefFrame->init_mappoints(pCurFrame);
+    // 将地图点投影到当前帧
+    Sophus::SE3f T_cam0_world = pCam0->T_cam_imu * mPose.T_imu_world;
+    for (int i = 0; i < refMappts.size(); ++i) {
+      if (!refMappts[i] || refMappts[i]->is_invalid()) continue;
+      cv::Point2f pt = pCam0->project(T_cam0_world * refMappts[i]->mPos);
+      if (pt.x < 0 || pt.x >= mImg0.cols || pt.y < 0 || pt.y >= mImg0.rows) continue;
+      grid_dict(pt.x, pt.y).copyTo(mask.row(i));
     }
-  } else {
-    // Stereo: 第一帧, 三角化确定地图点位姿
-    for (auto &mpt: mvpMappts) {
-      if (!mpt) continue;
-      mpt->triangulation();
+
+    // 余弦相似度筛选
+    pTracker->mpMatcher->search(pRefFrame->mDesc0, mDesc0, mask, ref_matches);
+    float n = ref_matches.size() + 1e-4;
+    cv::cosine_filter(pRefFrame->mvUnprojs0, mvUnprojs0, ref_matches, 0.8);
+    float r = float(ref_matches.size()) / n;
+    cv::drop_last(ref_matches, 0.1);
+
+    mpSystem->set_desc("ref-matches", ref_matches.size());
+    mpSystem->set_desc("ref-filter", (boost::format("%.2f") % r).str());
+
+    // RECENTLY_LOST: 匹配点过少
+    if (ref_matches.size() < pTracker->MIN_MATCHES) {
+      pTracker->switch_state(TrackState::RECENTLY_LOST);
     }
+
+    // Keyframe: 匹配点衰减到临界
+    if (ref_matches.size() <= pTracker->KEY_MATCHES) {
+      is_keyframe = true;
+    }
+
+    // 为地图点添加观测
+    connect_frame(pCurFrame, pRefFrame, ref_matches);
+    optimize_pose(this);
+
+    // Monocular: 上一帧是关键帧, 扩充地图点
+    if (pLastFrame->is_keyframe() && pTracker->is_monocular()) {
+      // todo
+    }
+    mPose.update_velocity(pLastFrame->mPose);
   }
 
-  // 标记为关键帧
+  // 标记为关键帧, 同时三角化已有地图点
   if (is_keyframe) {
     mark_keyframe();
     pTracker->mpRefFrame = pCurFrame;
     mpSystem->mpAtlas->mpCurMap->insert_keyframe(pCurFrame);
-    mpSystem->set_desc("id-key", pCurFrame->mIdKey);
+    mpSystem->set_desc("id-key", mIdKey);
   }
   pTracker->switch_state(TrackState::OK);
 }

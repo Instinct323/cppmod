@@ -8,10 +8,7 @@
 
 #include "zjcv/zjcv.hpp"
 
-namespace slam {
-
-// 基于特征点
-namespace feature {
+namespace slam::feature {
 
 class Frame;
 
@@ -49,8 +46,6 @@ public:
 #endif
 
 };
-
-}
 
 }
 

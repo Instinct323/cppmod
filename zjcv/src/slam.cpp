@@ -100,6 +100,12 @@ Frame::Frame(System *pSystem, const double &timestamp,
 ) : mpSystem(pSystem), mId(++FRAME_COUNT), mTimestamp(timestamp), mImg0(img0), mImg1(img1) {}
 
 
+void Frame::mark_keyframe() {
+  mIdKey = ++KEY_COUNT;
+  for (auto &m: mvpMappts) if (m) m->triangulation();
+}
+
+
 int Frame::init_mappoints(Frame::Ptr &shared_this, const std::vector<cv::DMatch> &matches) {
   int cnt = 0, n = mvUnprojs0.size();
   mvpMappts = std::vector<std::shared_ptr<Mappoint>>(n, nullptr);
@@ -154,12 +160,6 @@ int Frame::connect_frame(Frame::Ptr &shared_this, Frame::Ptr &other, std::vector
 
 void Frame::prune() {
   for (Mappoint::Ptr &m: mvpMappts) if (m) m->prune();
-}
-
-
-void Frame::mark_keyframe() {
-  mIdKey = ++KEY_COUNT;
-  // for (auto &m: mvpMappts) if (m) m->triangulation();
 }
 
 
@@ -220,6 +220,12 @@ void Mappoint::triangulation() {
     vT_cam_ref.push_back(pCam->T_cam_imu * pFrame->mPose.T_imu_world);
   }
   mReprErr = Sophus::triangulation(vP_cam, vT_cam_ref, mPos);
+}
+
+
+// optimize
+void optimize_pose(Frame *pFrame) {
+  g2o::Optimizer<6, 3, g2o::LinearSolverDense, g2o::OptimizationAlgorithmLevenberg> optimizer;
 }
 
 }
