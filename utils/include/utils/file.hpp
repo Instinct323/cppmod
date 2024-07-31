@@ -71,9 +71,9 @@ template<typename T>
 cv::Mat toCvMat(const Node &node) { return toMatrix<T, cv::Mat_<T>>(node); }
 
 
-// SE3d 转换
+// Sophus 转换
 template<typename T>
-Sophus::SE3 <T> toSE3(const Node &node) {
+Sophus::SE3<T> toSE3(const Node &node) {
   Eigen::MatrixX<T> mat = toEigen<T>(node);
   // tx ty tz qw qx qy qz
   if (mat.size() == 7) {
@@ -84,7 +84,7 @@ Sophus::SE3 <T> toSE3(const Node &node) {
     Eigen::MatrixX<T> matn4 = Eigen::reshape<T>(mat, -1, 4);
     return {Eigen::Quaternion<T>(matn4.template block<3, 3>(0, 0)), matn4.template block<3, 1>(0, 3)};
   }
-  LOG(FATAL) << "YAML: Invalid SE3d format";
+  LOG(FATAL) << "YAML: Invalid SE3 format";
 }
 
 }

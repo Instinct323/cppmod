@@ -9,26 +9,27 @@
 namespace cv {
 
 // 删除 distance 偏大的匹配
-void drop_last(std::vector<cv::DMatch> &matches, float radio);
+float drop_last(std::vector<cv::DMatch> &matches, float radio, bool ordered = false);
 
 // 使匹配一对一
-void make_one2one(std::vector<cv::DMatch> &matches);
+float make_one2one(std::vector<cv::DMatch> &matches, bool ordered = false);
 
 // Lowe's ratio test
-void lowes_filter(const std::vector<std::vector<cv::DMatch>> &knn_matches,
-                  std::vector<cv::DMatch> &matches, float ratio);
+float lowes_filter(const std::vector<std::vector<cv::DMatch>> &knn_matches,
+                   std::vector<cv::DMatch> &matches, float ratio);
 
 // 通过余弦相似度过滤匹配
-void cosine_filter(const std::vector<Eigen::Vector3f> &unprojs0,
-                   const std::vector<Eigen::Vector3f> &unprojs1,
-                   std::vector<cv::DMatch> &matches,
-                   float sigma_factor);
+float cosine_filter(const std::vector<Eigen::Vector3f> &unprojs0,
+                    const std::vector<Eigen::Vector3f> &unprojs1,
+                    std::vector<cv::DMatch> &matches,
+                    float thresh);
 
-// dy Pauta Criterion
-void dy_filter(const std::vector<Eigen::Vector3f> &unprojs0,
-               const std::vector<Eigen::Vector3f> &unprojs1,
-               std::vector<cv::DMatch> &matches,
-               float sigma_factor);
+// dx Pauta Criterion
+float dx_filter(const std::vector<Eigen::Vector3f> &unprojs0,
+                const std::vector<Eigen::Vector3f> &unprojs1,
+                std::vector<cv::DMatch> &matches,
+                float sigma_factor,
+                float *mean = nullptr);
 
 
 // Mat -> Eigen
@@ -66,17 +67,17 @@ public:
 // 关键点水平字典
 class HoriDict {
     int mRows;
-    int mStride;
     Mat_<uchar> mMask;
 
 public:
-    explicit HoriDict(std::vector<KeyPoint>::iterator begin, std::vector<KeyPoint>::iterator end,
-                      const int &imgRow, const int &stride);
+    explicit HoriDict(std::vector<KeyPoint>::iterator begin,
+                      std::vector<KeyPoint>::iterator end,
+                      const int &imgRow);
 
     template<typename T>
     Mat operator()(T y) const {
       static_assert(std::is_arithmetic<T>::value, "Invalid type");
-      return mMask.row(y / mStride);
+      return mMask.row(int(y));
     }
 };
 

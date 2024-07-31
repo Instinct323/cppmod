@@ -9,47 +9,6 @@
 namespace slam {
 
 
-void Frame::unproject_kps() {
-  Tracker::Ptr pTracker = mpSystem->mpTracker;
-  camera::Base::Ptr pCam0 = pTracker->mpCam0, pCam1 = pTracker->mpCam1;
-
-  assert(mvUnprojs0.empty() && mvUnprojs1.empty());
-  mvUnprojs0.reserve(mvKps0.size());
-  mvUnprojs1.reserve(mvKps1.size());
-
-  for (auto &i: mvKps0) {
-    mvUnprojs0.push_back(pCam0->unproject(i.pt));
-  }
-  for (auto &i: mvKps1) {
-    mvUnprojs1.push_back(pCam1->unproject(i.pt));
-  }
-}
-
-
-void Frame::stereo_features(std::vector<cv::DMatch> &matches) {
-  Tracker::Ptr &pTracker = mpSystem->mpTracker;
-  int lapCnt0, lapCnt1;
-  parallel::PriorityThread t0 = parallel::thread_pool.emplace(
-      1, [&lapCnt0, this, &pTracker]() {
-          lapCnt0 = pTracker->mpExtractor0->detect_and_compute(mImg0, cv::noArray(), mvKps0, mDesc0); \
-          pTracker->mpCam0->undistort(mvKps0, mvKps0);
-      });
-  lapCnt1 = pTracker->mpExtractor1->detect_and_compute(mImg1, cv::noArray(), mvKps1, mDesc1);
-  pTracker->mpCam1->undistort(mvKps1, mvKps1);
-  t0->join();
-  if (lapCnt1 == 0 || lapCnt0 == 0) return;
-  // 分配右相机特征到行
-  cv::Mat mask;
-  if (pTracker->mpCam0->get_type() == camera::PINHOLE) {
-    cv::HoriDict hori_dict(mvKps1.begin(), mvKps1.begin() + lapCnt1, mImg1.rows, 2);
-    mask = cv::Mat_<uchar>(lapCnt0, lapCnt1);
-    for (int i = 0; i < lapCnt0; ++i) hori_dict(mvKps0[i].pt.y).copyTo(mask.row(i));
-  }
-  // Lowe's ratio test
-  pTracker->mpMatcher->search_with_lowe(mDesc0.rowRange(0, lapCnt0), mDesc1.rowRange(0, lapCnt1), cv::Mat(), matches, 0.7);
-}
-
-
 void Frame::process() {
   Tracker::Ptr &pTracker = mpSystem->mpTracker;
   Ptr &pLastFrame = pTracker->mpLastFrame;
@@ -57,46 +16,34 @@ void Frame::process() {
   Ptr &pRefFrame = pTracker->mpRefFrame;
   camera::Base::Ptr pCam0 = pTracker->mpCam0, pCam1 = pTracker->mpCam1;
 
-  bool is_keyframe = pRefFrame == nullptr;
+  int lap_cnt0, lap_cnt1;
+  bool is_keyframe = !pRefFrame;
   mpSystem->set_desc("id", mId);
 
-  // motion model: 初始化位姿
-  if (pTracker->is_inertial()) {
-    if (pRefFrame) mPose.predict_from(pRefFrame->mPose, pTracker->mpIMUpreint.get());
-  } else if (pLastFrame) {
-    mPose.predict_from(pLastFrame->mPose);
-  }
-
-  // Monocular: ORB 特征点提取, 去畸, 反投影
-  if (pTracker->is_monocular()) {
-    pTracker->mpExtractor0->detect_and_compute(mImg0, cv::noArray(), mvKps0, mDesc0);
+  // Initialize: 初始化
+  {
+    // ORB 特征点提取, 去畸, 反投影
+    lap_cnt0 = pTracker->mpExtractor0->detect_and_compute(mImg0, cv::noArray(), mvKps0, mDesc0);
     pCam0->undistort(mvKps0, mvKps0);
-    unproject_kps();
+    mvUnprojs0.reserve(mvKps0.size());
+    for (auto &i: mvKps0) mvUnprojs0.push_back(pCam0->unproject(i.pt));
+    mvpMappts = std::vector<std::shared_ptr<Mappoint>>(mvUnprojs0.size(), nullptr);
 
-  } else {
-    // Stereo
-    stereo_features(mStereoMatches);
-    unproject_kps();
-    // 水平对齐约束, 离群点筛除
-    cv::dy_filter(mvUnprojs0, mvUnprojs1, mStereoMatches, 1.5);
-    cv::drop_last(mStereoMatches, 0.1);
-    mStereoMatches.shrink_to_fit();
+    // RECENTLY_LOST: 关键点过少
+    if (mvKps0.size() < pTracker->MIN_MATCHES) {
+      pTracker->switch_state(TrackState::RECENTLY_LOST);
+      return;
+    }
+
+    // motion model: 初始化位姿
+    if (pTracker->is_inertial()) {
+      if (pRefFrame) mPose.predict_from(pRefFrame->mPose, pTracker->mpIMUpreint.get());
+    } else if (pLastFrame) {
+      mPose.predict_from(pLastFrame->mPose);
+    }
   }
 
-  // RECENTLY_LOST: 关键点过少
-  if (mvKps0.size() < pTracker->MIN_MATCHES) {
-    pTracker->switch_state(TrackState::RECENTLY_LOST);
-    return;
-  }
-
-  // LOST: 重定位
-  if (pTracker->mState == TrackState::LOST) {
-    // todo: 重定位
-  }
-
-  // 初始化地图点
-  init_mappoints(pCurFrame, mStereoMatches);
-  mpSystem->set_desc("stereo-matches", mStereoMatches.size());
+  // feature matching: 修正位姿
   if (pRefFrame) {
     pRefFrame->prune();
     auto &refMappts = pRefFrame->mvpMappts;
@@ -117,21 +64,24 @@ void Frame::process() {
 
     // 余弦相似度筛选
     pTracker->mpMatcher->search(pRefFrame->mDesc0, mDesc0, mask, ref_matches);
-    float n = ref_matches.size() + 1e-4;
-    cv::cosine_filter(pRefFrame->mvUnprojs0, mvUnprojs0, ref_matches, 0.8);
-    float r = float(ref_matches.size()) / n;
     cv::drop_last(ref_matches, 0.1);
+    cv::make_one2one(ref_matches, true);
+    cv::cosine_filter(pRefFrame->mvUnprojs0, mvUnprojs0, ref_matches, 0.9397);
+    mpSystem->set_desc("ref-match", ref_matches.size());
 
-    mpSystem->set_desc("ref-matches", ref_matches.size());
-    mpSystem->set_desc("ref-filter", (boost::format("%.2f") % r).str());
-
-    // RECENTLY_LOST: 匹配点过少
+    // Relocalization: 重定位
     if (ref_matches.size() < pTracker->MIN_MATCHES) {
-      pTracker->switch_state(TrackState::RECENTLY_LOST);
+      ref_matches.clear();
+      // todo: 重定位
+      if (ref_matches.size() < pTracker->MIN_MATCHES) {
+        // RECENTLY_LOST: 匹配点过少
+        pTracker->switch_state(TrackState::RECENTLY_LOST);
+        return;
+      }
     }
 
     // Keyframe: 匹配点衰减到临界
-    if (ref_matches.size() <= pTracker->KEY_MATCHES) {
+    if (ref_matches.size() < pTracker->KEY_MATCHES) {
       is_keyframe = true;
     }
 
@@ -143,11 +93,48 @@ void Frame::process() {
     if (pLastFrame->is_keyframe() && pTracker->is_monocular()) {
       // todo
     }
+
+    // 根据位姿信息更新
     mPose.update_velocity(pLastFrame->mPose);
+    mJoint = Sophus::Joint(&pRefFrame->mPose.T_imu_world,
+                           mPose.T_imu_world * pRefFrame->mPose.T_world_imu);
   }
 
-  // 标记为关键帧, 同时三角化已有地图点
+  // Keyframe: 信息扩充
   if (is_keyframe) {
+
+    // Stereo: 检测右相机特征, 三角化地图点
+    if (pTracker->is_stereo()) {
+      lap_cnt1 = pTracker->mpExtractor1->detect_and_compute(mImg1, cv::noArray(), mvKps1, mDesc1);
+      pTracker->mpCam1->undistort(mvKps1, mvKps1);
+      if (lap_cnt0 > 0 && lap_cnt1 > 0) {
+        // 分配右相机特征到行
+        cv::Mat mask;
+        if (pTracker->mpCam0->get_type() == camera::PINHOLE) {
+          mask = cv::Mat_<uchar>(lap_cnt0, lap_cnt1);
+          cv::HoriDict hori_dict(mvKps1.begin(), mvKps1.begin() + lap_cnt1, mImg1.rows);
+          for (int i = 0; i < lap_cnt0; ++i) hori_dict(mvKps0[i].pt.y).copyTo(mask.row(i));
+        }
+        // Lowe's ratio test
+        std::vector<cv::DMatch> stereo_matches;
+        pTracker->mpMatcher->search_with_lowe(mDesc0.rowRange(0, lap_cnt0), mDesc1.rowRange(0, lap_cnt1),
+                                              mask, stereo_matches, 0.7);
+        // unproject
+        mvUnprojs1.reserve(mvKps1.size());
+        for (auto &i: mvKps1) mvUnprojs1.push_back(pCam1->unproject(i.pt));
+        // 水平对齐约束, 离群点筛除
+        cv::drop_last(stereo_matches, 0.1);
+        cv::make_one2one(stereo_matches, true);
+        cv::cosine_filter(mvUnprojs0, mvUnprojs1, stereo_matches, 0.9848);
+        stereo_matches.shrink_to_fit();
+        mStereoMatches = stereo_matches;
+
+        stereo_triangulation(pCurFrame, stereo_matches);
+        mpSystem->set_desc("stereo-match", stereo_matches.size());
+      }
+    }
+
+    // 标记为关键帧
     mark_keyframe();
     pTracker->mpRefFrame = pCurFrame;
     mpSystem->mpAtlas->mpCurMap->insert_keyframe(pCurFrame);
@@ -159,19 +146,24 @@ void Frame::process() {
 
 void Frame::draw() {
   Tracker::Ptr pTracker = mpSystem->mpTracker;
-  cv::Mat img0 = mImg0.clone(), img1 = mImg1.clone(), toshow;
+  cv::Mat img0 = mImg0.clone();
   // Image 0
   pTracker->mpCam0->undistort(img0, img0);
   cv::cvtColor(img0, img0, cv::COLOR_GRAY2BGR);
-  if (img1.empty()) {
-    cv::drawKeypoints(img0, mvKps0, toshow);
-  } else {
-    // Image 1
+  std::vector<cv::KeyPoint> kps;
+  for (int i = 0; i < mvKps0.size(); ++i) {
+    if (mvpMappts[i] && !mvpMappts[i]->is_invalid()) kps.push_back(mvKps0[i]);
+  }
+  cv::drawKeypoints(img0, kps, img0);
+  cv::imshow("Image", img0);
+  // Stereo
+  if (!mStereoMatches.empty()) {
+    cv::Mat img1 = mImg1.clone(), toshow;
     pTracker->mpCam1->undistort(img1, img1);
     cv::cvtColor(img1, img1, cv::COLOR_GRAY2BGR);
     cv::drawMatches(img0, mvKps0, img1, mvKps1, mStereoMatches, toshow);
+    cv::imshow("Stereo", toshow);
   }
-  cv::imshow("Image", toshow);
 }
 
 }

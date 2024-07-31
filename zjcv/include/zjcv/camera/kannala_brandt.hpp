@@ -5,8 +5,8 @@
 
 namespace camera {
 
-// 最大视场角 (90)
-#define KANNALA_BRANDT_MAX_FOV M_PI_2
+// 最大视场角 (180)
+#define KANNALA_BRANDT_MAX_FOV M_PI
 
 // 3D -> 2D
 #define KANNALA_BRANDT_PROJECT(vp, x, y, z) \

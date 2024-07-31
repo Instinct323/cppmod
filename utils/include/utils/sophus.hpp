@@ -3,11 +3,15 @@
 
 #include <sophus/se3.hpp>
 #include <sophus/sim3.hpp>
+#include <g2o/types/slam3d/se3quat.h>
 
 namespace Sophus {
 
+// Sophus -> g2o
+g2o::SE3Quat toG2O(const Sophus::SE3f &T);
+
 /** @brief 基于 SVD 的线性三角剖分
- *  @param vP_cam - 相机坐标系下的关键点
+ *  @param vP_cam - 相机坐标系下的关键点 (z=1)
  *  @param vT_cam_ref - 相机位姿 (相对于参考坐标系) */
 float triangulation(const std::vector<Eigen::Vector3f> &vP_cam,
                     const std::vector<Sophus::SE3f> &vT_cam_ref,
@@ -23,6 +27,7 @@ double abs_trans_error(const std::vector<Eigen::Vector3f> &pts1,
                        const std::vector<Eigen::Vector3f> &pts2);
 
 
+// 右雅可比矩阵
 template<typename T>
 Eigen::Matrix3<T> rightJacobian(const Eigen::Vector3<T> &omega) {
   T theta2 = omega.squaredNorm(), eps = Sophus::Constants<T>::epsilon();
@@ -35,6 +40,31 @@ Eigen::Matrix3<T> rightJacobian(const Eigen::Vector3<T> &omega) {
               + (theta - std::sin(theta)) * omega_hat2 / (theta2 * theta);
   }
   return rightJ;
+}
+
+
+// 关节
+class Joint {
+    const Sophus::SE3f *S_ref;
+    Sophus::SE3f T_cur_ref;
+
+public:
+    explicit Joint(const Sophus::SE3f *S_ref,
+                   const Sophus::SE3f &T_cur_ref = Sophus::SE3f()) : S_ref(S_ref), T_cur_ref(T_cur_ref) {}
+
+    void set(const Sophus::SE3f &T_cr) { this->T_cur_ref = T_cr; }
+
+    Sophus::SE3f get() const { return *S_ref * T_cur_ref; }
+};
+
+
+// 重载输出
+template<typename T>
+std::ostream &operator<<(std::ostream &os, const Sophus::SE3<T> &se3) {
+  const Eigen::Quaternion<T> &q = se3.unit_quaternion();
+  const Eigen::Vector3<T> &t = se3.translation();
+  return (os << t[0] << " " << t[1] << " " << t[2] << " " <<
+             q.w() << " " << q.x() << " " << q.y() << " " << q.z());
 }
 
 }

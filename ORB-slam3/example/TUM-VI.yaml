@@ -5,11 +5,11 @@ vocabulary: "/home/workbench/Repository/dbow2/ORBvoc.bin"
 tracker:
   min_matches: 15
   max_matches: 100
-  key_matches: 60
+  key_matches: 50
   lost_timeout: 3.0
 
   cam0:
-    type: "Pinhole"
+    type: "KannalaBrandt"
     resolution: [ 512, 512 ]
     intrinsics: [ 190.97847715128717, 190.9733070521226, 254.93170605935475, 256.8974428996504 ]
     dist_coeffs: [ 0.0034823894022493434, 0.0007150348452162257, -0.0020532361418706202, 0.00020293673591811182 ]
@@ -19,7 +19,7 @@ tracker:
       - [ -0.02989013031643309, -0.998969345370175, 0.03415885127385616, -0.0681999605066297 ]
 
   cam1:
-    type: "Pinhole"
+    type: "KannalaBrandt"
     resolution: [ 512, 512 ]
     intrinsics: [ 190.44236969414825, 190.4344384721956, 252.59949716835982, 254.91723064636983 ]
     dist_coeffs: [ 0.0034003170790442797, 0.001766278153469831, -0.00266312569781606, 0.0003299517423931039 ]
@@ -36,13 +36,13 @@ tracker:
     gyro_walk: 0.000022   # rad/s^1.5
 
   orb0:
-    nfeatures: 500
+    nfeatures: 600
     scale_factor: 1.2
     nlevels: 8
     lapping_area: [ 0, 511 ]
 
   orb1:
-    nfeatures: 500
+    nfeatures: 600
     scale_factor: 1.2
     nlevels: 8
     lapping_area: [ 0, 511 ]

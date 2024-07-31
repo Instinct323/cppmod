@@ -28,10 +28,11 @@ if (NOT UTILS_FOUND)
           -lboost_thread
 
           ${G2O_CORE_LIBRARY}
-          ${G2O_STUFF_LIBRARY}
-          ${G2O_TYPES_SLAM3D}
           ${G2O_SOLVER_CSPARSE}
           ${G2O_SOLVER_CSPARSE_EXTENSION}
+          ${G2O_STUFF_LIBRARY}
+          ${G2O_TYPES_SBA}
+          ${G2O_TYPES_SLAM3D}
   )
 
   # header

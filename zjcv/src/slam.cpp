@@ -21,6 +21,7 @@ System::System(const YAML::Node &cfg
 
 
 void System::run() {
+  ASSERT(parallel::thread_pool_size > 2, "The hardware concurrency is insufficient, please adjust the thread limit manually")
   mbRunning = true;
   mThreads["tracker"] = parallel::thread_pool.emplace(0, &Tracker::run, mpTracker);
   mThreads["viewer"] = parallel::thread_pool.emplace(0, &Viewer::run, mpViewer);
@@ -97,32 +98,28 @@ size_t Frame::KEY_COUNT = 0;
 
 Frame::Frame(System *pSystem, const double &timestamp,
              const cv::Mat &img0, const cv::Mat &img1
-) : mpSystem(pSystem), mId(++FRAME_COUNT), mTimestamp(timestamp), mImg0(img0), mImg1(img1) {}
+) : mpSystem(pSystem), mId(++FRAME_COUNT), mTimestamp(timestamp), mImg0(img0), mImg1(img1),
+    mJoint(&mPose.T_imu_world) {}
 
 
-void Frame::mark_keyframe() {
-  mIdKey = ++KEY_COUNT;
-  for (auto &m: mvpMappts) if (m) m->triangulation();
-}
-
-
-int Frame::init_mappoints(Frame::Ptr &shared_this, const std::vector<cv::DMatch> &matches) {
-  int cnt = 0, n = mvUnprojs0.size();
-  mvpMappts = std::vector<std::shared_ptr<Mappoint>>(n, nullptr);
-
-  if (!matches.empty()) {
+int Frame::stereo_triangulation(const Frame::Ptr &shared_this, const std::vector<cv::DMatch> &stereo_matches) {
+  int cnt = 0;
+  if (!stereo_matches.empty()) {
     Sophus::SE3f &T_cam0_cam1 = mpSystem->mpTracker->T_cam0_cam1;
-    for (auto m: matches) {
+    for (auto m: stereo_matches) {
       int i = m.queryIdx, j = m.trainIdx;
       // 余弦判断
       const Eigen::Vector3f &P0_cam0 = mvUnprojs0[i], &P1_cam1 = mvUnprojs1[j];
       Eigen::Vector3f P1_cam0 = T_cam0_cam1 * P1_cam1;
       if (Eigen::cos(P0_cam0, P1_cam0) > 0.9998) continue;
-      // 创建地图点
       cnt += 1;
-      mvpMappts[i] = std::make_shared<Mappoint>(mpSystem);
-      mvpMappts[i]->add_obs(shared_this, i);
+      // 创建地图点
+      if (!mvpMappts[i]) {
+        mvpMappts[i] = std::make_shared<Mappoint>(mpSystem);
+        mvpMappts[i]->add_obs(shared_this, i);
+      }
       mvpMappts[i]->add_obs(shared_this, j, true);
+      mvpMappts[i]->triangulation();
     }
   }
   return cnt;
@@ -155,6 +152,11 @@ int Frame::connect_frame(Frame::Ptr &shared_this, Frame::Ptr &other, std::vector
     }
   }
   return n;
+}
+
+
+void Frame::mark_keyframe() {
+  mIdKey = ++KEY_COUNT;
 }
 
 
@@ -226,6 +228,13 @@ void Mappoint::triangulation() {
 // optimize
 void optimize_pose(Frame *pFrame) {
   g2o::Optimizer<6, 3, g2o::LinearSolverDense, g2o::OptimizationAlgorithmLevenberg> optimizer;
+
+  // Vertex: 当前帧位姿
+  g2o::VertexSE3Expmap *vSE3 = new g2o::VertexSE3Expmap;
+  vSE3->setEstimate(Sophus::toG2O(pFrame->mPose.T_imu_world));
+  vSE3->setId(0);
+  vSE3->setFixed(false);
+  optimizer.addVertex(vSE3);
 }
 
 }

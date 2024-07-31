@@ -6,7 +6,6 @@
 #include <sophus/se3.hpp>
 
 #include "utils/glog.hpp"
-#include "utils/orb.hpp"
 
 namespace camera {
 

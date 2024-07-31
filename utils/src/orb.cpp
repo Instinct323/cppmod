@@ -100,7 +100,6 @@ Matcher::Ptr Matcher::from_yaml(const YAML::Node &cfg) {
 void Matcher::search(const cv::Mat &desc0, const cv::Mat &desc1,
                      const cv::Mat &mask, std::vector<cv::DMatch> &matches) {
   mpMatcher->match(desc0, desc1, matches, mask);
-  cv::make_one2one(matches);
 }
 
 
@@ -109,7 +108,6 @@ void Matcher::search_with_lowe(const cv::Mat &desc0, const cv::Mat &desc1,
   std::vector<std::vector<cv::DMatch>> knn_matches;
   mpMatcher->knnMatch(desc0, desc1, knn_matches, 2, mask);
   cv::lowes_filter(knn_matches, matches, ratio);
-  cv::make_one2one(matches);
 }
 
 }

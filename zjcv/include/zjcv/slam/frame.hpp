@@ -4,6 +4,7 @@
 #include <opencv2/opencv.hpp>
 
 #include "utils/cv.hpp"
+#include "utils/sophus.hpp"
 #include "zjcv/imu.hpp"
 
 namespace slam::feature {
@@ -24,22 +25,25 @@ public:
     ZJCV_BUILTIN const double mTimestamp;
     ZJCV_BUILTIN const cv::Mat mImg0, mImg1;
 
-    // Processed data
-    ZJCV_BUILTIN IMU::MovingPose mPose;
+    // Features
     ZJCV_BUILTIN std::vector<Eigen::Vector3f> mvUnprojs0, mvUnprojs1;
     ZJCV_BUILTIN std::vector<std::shared_ptr<Mappoint>> mvpMappts;
+
+    // Processed data
+    ZJCV_BUILTIN IMU::MovingPose mPose;
+    ZJCV_BUILTIN Sophus::Joint mJoint;
 
     ZJCV_BUILTIN explicit Frame(System *pSystem, const double &timestamp, const cv::Mat &img0, const cv::Mat &img1);
 
     ZJCV_BUILTIN bool is_keyframe() { return mIdKey > 0; }
 
-    ZJCV_BUILTIN void mark_keyframe();
-
-    // 根据匹配, 初始化对应左图关键点的地图点
-    ZJCV_BUILTIN int init_mappoints(Ptr &shared_this, const std::vector<cv::DMatch> &matches = {});
+    // 根据匹配, 三角化地图点
+    ZJCV_BUILTIN int stereo_triangulation(const Frame::Ptr &shared_this, const std::vector<cv::DMatch> &stereo_matches = {});
 
     // 根据匹配, 合并两帧的地图点
     ZJCV_BUILTIN int connect_frame(Ptr &shared_this, Ptr &other, std::vector<cv::DMatch> &matches);
+
+    ZJCV_BUILTIN void mark_keyframe();
 
     ZJCV_BUILTIN void prune();
 
@@ -51,11 +55,6 @@ public:
     std::vector<cv::KeyPoint> mvKps0, mvKps1;
     cv::Mat mDesc0, mDesc1;
     std::vector<cv::DMatch> mStereoMatches;
-
-    void stereo_features(std::vector<cv::DMatch> &matches);
-
-    void unproject_kps();
-
 #endif
 
 };

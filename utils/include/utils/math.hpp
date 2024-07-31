@@ -83,9 +83,10 @@ public:
 // 拉依达准则
 template<typename T>
 class PautaCriterion {
-    float mMean, mScaledStd;
 
 public:
+    float mMean, mScaledStd;
+
     explicit PautaCriterion(const std::vector<T> &vec, float sigma_factor = 3
     ) : mMean(mean(vec)), mScaledStd(sigma_factor * std(vec, mMean)) {}
 

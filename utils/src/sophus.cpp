@@ -4,6 +4,11 @@
 namespace Sophus {
 
 
+g2o::SE3Quat toG2O(const Sophus::SE3f &T) {
+  return {T.so3().unit_quaternion().cast<double>(), T.translation().cast<double>()};
+}
+
+
 float triangulation(const std::vector<Eigen::Vector3f> &vP_cam,
                     const std::vector<Sophus::SE3f> &vT_cam_ref,
                     Eigen::Vector3f &P_ref) {

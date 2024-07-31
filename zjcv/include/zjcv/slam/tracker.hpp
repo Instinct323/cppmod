@@ -6,6 +6,7 @@
 
 #include "zjcv/camera.hpp"
 #include "zjcv/imu.hpp"
+#include "utils/orb.hpp"
 
 namespace slam {
 

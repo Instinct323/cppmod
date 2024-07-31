@@ -55,6 +55,7 @@ public:
       CSV::row_mapping(
           mPath + file,
           [&vTimestamps, &vPose](std::vector<std::string> &row) {
+              // timestamp tx ty tz qw qx qy qz
               vTimestamps.push_back(std::stod(row[0]) / 1e9);
               vPose.emplace_back(
                   Eigen::Quaternionf(std::stof(row[4]), std::stof(row[5]), std::stof(row[6]), std::stof(row[7])),

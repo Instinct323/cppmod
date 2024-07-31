@@ -2,8 +2,6 @@
 #define ZJCV__CAMERA__PINHOLE_HPP
 
 #include "base.hpp"
-#include "utils/cv.hpp"
-#include "utils/eigen.hpp"
 
 namespace camera {
 
