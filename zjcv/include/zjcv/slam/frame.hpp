@@ -6,8 +6,14 @@
 #include "utils/cv.hpp"
 #include "utils/sophus.hpp"
 #include "zjcv/imu.hpp"
+#include "zjcv/zjcv.hpp"
 
-namespace slam::feature {
+namespace slam {
+
+class System;
+
+// 基于特征点
+namespace feature {
 
 class Mappoint;
 
@@ -21,7 +27,7 @@ public:
     ZJCV_BUILTIN System *mpSystem;
 
     // Origin data
-    ZJCV_BUILTIN size_t mId, mIdKey = 0;
+    ZJCV_BUILTIN size_t mId, mIdKey = 0, mIdVex;
     ZJCV_BUILTIN const double mTimestamp;
     ZJCV_BUILTIN const cv::Mat mImg0, mImg1;
 
@@ -58,6 +64,8 @@ public:
 #endif
 
 };
+
+}
 
 }
 

@@ -87,7 +87,7 @@ void Frame::process() {
 
     // 为地图点添加观测
     connect_frame(pCurFrame, pRefFrame, ref_matches);
-    optimize_pose(this);
+    optimize_pose(pCurFrame);
 
     // Monocular: 上一帧是关键帧, 扩充地图点
     if (pLastFrame->is_keyframe() && pTracker->is_monocular()) {
@@ -135,9 +135,8 @@ void Frame::process() {
     }
 
     // 标记为关键帧
-    mark_keyframe();
     pTracker->mpRefFrame = pCurFrame;
-    mpSystem->mpAtlas->mpCurMap->insert_keyframe(pCurFrame);
+    mpSystem->get_cur_map()->insert_keyframe(pCurFrame);
     mpSystem->set_desc("id-key", mIdKey);
   }
   pTracker->switch_state(TrackState::OK);

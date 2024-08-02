@@ -3,6 +3,7 @@
 
 #include <yaml-cpp/yaml.h>
 
+#include "mappoint.hpp"
 #include "zjcv/zjcv.hpp"
 
 namespace slam {
@@ -22,10 +23,13 @@ public:
 
     ZJCV_BUILTIN System *mpSystem;
     ZJCV_BUILTIN std::vector<std::shared_ptr<Frame>> mvpKeyFrames;
+    ZJCV_BUILTIN std::vector<std::weak_ptr<Mappoint>> mvpMappts, mvpTmpMappts;
 
     ZJCV_BUILTIN Map(System *pSystem) : mpSystem(pSystem) {}
 
-    ZJCV_BUILTIN void insert_keyframe(const std::shared_ptr<Frame>& pKF) { mvpKeyFrames.push_back(pKF); }
+    ZJCV_BUILTIN Mappoint::Ptr create_mappoint();
+
+    ZJCV_BUILTIN void insert_keyframe(const std::shared_ptr<Frame> &pKF);
 
     ZJCV_CUSTOM void draw() const;
 

@@ -1,3 +1,5 @@
+#include <g2o/solvers/dense/linear_solver_dense.h>
+
 #include "utils/sophus.hpp"
 #include "zjcv/slam.hpp"
 
@@ -115,7 +117,7 @@ int Frame::stereo_triangulation(const Frame::Ptr &shared_this, const std::vector
       cnt += 1;
       // 创建地图点
       if (!mvpMappts[i]) {
-        mvpMappts[i] = std::make_shared<Mappoint>(mpSystem);
+        mvpMappts[i] = mpSystem->get_cur_map()->create_mappoint();
         mvpMappts[i]->add_obs(shared_this, i);
       }
       mvpMappts[i]->add_obs(shared_this, j, true);
@@ -144,7 +146,7 @@ int Frame::connect_frame(Frame::Ptr &shared_this, Frame::Ptr &other, std::vector
     } else {
       // 合并: 参考帧 -> 当前帧
       if (!*mpit_cur) {
-        *mpit_cur = std::make_shared<Mappoint>(mpSystem);
+        *mpit_cur = mpSystem->get_cur_map()->create_mappoint();
         (*mpit_cur)->add_obs(shared_this, m.trainIdx);
       }
       (*mpit_cur)->add_obs(other, m.queryIdx);
@@ -165,16 +167,38 @@ void Frame::prune() {
 }
 
 
+// Map
+Mappoint::Ptr Map::create_mappoint() {
+  auto pMappt = std::make_shared<Mappoint>(mpSystem);
+  mvpTmpMappts.push_back(pMappt);
+  return pMappt;
+}
+
+
+void Map::insert_keyframe(const std::shared_ptr<Frame> &pKF) {
+  pKF->mark_keyframe();
+  mvpKeyFrames.push_back(pKF);
+  // 整理临时地图点
+  mvpKeyFrames.reserve(mvpKeyFrames.size() + mvpTmpMappts.size());
+  for (auto &pMappt: mvpTmpMappts) {
+    if (pMappt.expired()) continue;
+    mvpMappts.push_back(pMappt);
+  }
+}
+
+
 // Mappoint
 int Mappoint::frame_count() {
   prune();
   std::set<Frame *> sFrames;
+  parallel::ScopedLock lock(mMutexObs);
   for (auto &obs: mObs) sFrames.insert(obs.first.lock().get());
   return sFrames.size();
 }
 
 
 void Mappoint::prune() {
+  parallel::ScopedLock lock(mMutexObs);
   auto begit = std::remove_if(
       mObs.begin(), mObs.end(),
       [](const Observation &obs) { return obs.first.expired(); });
@@ -183,11 +207,21 @@ void Mappoint::prune() {
 
 
 void Mappoint::add_obs(const Frame::Ptr &pFrame, const int &idx, bool is_right) {
+  parallel::ScopedLock lock(mMutexObs);
   mObs.emplace_back(pFrame, is_right ? (idx + pFrame->mvUnprojs0.size()) : idx);
+  // 如果是右相机观测, 调整位置
+  if (is_right) {
+    size_t fid = pFrame->mId;
+    auto it = std::find_if(
+        mObs.begin(), mObs.end(),
+        [&fid](const Observation &obs) { return !obs.first.expired() && obs.first.lock()->mId == fid; });
+    std::swap(*(it + 1), mObs.back());
+  }
 }
 
 
 void Mappoint::clear() {
+  parallel::ScopedLock lock(mMutexObs);
   for (auto [wpf, i]: mObs) {
     if (wpf.expired()) continue;
     Frame::Ptr spf = wpf.lock();
@@ -198,6 +232,7 @@ void Mappoint::clear() {
 
 
 Mappoint &Mappoint::operator+=(const Mappoint &other) {
+  parallel::ScopedLock lock(mMutexObs);
   mObs.insert(mObs.end(), other.mObs.begin(), other.mObs.end());
   return *this;
 }
@@ -209,32 +244,48 @@ void Mappoint::triangulation() {
   std::vector<Sophus::SE3f> vT_cam_ref;
 
   prune();
-  for (auto &obs: mObs) {
-    if (obs.first.expired()) continue;
-    Frame::Ptr pFrame = obs.first.lock();
-    int i = obs.second;
-    int n = pFrame->mvUnprojs0.size();
+  {
+    parallel::ScopedLock lock(mMutexObs);
+    for (auto &obs: mObs) {
+      if (obs.first.expired()) continue;
+      Frame::Ptr pFrame = obs.first.lock();
+      int i = obs.second;
+      int n = pFrame->mvUnprojs0.size();
 
-    bool is_left = i < n;
-    const camera::Base::Ptr &pCam = is_left ? pCam0 : pCam1;
+      bool is_left = i < n;
+      const camera::Base::Ptr &pCam = is_left ? pCam0 : pCam1;
 
-    vP_cam.push_back(is_left ? pFrame->mvUnprojs0[i] : pFrame->mvUnprojs1[i - n]);
-    vT_cam_ref.push_back(pCam->T_cam_imu * pFrame->mPose.T_imu_world);
+      vP_cam.push_back(is_left ? pFrame->mvUnprojs0[i] : pFrame->mvUnprojs1[i - n]);
+      vT_cam_ref.push_back(pCam->T_cam_imu * pFrame->mPose.T_imu_world);
+    }
   }
   mReprErr = Sophus::triangulation(vP_cam, vT_cam_ref, mPos);
 }
 
 
 // optimize
-void optimize_pose(Frame *pFrame) {
-  g2o::Optimizer<6, 3, g2o::LinearSolverDense, g2o::OptimizationAlgorithmLevenberg> optimizer;
+void optimize_pose(Frame::Ptr pFrame) {
+  std::vector<std::shared_ptr<Frame>> vpFrames = {pFrame};
+  bundle_adjustment<g2o::LinearSolverDense>(vpFrames, pFrame->mpSystem->get_cur_map()->mvpTmpMappts, true);
+}
 
-  // Vertex: 当前帧位姿
-  g2o::VertexSE3Expmap *vSE3 = new g2o::VertexSE3Expmap;
-  vSE3->setEstimate(Sophus::toG2O(pFrame->mPose.T_imu_world));
-  vSE3->setId(0);
-  vSE3->setFixed(false);
-  optimizer.addVertex(vSE3);
+
+template<template<typename> class LinearSolverTp>
+void bundle_adjustment(std::vector<std::shared_ptr<Frame>> &vpFrames,
+                       std::vector<std::weak_ptr<Mappoint>> &vpMappts,
+                       bool only_pose) {
+  g2o::Optimizer<6, 3, LinearSolverTp, g2o::OptimizationAlgorithmLevenberg> optimizer;
+  int id_vex = 0;
+
+  // Vertex: 帧位姿
+  for (int &i = id_vex; i < vpFrames.size(); ++i) {
+    vpFrames[i]->mIdVex = i;
+    auto *vSE3 = new g2o::VertexSE3Expmap;
+    vSE3->setEstimate(Sophus::toG2O(vpFrames[i]->mPose.T_imu_world));
+    vSE3->setId(i);
+    vSE3->setFixed(false);
+    optimizer.addVertex(vSE3);
+  }
 }
 
 }

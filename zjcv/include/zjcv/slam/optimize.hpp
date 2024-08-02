@@ -25,7 +25,12 @@ public:
 
 namespace slam::feature {
 
-void optimize_pose(Frame *pFrame);
+void optimize_pose(std::shared_ptr<Frame> pFrame);
+
+template<template<typename> class LinearSolverTp>
+void bundle_adjustment(std::vector<std::shared_ptr<Frame>> &vpFrames,
+                       std::vector<std::weak_ptr<Mappoint>> &vpMappts,
+                       bool only_pose);
 
 }
 

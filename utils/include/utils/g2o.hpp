@@ -4,7 +4,6 @@
 #include <g2o/core/block_solver.h>
 #include <g2o/core/optimization_algorithm_levenberg.h>
 #include <g2o/core/sparse_optimizer.h>
-#include <g2o/solvers/dense/linear_solver_dense.h>
 #include <g2o/types/slam3d/se3quat.h>
 #include <sophus/se3.hpp>
 
@@ -21,7 +20,7 @@ Sophus::SE3f toSE3(const g2o::SE3Quat &pose);
 
 // g2o 优化器
 template<int p, int l,
-    template<typename> class LinearSolverTp = LinearSolverDense,
+    template<typename> class LinearSolverTp,
     typename AlgorithmT = OptimizationAlgorithmLevenberg
 >
 class Optimizer : public SparseOptimizer {

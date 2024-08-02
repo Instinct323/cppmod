@@ -53,6 +53,8 @@ public:
       desc.erase(desc.end() - 2, desc.end());
       return desc;
     }
+
+    ZJCV_BUILTIN feature::Map::Ptr &get_cur_map() { return mpAtlas->mpCurMap; }
 };
 
 }
