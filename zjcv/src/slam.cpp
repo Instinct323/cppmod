@@ -5,12 +5,10 @@
 
 namespace slam {
 
-using namespace feature;
-
 
 // Atlas
-Map::Ptr Atlas::create_map() {
-  mpCurMap = std::make_shared<Map>(mpSystem);
+feature::Map::Ptr Atlas::create_map() {
+  mpCurMap = std::make_shared<feature::Map>(mpSystem);
   mvpMaps.push_back(mpCurMap);
   return mpCurMap;
 }
@@ -45,12 +43,13 @@ Tracker::Tracker(System *pSystem, const YAML::Node &cfg
     mpCam0(camera::from_yaml(cfg["cam0"])), mpCam1(camera::from_yaml(cfg["cam1"])),
     mpIMU(IMU::Device::from_yaml(cfg["imu"])) {
 
-  ASSERT(!is_monocular() || !is_inertial(), "Not implemented")
+  ASSERT(!is_inertial(), "Not implemented")
   ASSERT(mpCam0, "Camera0 not found")
   if (is_stereo()) {
     // 校对相机类型
     ASSERT(mpCam0->get_type() == mpCam1->get_type(), "Camera0 and Camera1 must be the same type")
     T_cam0_cam1 = mpCam0->T_cam_imu * mpCam1->T_cam_imu.inverse();
+    T_cam1_cam0 = T_cam0_cam1.inverse();
   }
 }
 
@@ -89,6 +88,16 @@ void Tracker::switch_state(TrackState state) {
 }
 
 
+// Viewer
+Viewer::Viewer(System *pSystem, const YAML::Node &cfg
+) : mpSystem(pSystem), delay(1000 / cfg["fps"].as<int>()),
+    imu_size(cfg["imu_size"].as<float>()), mp_size(cfg["mp_size"].as<float>()), trail_size(cfg["trail_size"].as<size_t>()),
+    lead_color(YAML::toEigen<float>(cfg["lead_color"])), trail_color(YAML::toEigen<float>(cfg["trail_color"])),
+    mp_color(YAML::toEigen<float>(cfg["mp_color"])) {
+  ASSERT(delay > 0, "Viewer: The delay must be greater than 0")
+}
+
+
 // 基于特征点
 namespace feature {
 
@@ -107,21 +116,28 @@ Frame::Frame(System *pSystem, const double &timestamp,
 int Frame::stereo_triangulation(const Frame::Ptr &shared_this, const std::vector<cv::DMatch> &stereo_matches) {
   int cnt = 0;
   if (!stereo_matches.empty()) {
-    Sophus::SE3f &T_cam0_cam1 = mpSystem->mpTracker->T_cam0_cam1;
+    Sophus::SE3f T_cam1_cam0 = mpSystem->mpTracker->T_cam1_cam0,
+        T_imu_cam0 = mpSystem->mpTracker->mpCam0->T_cam_imu.inverse();
     for (auto m: stereo_matches) {
       int i = m.queryIdx, j = m.trainIdx;
       // 余弦判断
       const Eigen::Vector3f &P0_cam0 = mvUnprojs0[i], &P1_cam1 = mvUnprojs1[j];
-      Eigen::Vector3f P1_cam0 = T_cam0_cam1 * P1_cam1;
-      if (Eigen::cos(P0_cam0, P1_cam0) > 0.9998) continue;
-      cnt += 1;
-      // 创建地图点
-      if (!mvpMappts[i]) {
-        mvpMappts[i] = mpSystem->get_cur_map()->create_mappoint();
-        mvpMappts[i]->add_obs(shared_this, i);
+      Eigen::Vector3f P0_cam1 = T_cam1_cam0 * P0_cam0;
+      if (Eigen::cos(P0_cam0, P0_cam1) > 0.9998) continue;
+      // 三角化
+      Eigen::Vector3f P_cam0;
+      float rep_error = Sophus::triangulation({P0_cam0, P1_cam1}, {Sophus::SE3f(), T_cam1_cam0}, P_cam0);
+      if (rep_error >= 0) {
+        cnt += 1;
+        mvUnprojs0[i][2] = -P_cam0[2];
+        // 创建地图点
+        if (!mvpMappts[i]) {
+          mvpMappts[i] = mpSystem->get_cur_map()->create_mappoint();
+          mvpMappts[i]->add_obs(shared_this, i);
+        }
+        mvpMappts[i]->mReprErr = rep_error;
+        mvpMappts[i]->mPos = T_imu_cam0 * P_cam0;
       }
-      mvpMappts[i]->add_obs(shared_this, j, true);
-      mvpMappts[i]->triangulation();
     }
   }
   return cnt;
@@ -157,13 +173,33 @@ int Frame::connect_frame(Frame::Ptr &shared_this, Frame::Ptr &other, std::vector
 }
 
 
-void Frame::mark_keyframe() {
-  mIdKey = ++KEY_COUNT;
-}
+void Frame::mark_keyframe() { mIdKey = ++KEY_COUNT; }
 
 
 void Frame::prune() {
   for (Mappoint::Ptr &m: mvpMappts) if (m) m->prune();
+}
+
+
+void Frame::show_in_pangolin(float imu_size, float mp_size, const float *imu_color, const float *mp_color) {
+  // Frame
+  glColor3fv(imu_color);
+  pangolin::OpenGlMatrix Twc = mPose.T_world_imu.matrix();
+  pangolin::draw_imu(Twc, imu_size);
+  // MapPoints
+  glPointSize(mp_size);
+  for (auto &pMappt: mvpMappts) {
+    if (!pMappt || pMappt->is_invalid()) continue;
+    glColor3fv(mp_color);
+    glBegin(GL_LINES);
+    glVertex3fv(mPose.T_imu_world.translation().data());
+    glVertex3fv(pMappt->mPos.data());
+    glEnd();
+    glColor3f(0.f, 0.f, 0.f);
+    glBegin(GL_POINTS);
+    glVertex3fv(pMappt->mPos.data());
+    glEnd();
+  }
 }
 
 
@@ -177,9 +213,12 @@ Mappoint::Ptr Map::create_mappoint() {
 
 void Map::insert_keyframe(const std::shared_ptr<Frame> &pKF) {
   pKF->mark_keyframe();
-  mvpKeyFrames.push_back(pKF);
+  {
+    parallel::ScopedLock lock(mapKeyFrames.mutex);
+    mapKeyFrames->push_back(pKF);
+  }
   // 整理临时地图点
-  mvpKeyFrames.reserve(mvpKeyFrames.size() + mvpTmpMappts.size());
+  mvpMappts.reserve(mapKeyFrames->size() + mvpTmpMappts.size());
   for (auto &pMappt: mvpTmpMappts) {
     if (pMappt.expired()) continue;
     mvpMappts.push_back(pMappt);
@@ -187,105 +226,57 @@ void Map::insert_keyframe(const std::shared_ptr<Frame> &pKF) {
 }
 
 
-// Mappoint
-int Mappoint::frame_count() {
-  prune();
-  std::set<Frame *> sFrames;
-  parallel::ScopedLock lock(mMutexObs);
-  for (auto &obs: mObs) sFrames.insert(obs.first.lock().get());
-  return sFrames.size();
-}
-
-
-void Mappoint::prune() {
-  parallel::ScopedLock lock(mMutexObs);
-  auto begit = std::remove_if(
-      mObs.begin(), mObs.end(),
-      [](const Observation &obs) { return obs.first.expired(); });
-  mObs.erase(begit, mObs.end());
-}
-
-
-void Mappoint::add_obs(const Frame::Ptr &pFrame, const int &idx, bool is_right) {
-  parallel::ScopedLock lock(mMutexObs);
-  mObs.emplace_back(pFrame, is_right ? (idx + pFrame->mvUnprojs0.size()) : idx);
-  // 如果是右相机观测, 调整位置
-  if (is_right) {
-    size_t fid = pFrame->mId;
-    auto it = std::find_if(
-        mObs.begin(), mObs.end(),
-        [&fid](const Observation &obs) { return !obs.first.expired() && obs.first.lock()->mId == fid; });
-    std::swap(*(it + 1), mObs.back());
+void Map::draw() const {
+  Viewer::Ptr &viewer = mpSystem->mpViewer;
+  if (!viewer) return;
+  size_t n = std::min(viewer->trail_size, mapKeyFrames->size());
+  // pangolin
+  parallel::ScopedLock lock(mapKeyFrames.mutex);
+  for (auto it = mapKeyFrames->end() - n; it != mapKeyFrames->end(); ++it) {
+    (*it)->show_in_pangolin(viewer->imu_size, viewer->mp_size, viewer->trail_color.data(), viewer->mp_color.data());
   }
+}
+
+
+// Mappoint
+void Mappoint::prune() {
+  parallel::ScopedLock lock(mapObs.mutex);
+  auto begit = std::remove_if(
+      mapObs->begin(), mapObs->end(),
+      [](const Observation &obs) { return obs.first.expired(); });
+  mapObs->erase(begit, mapObs->end());
+}
+
+
+void Mappoint::add_obs(const Frame::Ptr &pFrame, const int &idx) {
+  parallel::ScopedLock lock(mapObs.mutex);
+  mapObs->emplace_back(pFrame, idx);
 }
 
 
 void Mappoint::clear() {
-  parallel::ScopedLock lock(mMutexObs);
-  for (auto [wpf, i]: mObs) {
+  parallel::ScopedLock lock(mapObs.mutex);
+  for (auto [wpf, i]: *mapObs) {
     if (wpf.expired()) continue;
-    Frame::Ptr spf = wpf.lock();
-    if (i < spf->mvUnprojs0.size()) spf->mvpMappts[i] = nullptr;
+    wpf.lock()->mvpMappts[i] = nullptr;
   }
-  mObs.clear();
+  mapObs->clear();
 }
 
 
 Mappoint &Mappoint::operator+=(const Mappoint &other) {
-  parallel::ScopedLock lock(mMutexObs);
-  mObs.insert(mObs.end(), other.mObs.begin(), other.mObs.end());
+  parallel::ScopedLock lock(mapObs.mutex);
+  mapObs->insert(mapObs->end(), other.mapObs->begin(), other.mapObs->end());
   return *this;
 }
 
 
-void Mappoint::triangulation() {
-  const camera::Base::Ptr &pCam0 = mpSystem->mpTracker->mpCam0, &pCam1 = mpSystem->mpTracker->mpCam1;
-  std::vector<Eigen::Vector3f> vP_cam;
-  std::vector<Sophus::SE3f> vT_cam_ref;
-
-  prune();
-  {
-    parallel::ScopedLock lock(mMutexObs);
-    for (auto &obs: mObs) {
-      if (obs.first.expired()) continue;
-      Frame::Ptr pFrame = obs.first.lock();
-      int i = obs.second;
-      int n = pFrame->mvUnprojs0.size();
-
-      bool is_left = i < n;
-      const camera::Base::Ptr &pCam = is_left ? pCam0 : pCam1;
-
-      vP_cam.push_back(is_left ? pFrame->mvUnprojs0[i] : pFrame->mvUnprojs1[i - n]);
-      vT_cam_ref.push_back(pCam->T_cam_imu * pFrame->mPose.T_imu_world);
-    }
-  }
-  mReprErr = Sophus::triangulation(vP_cam, vT_cam_ref, mPos);
-}
-
-
 // optimize
-void optimize_pose(Frame::Ptr pFrame) {
+void optimize_pose(const Frame::Ptr &pFrame) {
   std::vector<std::shared_ptr<Frame>> vpFrames = {pFrame};
-  bundle_adjustment<g2o::LinearSolverDense>(vpFrames, pFrame->mpSystem->get_cur_map()->mvpTmpMappts, true);
-}
-
-
-template<template<typename> class LinearSolverTp>
-void bundle_adjustment(std::vector<std::shared_ptr<Frame>> &vpFrames,
-                       std::vector<std::weak_ptr<Mappoint>> &vpMappts,
-                       bool only_pose) {
-  g2o::Optimizer<6, 3, LinearSolverTp, g2o::OptimizationAlgorithmLevenberg> optimizer;
-  int id_vex = 0;
-
-  // Vertex: 帧位姿
-  for (int &i = id_vex; i < vpFrames.size(); ++i) {
-    vpFrames[i]->mIdVex = i;
-    auto *vSE3 = new g2o::VertexSE3Expmap;
-    vSE3->setEstimate(Sophus::toG2O(vpFrames[i]->mPose.T_imu_world));
-    vSE3->setId(i);
-    vSE3->setFixed(false);
-    optimizer.addVertex(vSE3);
-  }
+  BundleAdjustment<g2o::LinearSolverDense> ba(&vpFrames, &pFrame->mpSystem->get_cur_map()->mvpTmpMappts, true);
+  // todo: 优化和滤除
+  ba.apply_result();
 }
 
 }

@@ -27,7 +27,7 @@ public:
     ZJCV_BUILTIN System *mpSystem;
 
     // Origin data
-    ZJCV_BUILTIN size_t mId, mIdKey = 0, mIdVex;
+    ZJCV_BUILTIN size_t mId, mIdKey = 0, mIdVex = SIZE_MAX;
     ZJCV_BUILTIN const double mTimestamp;
     ZJCV_BUILTIN const cv::Mat mImg0, mImg1;
 
@@ -52,6 +52,8 @@ public:
     ZJCV_BUILTIN void mark_keyframe();
 
     ZJCV_BUILTIN void prune();
+
+    ZJCV_BUILTIN void show_in_pangolin(float imu_size, float mp_size, const float *imu_color, const float *mp_color);
 
     ZJCV_CUSTOM void process();
 

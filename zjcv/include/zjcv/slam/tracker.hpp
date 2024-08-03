@@ -31,7 +31,7 @@ public:
 
     // 设备信息
     ZJCV_BUILTIN const camera::Base::Ptr mpCam0, mpCam1;
-    ZJCV_BUILTIN Sophus::SE3f T_cam0_cam1;
+    ZJCV_BUILTIN Sophus::SE3f T_cam0_cam1, T_cam1_cam0;
     ZJCV_BUILTIN const IMU::Device::Ptr mpIMU;
 
     // 帧信息

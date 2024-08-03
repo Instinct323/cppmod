@@ -56,18 +56,15 @@ viewer:
   title: "Feature Map"
   resolution: [ 640, 480 ]
   camera_focal: 200
-  view_point: [ 0., -3.5, 0. ]
+  view_point: [ 0., 3.5, 0. ]
   view_up_axis: 6
-  imu_size: 0.5
-  trail_size: 100
-  sample_stride: 10
-  lead_color: [ 0.0, 0.0, 1.0 ]
-  trail_color: [ 0.0, 1.0, 0.0 ]
 
-  imu_gt:
-    imu_size: 0.1
-    trail_size: 100
-    sample_stride: 10
-    lead_color: [ 1.0, 0.0, 1.0 ]
-    trail_color: [ 1.0, 1.0, 0.0 ]
+  imu_size: 0.5
+  mp_size: 5
+  trail_size: 30
+  # sample_stride: 20
+
+  lead_color: [ 1.0, 0.0, 0.0 ]
+  trail_color: [ 0.0, 1.0, 0.0 ]
+  mp_color: [ 0.0, 0.0, 1.0 ]
 

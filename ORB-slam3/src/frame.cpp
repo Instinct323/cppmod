@@ -46,7 +46,7 @@ void Frame::process() {
   // feature matching: 修正位姿
   if (pRefFrame) {
     pRefFrame->prune();
-    auto &refMappts = pRefFrame->mvpMappts;
+    auto &ref_mappts = pRefFrame->mvpMappts;
 
     // 利用已有地图点进行匹配
     cv::GridDict grid_dict(mvKps0.begin(), mvKps0.end(), mImg0.size());
@@ -55,9 +55,9 @@ void Frame::process() {
 
     // 将地图点投影到当前帧
     Sophus::SE3f T_cam0_world = pCam0->T_cam_imu * mPose.T_imu_world;
-    for (int i = 0; i < refMappts.size(); ++i) {
-      if (!refMappts[i] || refMappts[i]->is_invalid()) continue;
-      cv::Point2f pt = pCam0->project(T_cam0_world * refMappts[i]->mPos);
+    for (int i = 0; i < ref_mappts.size(); ++i) {
+      if (!ref_mappts[i] || ref_mappts[i]->is_invalid()) continue;
+      cv::Point2f pt = pCam0->project(T_cam0_world * ref_mappts[i]->mPos);
       if (pt.x < 0 || pt.x >= mImg0.cols || pt.y < 0 || pt.y >= mImg0.rows) continue;
       grid_dict(pt.x, pt.y).copyTo(mask.row(i));
     }

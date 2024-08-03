@@ -23,14 +23,14 @@ extern PriorityThreadPool thread_pool;
 
 // 线程共享变量
 template<typename T>
-class atomic_ptr : public std::unique_ptr<T>, public std::mutex {
+class atomic_ptr : public std::unique_ptr<T> {
 
 public:
-    atomic_ptr() : std::unique_ptr<T>(new T) {};
+    mutable std::mutex mutex;
 
-    explicit atomic_ptr(const T &value) : std::unique_ptr<T>(new T(value)) {};
+    explicit atomic_ptr(T *pValue) : std::unique_ptr<T>(pValue) {};
 
-    explicit atomic_ptr(const T *pValue) : std::unique_ptr<T>(pValue) {};
+    explicit atomic_ptr() : atomic_ptr(nullptr) {};
 };
 
 

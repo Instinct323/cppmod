@@ -29,28 +29,24 @@ public:
     ZJCV_BUILTIN System *mpSystem;
 
     // Raw data
-    ZJCV_BUILTIN std::mutex mMutexObs;
-    ZJCV_BUILTIN std::vector<Observation> mObs;
+    ZJCV_BUILTIN parallel::atomic_ptr<std::vector<Observation>> mapObs;
 
     // Processed data
     ZJCV_BUILTIN float mReprErr = -1;
     ZJCV_BUILTIN Eigen::Vector3f mPos;
 
-    ZJCV_BUILTIN explicit Mappoint(System *pSystem) : mpSystem(pSystem) {}
+    // Frame 创建, Map 清理
+    ZJCV_BUILTIN explicit Mappoint(System *pSystem) : mpSystem(pSystem), mapObs(new std::vector<Observation>) {}
 
     ZJCV_BUILTIN bool is_invalid() const { return mReprErr < 0; }
 
-    ZJCV_BUILTIN int frame_count();
-
     ZJCV_BUILTIN void prune();
 
-    ZJCV_BUILTIN void add_obs(const Frame::Ptr &pFrame, const int &idx, bool is_right = false);
+    ZJCV_BUILTIN void add_obs(const Frame::Ptr &pFrame, const int &idx);
 
     ZJCV_BUILTIN void clear();
 
     ZJCV_BUILTIN Mappoint &operator+=(const Mappoint &other);
-
-    ZJCV_BUILTIN void triangulation();
 
 #ifdef ZJCV_ORB_SLAM
 #endif

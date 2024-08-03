@@ -15,19 +15,6 @@ extern std::tuple<
 namespace slam {
 
 
-Viewer::Viewer(System *pSystem, const YAML::Node &cfg
-) : mpSystem(pSystem) {
-  int fps = cfg["fps"].as<int>();
-  ASSERT(fps > 0, "Viewer: The delay must be greater than 0")
-  delay = 1000 / fps;
-  sample_stride = cfg["sample_stride"].as<int>();
-  trail_size = cfg["trail_size"].as<int>();
-  imu_size = cfg["imu_size"].as<float>();
-  lead_color = YAML::toEigen<float>(cfg["lead_color"]);
-  trail_color = YAML::toEigen<float>(cfg["trail_color"]);
-}
-
-
 void Viewer::run() {
   YAML::Node cfg = mpSystem->mCfg["viewer"];
 
@@ -44,10 +31,9 @@ void Viewer::run() {
       pangolin::OpenGlMatrix T_world_imu(pFrame->mPose.T_world_imu.matrix());
       pgl_fig->follow(T_world_imu);
       // 绘制当前帧
-      glColor3f(lead_color[0], lead_color[1], lead_color[2]);
+      glColor3fv(lead_color.data());
       pangolin::draw_imu(T_world_imu, imu_size);
-      // 绘制关键帧
-      glColor3f(trail_color[0], trail_color[1], trail_color[2]);
+      // 绘制地图
       mpSystem->mpAtlas->mpCurMap->draw();
       pgl_fig->draw();
       // ----- OpenCV -----
