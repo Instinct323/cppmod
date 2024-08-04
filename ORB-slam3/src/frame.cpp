@@ -39,6 +39,7 @@ void Frame::process() {
     if (pTracker->is_inertial()) {
       if (pRefFrame) mPose.predict_from(pRefFrame->mPose, pTracker->mpIMUpreint.get());
     } else if (pLastFrame) {
+      pLastFrame->update_pose();
       mPose.predict_from(pLastFrame->mPose);
     }
   }
@@ -49,7 +50,7 @@ void Frame::process() {
     auto &ref_mappts = pRefFrame->mvpMappts;
 
     // 利用已有地图点进行匹配
-    cv::GridDict grid_dict(mvKps0.begin(), mvKps0.end(), mImg0.size());
+    cv::GridDict grid_dict(mvKps0.begin(), mvKps0.end(), mImg0.size(), {32, 32});
     std::vector<cv::DMatch> ref_matches;
     cv::Mat_<uchar> mask(pRefFrame->mvKps0.size(), mvKps0.size(), uchar(0));
 
@@ -66,7 +67,7 @@ void Frame::process() {
     pTracker->mpMatcher->search(pRefFrame->mDesc0, mDesc0, mask, ref_matches);
     cv::drop_last(ref_matches, 0.1);
     cv::make_one2one(ref_matches, true);
-    cv::cosine_filter(pRefFrame->mvUnprojs0, mvUnprojs0, ref_matches, 0.9397);
+    // cv::cosine_filter(pRefFrame->mvUnprojs0, mvUnprojs0, ref_matches, 0.9397);
     mpSystem->set_desc("ref-match", ref_matches.size());
 
     // Relocalization: 重定位
@@ -87,17 +88,20 @@ void Frame::process() {
 
     // 为地图点添加观测
     connect_frame(pCurFrame, pRefFrame, ref_matches);
-    optimize_pose(pCurFrame);
+    bool ok = optimize_pose(pCurFrame, pRefFrame);
+    if (ok) {
+      // Monocular: 上一帧是关键帧, 扩充地图点
+      if (pLastFrame->is_keyframe() && pTracker->is_monocular()) {
+        // todo
+      }
 
-    // Monocular: 上一帧是关键帧, 扩充地图点
-    if (pLastFrame->is_keyframe() && pTracker->is_monocular()) {
-      // todo
+      // 根据位姿信息更新
+      pLastFrame->update_pose();
+      mPose.update_velocity(pLastFrame->mPose);
+      mJoint = Sophus::Joint(&pRefFrame->mPose.T_imu_world, mPose.T_imu_world * pRefFrame->mPose.T_world_imu);
+    } else {
+      pTracker->switch_state(TrackState::RECENTLY_LOST);
     }
-
-    // 根据位姿信息更新
-    mPose.update_velocity(pLastFrame->mPose);
-    mJoint = Sophus::Joint(&pRefFrame->mPose.T_imu_world,
-                           mPose.T_imu_world * pRefFrame->mPose.T_world_imu);
   }
 
   // Keyframe: 信息扩充

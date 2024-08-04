@@ -31,8 +31,7 @@ void Viewer::run() {
       pangolin::OpenGlMatrix T_world_imu(pFrame->mPose.T_world_imu.matrix());
       pgl_fig->follow(T_world_imu);
       // 绘制当前帧
-      glColor3fv(lead_color.data());
-      pangolin::draw_imu(T_world_imu, imu_size);
+      pFrame->show_in_pangolin(imu_size, mp_size, lead_color.data(), mp_color.data());
       // 绘制地图
       mpSystem->mpAtlas->mpCurMap->draw();
       pgl_fig->draw();

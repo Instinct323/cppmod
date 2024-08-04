@@ -29,20 +29,28 @@ public:
     ZJCV_BUILTIN System *mpSystem;
 
     // Raw data
-    ZJCV_BUILTIN parallel::atomic_ptr<std::vector<Observation>> mapObs;
+    ZJCV_BUILTIN size_t mIdFrame;
+    ZJCV_BUILTIN parallel::atomic_ptr<std::vector<Observation>> apObs;
 
     // Processed data
-    ZJCV_BUILTIN float mReprErr = -1;
+    ZJCV_BUILTIN bool mbBad = true;
     ZJCV_BUILTIN Eigen::Vector3f mPos;
 
     // Frame 创建, Map 清理
-    ZJCV_BUILTIN explicit Mappoint(System *pSystem) : mpSystem(pSystem), mapObs(new std::vector<Observation>) {}
-
-    ZJCV_BUILTIN bool is_invalid() const { return mReprErr < 0; }
+    ZJCV_BUILTIN explicit Mappoint(System *pSystem, size_t id_frame
+    ) : mpSystem(pSystem), mIdFrame(id_frame), apObs(new std::vector<Observation>) {}
 
     ZJCV_BUILTIN void prune();
 
     ZJCV_BUILTIN void add_obs(const Frame::Ptr &pFrame, const int &idx);
+
+    ZJCV_BUILTIN void erase_obs(const Frame::Ptr &pFrame);
+
+    ZJCV_BUILTIN void set_pos(const Eigen::Vector3f &pos);
+
+    ZJCV_BUILTIN void set_invalid() { mbBad = true; }
+
+    ZJCV_BUILTIN bool is_invalid() const { return mbBad; }
 
     ZJCV_BUILTIN void clear();
 

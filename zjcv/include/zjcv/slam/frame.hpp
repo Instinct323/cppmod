@@ -43,16 +43,22 @@ public:
 
     ZJCV_BUILTIN bool is_keyframe() { return mIdKey > 0; }
 
+    // 使用 Joint 更新位姿
+    ZJCV_BUILTIN void update_pose();
+
     // 根据匹配, 三角化地图点
     ZJCV_BUILTIN int stereo_triangulation(const Frame::Ptr &shared_this, const std::vector<cv::DMatch> &stereo_matches = {});
 
     // 根据匹配, 合并两帧的地图点
     ZJCV_BUILTIN int connect_frame(Ptr &shared_this, Ptr &other, std::vector<cv::DMatch> &matches);
 
+    // 标记为关键帧
     ZJCV_BUILTIN void mark_keyframe();
 
+    // 裁剪占用空间
     ZJCV_BUILTIN void prune();
 
+    // pangolin 绘图
     ZJCV_BUILTIN void show_in_pangolin(float imu_size, float mp_size, const float *imu_color, const float *mp_color);
 
     ZJCV_CUSTOM void process();

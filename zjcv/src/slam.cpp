@@ -83,7 +83,7 @@ void Tracker::switch_state(TrackState state) {
     mpLastFrame = nullptr;
     mpCurFrame = nullptr;
     mpRefFrame = nullptr;
-    // todo: 切换地图
+    mpSystem->mpAtlas->create_map();
   }
 }
 
@@ -113,6 +113,9 @@ Frame::Frame(System *pSystem, const double &timestamp,
     mJoint(&mPose.T_imu_world) {}
 
 
+void Frame::update_pose() { mPose.set_pose(mJoint.get()); }
+
+
 int Frame::stereo_triangulation(const Frame::Ptr &shared_this, const std::vector<cv::DMatch> &stereo_matches) {
   int cnt = 0;
   if (!stereo_matches.empty()) {
@@ -132,11 +135,10 @@ int Frame::stereo_triangulation(const Frame::Ptr &shared_this, const std::vector
         mvUnprojs0[i][2] = -P_cam0[2];
         // 创建地图点
         if (!mvpMappts[i]) {
-          mvpMappts[i] = mpSystem->get_cur_map()->create_mappoint();
+          mvpMappts[i] = mpSystem->get_cur_map()->create_mappoint(mId);
           mvpMappts[i]->add_obs(shared_this, i);
         }
-        mvpMappts[i]->mReprErr = rep_error;
-        mvpMappts[i]->mPos = T_imu_cam0 * P_cam0;
+        mvpMappts[i]->set_pos(T_imu_cam0 * P_cam0);
       }
     }
   }
@@ -162,7 +164,7 @@ int Frame::connect_frame(Frame::Ptr &shared_this, Frame::Ptr &other, std::vector
     } else {
       // 合并: 参考帧 -> 当前帧
       if (!*mpit_cur) {
-        *mpit_cur = mpSystem->get_cur_map()->create_mappoint();
+        *mpit_cur = mpSystem->get_cur_map()->create_mappoint(other->mId);
         (*mpit_cur)->add_obs(shared_this, m.trainIdx);
       }
       (*mpit_cur)->add_obs(other, m.queryIdx);
@@ -176,9 +178,7 @@ int Frame::connect_frame(Frame::Ptr &shared_this, Frame::Ptr &other, std::vector
 void Frame::mark_keyframe() { mIdKey = ++KEY_COUNT; }
 
 
-void Frame::prune() {
-  for (Mappoint::Ptr &m: mvpMappts) if (m) m->prune();
-}
+void Frame::prune() { for (Mappoint::Ptr &m: mvpMappts) if (m) m->prune(); }
 
 
 void Frame::show_in_pangolin(float imu_size, float mp_size, const float *imu_color, const float *mp_color) {
@@ -204,9 +204,10 @@ void Frame::show_in_pangolin(float imu_size, float mp_size, const float *imu_col
 
 
 // Map
-Mappoint::Ptr Map::create_mappoint() {
-  auto pMappt = std::make_shared<Mappoint>(mpSystem);
-  mvpTmpMappts.push_back(pMappt);
+Mappoint::Ptr Map::create_mappoint(size_t id_frame) {
+  auto pMappt = std::make_shared<Mappoint>(mpSystem, id_frame);
+  parallel::ScopedLock lock(apTmpMappts.mutex);
+  apTmpMappts->push_back(pMappt);
   return pMappt;
 }
 
@@ -214,14 +215,15 @@ Mappoint::Ptr Map::create_mappoint() {
 void Map::insert_keyframe(const std::shared_ptr<Frame> &pKF) {
   pKF->mark_keyframe();
   {
-    parallel::ScopedLock lock(mapKeyFrames.mutex);
-    mapKeyFrames->push_back(pKF);
+    parallel::ScopedLock lock(apKeyFrames.mutex);
+    apKeyFrames->push_back(pKF);
   }
   // 整理临时地图点
-  mvpMappts.reserve(mapKeyFrames->size() + mvpTmpMappts.size());
-  for (auto &pMappt: mvpTmpMappts) {
+  parallel::ScopedLock lock0(apMappts.mutex), lock1(apTmpMappts.mutex);
+  apMappts->reserve(apMappts->size() + apTmpMappts->size());
+  for (auto &pMappt: *apTmpMappts) {
     if (pMappt.expired()) continue;
-    mvpMappts.push_back(pMappt);
+    apMappts->push_back(pMappt);
   }
 }
 
@@ -229,10 +231,10 @@ void Map::insert_keyframe(const std::shared_ptr<Frame> &pKF) {
 void Map::draw() const {
   Viewer::Ptr &viewer = mpSystem->mpViewer;
   if (!viewer) return;
-  size_t n = std::min(viewer->trail_size, mapKeyFrames->size());
+  size_t n = std::min(viewer->trail_size, apKeyFrames->size());
   // pangolin
-  parallel::ScopedLock lock(mapKeyFrames.mutex);
-  for (auto it = mapKeyFrames->end() - n; it != mapKeyFrames->end(); ++it) {
+  parallel::ScopedLock lock(apKeyFrames.mutex);
+  for (auto it = apKeyFrames->end() - n; it != apKeyFrames->end(); ++it) {
     (*it)->show_in_pangolin(viewer->imu_size, viewer->mp_size, viewer->trail_color.data(), viewer->mp_color.data());
   }
 }
@@ -240,43 +242,76 @@ void Map::draw() const {
 
 // Mappoint
 void Mappoint::prune() {
-  parallel::ScopedLock lock(mapObs.mutex);
+  parallel::ScopedLock lock(apObs.mutex);
   auto begit = std::remove_if(
-      mapObs->begin(), mapObs->end(),
+      apObs->begin(), apObs->end(),
       [](const Observation &obs) { return obs.first.expired(); });
-  mapObs->erase(begit, mapObs->end());
+  apObs->erase(begit, apObs->end());
 }
 
 
 void Mappoint::add_obs(const Frame::Ptr &pFrame, const int &idx) {
-  parallel::ScopedLock lock(mapObs.mutex);
-  mapObs->emplace_back(pFrame, idx);
+  parallel::ScopedLock lock(apObs.mutex);
+  apObs->emplace_back(pFrame, idx);
+}
+
+
+void Mappoint::erase_obs(const Frame::Ptr &pFrame) {
+  parallel::ScopedLock lock(apObs.mutex);
+  for (auto it = apObs->begin(); it != apObs->end(); ++it) {
+    if (it->first.expired()) continue;
+    if (it->first.lock() == pFrame) {
+      apObs->erase(it);
+      pFrame->mvpMappts[it->second] = nullptr;
+      return;
+    }
+  }
+}
+
+
+void Mappoint::set_pos(const Eigen::Vector3f &pos) {
+  mPos = pos;
+  mbBad = false;
 }
 
 
 void Mappoint::clear() {
-  parallel::ScopedLock lock(mapObs.mutex);
-  for (auto [wpf, i]: *mapObs) {
+  parallel::ScopedLock lock(apObs.mutex);
+  for (auto [wpf, i]: *apObs) {
     if (wpf.expired()) continue;
     wpf.lock()->mvpMappts[i] = nullptr;
   }
-  mapObs->clear();
+  apObs->clear();
 }
 
 
 Mappoint &Mappoint::operator+=(const Mappoint &other) {
-  parallel::ScopedLock lock(mapObs.mutex);
-  mapObs->insert(mapObs->end(), other.mapObs->begin(), other.mapObs->end());
+  parallel::ScopedLock lock(apObs.mutex);
+  apObs->insert(apObs->end(), other.apObs->begin(), other.apObs->end());
   return *this;
 }
 
 
 // optimize
-void optimize_pose(const Frame::Ptr &pFrame) {
+bool optimize_pose(const Frame::Ptr &pFrame, const Frame::Ptr &pRefFrame, int n_iters) {
   std::vector<std::shared_ptr<Frame>> vpFrames = {pFrame};
-  BundleAdjustment<g2o::LinearSolverDense> ba(&vpFrames, &pFrame->mpSystem->get_cur_map()->mvpTmpMappts, true);
-  // todo: 优化和滤除
-  ba.apply_result();
+  auto &apMapppts = pFrame->mpSystem->get_cur_map()->apTmpMappts;
+  apMapppts.mutex.lock();
+  BundleAdjustment<g2o::LinearSolverDense> ba(pRefFrame->mId, true, vpFrames.begin(), vpFrames.end(), apMapppts->begin(), apMapppts->end());
+  apMapppts.mutex.unlock();
+  const int &MIN_MATCHES = pFrame->mpSystem->mpTracker->MIN_MATCHES;
+  if (ba.valid_mappts() < MIN_MATCHES) return false;
+
+  for (int i = 0; i < n_iters; ++i) {
+    ba.reset();
+    ba.initializeOptimization(0);
+    ba.optimize(15);
+    ba.outlier_rejection(5.991f * (n_iters - i));
+    if (ba.valid_mappts() < MIN_MATCHES) break;
+  }
+  parallel::ScopedLock lock(apMapppts.mutex);
+  ba.apply_result(false);
+  return true;
 }
 
 }

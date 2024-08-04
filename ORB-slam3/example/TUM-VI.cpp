@@ -37,7 +37,7 @@ void slam::Tracker::run() {
     //          dataset::IMUsamples(std::get<5>(storage).begin() + j, std::get<5>(storage).begin() + k));
     grab_image(std::get<0>(storage)[i], imgLeft, imgRight);
     // 保存位姿
-    joints.emplace_back(mpCurFrame->mTimestamp, mpCurFrame->mJoint);
+    if (mpCurFrame) joints.emplace_back(mpCurFrame->mTimestamp, mpCurFrame->mJoint);
 
     mpSystem->set_desc("track-cost", (boost::format("%.1fms") % (1e3 * timer.count())).str());
     mpSystem->set_desc("state", mState);

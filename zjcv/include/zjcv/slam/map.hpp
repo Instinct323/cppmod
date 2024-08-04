@@ -23,12 +23,14 @@ public:
 
     ZJCV_BUILTIN System *mpSystem;
 
-    ZJCV_BUILTIN parallel::atomic_ptr<std::vector<std::shared_ptr<Frame>>> mapKeyFrames;
-    ZJCV_BUILTIN std::vector<std::weak_ptr<Mappoint>> mvpMappts, mvpTmpMappts;
+    ZJCV_BUILTIN parallel::atomic_ptr<std::vector<std::shared_ptr<Frame>>> apKeyFrames;
+    ZJCV_BUILTIN parallel::atomic_ptr<std::vector<std::weak_ptr<Mappoint>>> apMappts, apTmpMappts;
 
-    ZJCV_BUILTIN Map(System *pSystem) : mpSystem(pSystem), mapKeyFrames(new std::vector<std::shared_ptr<Frame>>) {}
+    ZJCV_BUILTIN Map(System *pSystem
+    ) : mpSystem(pSystem), apKeyFrames(new std::vector<std::shared_ptr<Frame>>),
+        apMappts(new std::vector<std::weak_ptr<Mappoint>>), apTmpMappts(new std::vector<std::weak_ptr<Mappoint>>) {}
 
-    ZJCV_BUILTIN Mappoint::Ptr create_mappoint();
+    ZJCV_BUILTIN Mappoint::Ptr create_mappoint(size_t id_frame);
 
     ZJCV_BUILTIN void insert_keyframe(const std::shared_ptr<Frame> &pKF);
 
