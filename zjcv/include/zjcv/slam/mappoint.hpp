@@ -54,7 +54,7 @@ public:
 
     ZJCV_BUILTIN void clear();
 
-    ZJCV_BUILTIN Mappoint &operator+=(const Mappoint &other);
+    ZJCV_BUILTIN void merge(Ptr &shared_this, Ptr &other);
 
 #ifdef ZJCV_ORB_SLAM
 #endif

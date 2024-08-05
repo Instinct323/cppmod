@@ -53,13 +53,36 @@ class GridDict {
 
 public:
     explicit GridDict(std::vector<KeyPoint>::iterator begin, std::vector<KeyPoint>::iterator end,
-                      const Size &imgSize, const Size &gridSize = {16, 16}, int dilation = 1);
+                      const Size &imgSize, const Size &gridSize);
 
     template<typename T>
-    Mat operator()(T x, T y) const {
+    Mat operator()(T x, T y, int dilation = 0) const {
       static_assert(std::is_arithmetic<T>::value, "Invalid type");
       int r = y / mGridSize.height, c = x / mGridSize.width;
-      return mMask.row(r * mCols + c);
+      if (!dilation) {
+        return mMask.row(r * mCols + c);
+      } else {
+        Mat_<uchar> ret(1, mMask.cols), tmp = mMask.row(0);
+        {
+          int cmin = std::max(0, c - dilation), cmax = std::min(mCols - 1, c + dilation) + 1;
+          cv::reduce(mMask.rowRange(r * mCols + cmin, r * mCols + cmax), ret, 0, cv::REDUCE_MAX);
+        }
+        // 纵向膨胀
+        for (int d = 1; d <= dilation; d++) {
+          int radius = dilation - d;
+          int r1 = r - d, r2 = r + d;
+          int cmin = std::max(0, c - radius), cmax = std::min(mCols - 1, c + radius) + 1;
+          if (r1 >= 0) {
+            cv::reduce(mMask.rowRange(r1 * mCols + cmin, r1 * mCols + cmax), tmp, 0, cv::REDUCE_MAX);
+            cv::bitwise_or(ret, tmp, ret);
+          }
+          if (r2 < mRows) {
+            cv::reduce(mMask.rowRange(r2 * mCols + cmin, r2 * mCols + cmax), tmp, 0, cv::REDUCE_MAX);
+            cv::bitwise_or(ret, tmp, ret);
+          }
+        }
+        return ret;
+      }
     }
 };
 

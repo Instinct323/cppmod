@@ -3,9 +3,9 @@ vocabulary: "/home/workbench/Repository/dbow2/ORBvoc.bin"
 
 
 tracker:
-  min_matches: 15
-  max_matches: 100
-  key_matches: 50
+  min_matches: 20
+  max_matches: 150
+  key_matches_radio: 0.5
   lost_timeout: 3.0
 
   cam0:
@@ -59,10 +59,10 @@ viewer:
   view_point: [ 0., 3.5, 0. ]
   view_up_axis: 6
 
-  imu_size: 0.5
-  mp_size: 5
+  imu_size: 0.3
+  mp_size: 2
   trail_size: 30
-  # sample_stride: 20
+  sample_stride: 20
 
   lead_color: [ 1.0, 0.0, 0.0 ]
   trail_color: [ 0.0, 1.0, 0.0 ]

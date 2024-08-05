@@ -26,15 +26,28 @@ void Viewer::run() {
     timer.reset();
     Frame::Ptr pFrame = pTracker->mpLastFrame;
     if (pFrame) {
-      // ----- Pangolin -----
-      pgl_fig->clear();
-      pangolin::OpenGlMatrix T_world_imu(pFrame->mPose.T_world_imu.matrix());
-      pgl_fig->follow(T_world_imu);
-      // 绘制当前帧
-      pFrame->show_in_pangolin(imu_size, mp_size, lead_color.data(), mp_color.data());
-      // 绘制地图
-      mpSystem->mpAtlas->mpCurMap->draw();
-      pgl_fig->draw();
+      auto &cur_map = mpSystem->mpAtlas->mpCurMap;
+      if (pTracker->mState == TrackState::OK) {
+        // ----- Pangolin -----
+        pgl_fig->clear();
+        pangolin::OpenGlMatrix T_world_imu(pFrame->mPose.T_world_imu.matrix());
+        pgl_fig->follow(T_world_imu);
+        // 绘制当前帧
+        pFrame->show_in_opengl(imu_size, lead_color.data());
+        {
+          parallel::ScopedLock lock(cur_map->apKeyFrames.mutex);
+          if (cur_map->apKeyFrames->size()) {
+            glColor3fv(trail_color.data());
+            glBegin(GL_LINES);
+            glVertex3fv(pFrame->get_pos().data());
+            glVertex3fv(cur_map->apKeyFrames->back()->get_pos().data());
+            glEnd();
+          }
+        }
+        // 绘制地图
+        cur_map->draw();
+        pgl_fig->draw();
+      }
       // ----- OpenCV -----
       pFrame->draw();
     }

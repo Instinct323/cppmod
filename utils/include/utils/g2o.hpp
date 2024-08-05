@@ -14,6 +14,8 @@
 
 namespace g2o {
 
+typedef g2o::HyperGraph::Data UserDataType;
+
 // g2o -> Sophus
 Sophus::SE3f toSE3(const g2o::SE3Quat &pose);
 

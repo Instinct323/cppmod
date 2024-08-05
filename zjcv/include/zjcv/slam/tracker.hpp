@@ -26,7 +26,7 @@ public:
     ZJCV_BUILTIN System *mpSystem;
 
     // 配置参数
-    ZJCV_BUILTIN const int MIN_MATCHES, MAX_MATCHES, KEY_MATCHES;
+    ZJCV_BUILTIN const int MIN_MATCHES, MAX_MATCHES, KEY_MATCHES_RADIO;
     ZJCV_BUILTIN const double LOST_TIMEOUT;
 
     // 设备信息

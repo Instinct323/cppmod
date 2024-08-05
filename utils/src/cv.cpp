@@ -102,17 +102,16 @@ float dx_filter(const std::vector<Eigen::Vector3f> &unprojs0,
 
 
 GridDict::GridDict(std::vector<KeyPoint>::iterator begin, std::vector<KeyPoint>::iterator end,
-                   const Size &imgSize, const Size &gridSize, int dilation
+                   const Size &imgSize, const Size &gridSize
 ) : mRows(std::ceil(imgSize.height / gridSize.height)), mCols(std::ceil(imgSize.width / gridSize.width)),
     mGridSize(gridSize), mMask(mRows * mCols, end - begin, uchar(0)) {
-  assert(dilation >= 0);
 
   for (auto it = begin; it != end; it++) {
     float radius = it->size / 2;
-    int rMin = std::max(0, int(it->pt.y - radius) / mGridSize.height - dilation),
-        rMax = std::min(mRows, int(it->pt.y + radius) / mGridSize.height + dilation),
-        cMin = std::max(0, int(it->pt.x - radius) / mGridSize.width - dilation),
-        cMax = std::min(mCols - 1, int(it->pt.x + radius) / mGridSize.width + dilation);
+    int rMin = std::max(0, int(it->pt.y - radius) / mGridSize.height),
+        rMax = std::min(mRows - 1, int(it->pt.y + radius) / mGridSize.height),
+        cMin = std::max(0, int(it->pt.x - radius) / mGridSize.width),
+        cMax = std::min(mCols - 1, int(it->pt.x + radius) / mGridSize.width);
 
     for (int r = rMin; r <= rMax; r++) {
       for (int c = cMin; c <= cMax; c++) {

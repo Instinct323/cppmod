@@ -8,6 +8,8 @@
 #include "zjcv/imu.hpp"
 #include "zjcv/zjcv.hpp"
 
+#define STEREO_OBS_COS_THRESH 0.9998
+
 namespace slam {
 
 class System;
@@ -36,6 +38,7 @@ public:
     ZJCV_BUILTIN std::vector<std::shared_ptr<Mappoint>> mvpMappts;
 
     // Processed data
+    ZJCV_BUILTIN Ptr mpRefFrame;
     ZJCV_BUILTIN IMU::MovingPose mPose;
     ZJCV_BUILTIN Sophus::Joint mJoint;
 
@@ -50,7 +53,7 @@ public:
     ZJCV_BUILTIN int stereo_triangulation(const Frame::Ptr &shared_this, const std::vector<cv::DMatch> &stereo_matches = {});
 
     // 根据匹配, 合并两帧的地图点
-    ZJCV_BUILTIN int connect_frame(Ptr &shared_this, Ptr &other, std::vector<cv::DMatch> &matches);
+    ZJCV_BUILTIN int connect_frame(Ptr &shared_this, Ptr &ref, std::vector<cv::DMatch> &ref2this);
 
     // 标记为关键帧
     ZJCV_BUILTIN void mark_keyframe();
@@ -58,8 +61,11 @@ public:
     // 裁剪占用空间
     ZJCV_BUILTIN void prune();
 
+    // 世界坐标
+    ZJCV_BUILTIN const Eigen::Vector3f &get_pos() { return mPose.T_imu_world.translation(); }
+
     // pangolin 绘图
-    ZJCV_BUILTIN void show_in_pangolin(float imu_size, float mp_size, const float *imu_color, const float *mp_color);
+    ZJCV_BUILTIN void show_in_opengl(float imu_size, const float *imu_color);
 
     ZJCV_CUSTOM void process();
 
@@ -68,7 +74,11 @@ public:
 #ifdef ZJCV_ORB_SLAM
     std::vector<cv::KeyPoint> mvKps0, mvKps1;
     cv::Mat mDesc0, mDesc1;
-    std::vector<cv::DMatch> mStereoMatches;
+    std::vector<cv::DMatch> mStereoMatches, mRefToThisMatches;
+    std::unique_ptr<cv::GridDict> mpGridDict;
+
+    bool match_previous(float &radio);
+
 #endif
 
 };
