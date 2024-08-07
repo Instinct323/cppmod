@@ -48,9 +48,6 @@ public:
     void undistort(const cv::Mat &src, cv::Mat &dst) const override { cv::remap(src, dst, mMap1, mMap2, cv::INTER_LINEAR); }
 
     void undistort(const VectorPt2f &src, VectorPt2f &dst) const override { cv::undistortPoints(src, dst, mOrgK, get_distcoeffs(), mRectR, getK()); }
-
-    // 立体校正: 调用后, 由 undistot 函数驱动
-    void stereo_rectify(Pinhole *cam_right);
 };
 
 }

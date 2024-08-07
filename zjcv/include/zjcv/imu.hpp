@@ -128,7 +128,7 @@ public:
     }
 
     // T_cur_last
-    void update_velocity(const MovingPose &prev) { v = T_world_imu * prev.T_imu_world; }
+    void update_velocity(const MovingPose &prev) { v = T_imu_world * prev.T_world_imu; }
 
     void predict_from(const MovingPose &prev, const Preintegration *preint = nullptr, bool update = false);
 };

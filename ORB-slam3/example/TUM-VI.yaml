@@ -3,9 +3,9 @@ vocabulary: "/home/workbench/Repository/dbow2/ORBvoc.bin"
 
 
 tracker:
-  min_matches: 20
-  max_matches: 150
-  key_matches_radio: 0.5
+  min_matches: 15
+  max_matches: 30
+  key_matches_radio: 0.3
   lost_timeout: 3.0
 
   cam0:
@@ -54,8 +54,9 @@ tracker:
 viewer:
   fps: 45
   title: "Feature Map"
-  resolution: [ 640, 480 ]
-  camera_focal: 200
+  resolution: [ 960, 480 ]
+  panel_radio: 0.3
+  camera_focal: 300
   view_point: [ 0., 3.5, 0. ]
   view_up_axis: 6
 
@@ -67,4 +68,3 @@ viewer:
   lead_color: [ 1.0, 0.0, 0.0 ]
   trail_color: [ 0.0, 1.0, 0.0 ]
   mp_color: [ 0.0, 0.0, 1.0 ]
-

@@ -25,8 +25,9 @@ float triangulation(const std::vector<Eigen::Vector3f> &vP_cam,
   // A[2n, 4]: n 个 (T_cam_ref[:2] - p2D * T_cam_ref[2])
   // V[4, 4]: AV = US, 每一列对应一个可能的 P_ref
   // 由于特征向量 S 最后一个值最小, 故 US (即 AV) 的最后一列趋近于零, 即 V 的最后一列为解
-  auto svd = equ_set.bdcSvd(Eigen::ComputeThinV);
+  auto svd = equ_set.jacobiSvd(Eigen::ComputeThinV);
   Eigen::Vector4f P_homo = svd.matrixV().col(3);
+  if (std::abs(P_homo[3]) < 1e-4) return false;
   P_homo /= P_homo[3];
   P_ref = P_homo.head(3);
   // 检验点在相机平面上的深度

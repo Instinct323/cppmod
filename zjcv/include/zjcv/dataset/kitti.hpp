@@ -8,6 +8,8 @@ namespace dataset {
 
 /**
  * @brief KITTI https://www.cvlibs.net/datasets/kitti/eval_odometry.php
+ * @calib P0 (灰左), P1 (灰右), P2 (彩左), P3 (彩右)
+ *        根据参数不同分 3 组: (00~02, 13~21); (03,); (04~12)
  */
 class Kitti : public Base {
     std::string mId;
@@ -57,16 +59,25 @@ public:
           });
     }
 
-    void save_poses(Poses &vPoses) {
-      std::ofstream f(mPath + mId + ".txt");
-      for (const auto &pose: vPoses) {
-        Matrix34f p = pose.matrix3x4();
-        for (int i = 0; i < p.size(); i++) {
-          f << *(p.data() + i) << " ";
+    // e.g., P0, P1, P2, P3
+    Matrix34f load_calib(std::string id = "P0") {
+      std::string file = mPath + "sequences/" + mId + "/calib.txt";
+      std::ifstream ifs(file);
+      ASSERT(ifs.is_open(), "fail to open file " << file)
+      std::string line;
+      while (std::getline(ifs, line)) {
+        std::istringstream iss(line);
+        std::string token;
+        iss >> token;
+        if (token == id + ":") {
+          Matrix34f P;
+          for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 4; j++) iss >> P(i, j);
+          }
+          return P;
         }
-        f << std::endl;
       }
-      f.close();
+      throw std::runtime_error("Invalid calib id: " + id);
     }
 };
 

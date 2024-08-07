@@ -103,7 +103,7 @@ float dx_filter(const std::vector<Eigen::Vector3f> &unprojs0,
 
 GridDict::GridDict(std::vector<KeyPoint>::iterator begin, std::vector<KeyPoint>::iterator end,
                    const Size &imgSize, const Size &gridSize
-) : mRows(std::ceil(imgSize.height / gridSize.height)), mCols(std::ceil(imgSize.width / gridSize.width)),
+) : mRows(std::ceil(float(imgSize.height) / gridSize.height)), mCols(std::ceil(float(imgSize.width) / gridSize.width)),
     mGridSize(gridSize), mMask(mRows * mCols, end - begin, uchar(0)) {
 
   for (auto it = begin; it != end; it++) {

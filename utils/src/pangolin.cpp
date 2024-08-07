@@ -6,7 +6,7 @@
 namespace pangolin {
 
 
-void draw_imu(OpenGlMatrix &Twc, float w) {
+void draw_imu(const OpenGlMatrix &Tcw, float w) {
   float h = w * 0.75, z = w * 0.6;
   float pts[4][3] = {{-w, h, z},
                      {w,  h, z},
@@ -17,7 +17,7 @@ void draw_imu(OpenGlMatrix &Twc, float w) {
 #ifdef HAVE_GLES
   glMultMatrixf(Twc.m);
 #else
-  glMultMatrixd(Twc.m);
+  glMultMatrixd(Tcw.m);
 #endif
 
   glBegin(GL_LINES);
@@ -51,7 +51,7 @@ void plot_trajectory(YAML::Node cfg,
     timer.reset();
     pgl_fig->clear();
 
-    OpenGlMatrix &T_world_imu(trace.plot(vTsImg[i]));
+    const OpenGlMatrix &T_world_imu(trace.plot(vTsImg[i]));
     pgl_fig->follow(T_world_imu);
 
     pgl_fig->draw();
@@ -83,6 +83,7 @@ Figure::Ptr Figure::from_yaml(const YAML::Node &cfg) {
   pFig->set_focal(cfg["camera_focal"].as<float>());
   pFig->set_view_point(view_point[0], view_point[1], view_point[2],
                        static_cast<pangolin::AxisDirection>(cfg["view_up_axis"].as<int>()));
+  pFig->set_panel(cfg["panel_ratio"].as<float>(0.f));
   return pFig;
 }
 

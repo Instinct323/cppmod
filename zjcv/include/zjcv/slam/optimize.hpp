@@ -109,7 +109,7 @@ public:
 
 namespace slam::feature {
 
-bool optimize_pose(const std::shared_ptr<Frame> &pFrame, const std::shared_ptr<Frame> &pRefFrame, bool only_pose);
+bool optimize_pose(System *pSystem, const std::shared_ptr<Frame> &pFrame, const std::shared_ptr<Frame> &pRefFrame, bool only_pose);
 
 
 // 光束法平差
@@ -122,30 +122,31 @@ public:
     typedef std::vector<std::shared_ptr<Frame>> FrameSharedPtrs;
     typedef std::vector<std::weak_ptr<Mappoint>> MappointWeakPtrs;
 
+    const Sophus::SE3f T_cam0_imu, T_imu_cam0;
     bool only_pose;
 
     // Raw data
     FrameSharedPtrs::iterator iFramesBeg, iFramesEnd;
     MappointWeakPtrs::iterator iMapptsBeg, iMapptsEnd;
-    size_t n_frames = 0, n_mappts = 0, id_vex = 0;
+    size_t n_frames = 0, n_mappts = 0;
 
     // Information, Robust kernel
-    const Eigen::Vector4f thresh = {0, 2.706, 3.841, 5.024};
+    const Eigen::Vector4f thresh = {0, 3.841, 5.991, 7.815};
     Eigen::Matrix2d info2 = Eigen::Matrix2d::Identity();
     Eigen::Matrix3d info3 = Eigen::Matrix3d::Identity();
     g2o::RobustKernelHuber *rk = nullptr;
 
     // Processed data
-    std::vector<std::vector<Edge *>> edgeMappt;
-    std::vector<size_t> badMappt;
+    std::vector<std::vector<Edge *>> edgeMappts;
 
-    BundleAdjustment(size_t idRefFrame, bool only_pose,
+    BundleAdjustment(const Sophus::SE3f &T_cam0_imu, size_t idRefFrame, bool only_pose,
                      FrameSharedPtrs::iterator iFramesBeg, FrameSharedPtrs::iterator iFramesEnd,
                      MappointWeakPtrs::iterator iMapptsBeg, MappointWeakPtrs::iterator iMapptsEnd
-    ) : g2o::Optimizer<6, 3, LinearSolverTp>(), only_pose(only_pose),
+    ) : g2o::Optimizer<6, 3, LinearSolverTp>(),
+        T_cam0_imu(T_cam0_imu), T_imu_cam0(T_cam0_imu.inverse()), only_pose(only_pose),
         iFramesBeg(iFramesBeg), iFramesEnd(iFramesEnd), iMapptsBeg(iMapptsBeg), iMapptsEnd(iMapptsEnd),
-        n_frames(iFramesEnd - iFramesBeg), n_mappts(iMapptsEnd - iMapptsBeg), id_vex(n_frames + n_mappts),
-        edgeMappt(n_mappts) {
+        n_frames(iFramesEnd - iFramesBeg), n_mappts(iMapptsEnd - iMapptsBeg),
+        edgeMappts(n_mappts) {
       ASSERT(n_frames > 0 && n_mappts > 0, "Empty frames or map points")
       info3(2, 2) = BA_DEPTH_WEIGHT;
       // Vertex: 帧位姿
@@ -157,15 +158,9 @@ public:
       }
       for (size_t i = 0; i < n_mappts; ++i) {
         auto it = iMapptsBeg + i;
-        if (it->expired()) {
-          badMappt.push_back(i);
-          continue;
-        }
+        if (it->expired()) continue;
         auto pMappt = it->lock();
-        if (only_pose && pMappt->is_invalid()) {
-          badMappt.push_back(i);
-          continue;
-        }
+        if (only_pose && pMappt->is_invalid()) continue;
         // Vertex: 地图点
         Vertex *vMappt = add_mappt(n_frames + i);
         if (vMappt) this->addVertex(vMappt);
@@ -173,20 +168,22 @@ public:
         Eigen::Vector3d Pw = pMappt->mPos.cast<double>();
         {
           parallel::ScopedLock lock(pMappt->apObs.mutex);
-          edgeMappt[i].reserve(pMappt->apObs->size());
+          edgeMappts[i].reserve(pMappt->apObs->size());
           for (auto obs: *pMappt->apObs) {
             Edge *eObs = add_observation(i, Pw, obs, vMappt);
-            if (eObs) edgeMappt[i].push_back(eObs);
+            if (!eObs) continue;
+            edgeMappts[i].push_back(eObs);
           }
         }
-        // 离群点标记
-        if (edgeMappt[i].size() < 2) {
-          badMappt.push_back(i);
-          edgeMappt[i].clear();
+        // 只有一个观测, 而且不是双目观测
+        if (is_bad_mappts(i)) {
+          edgeMappts[i].clear();
         } else {
-          for (auto e: edgeMappt[i]) this->addEdge(e);
+          for (auto e: edgeMappts[i]) this->addEdge(e);
         }
       }
+      // 还原 mIdVex
+      for (size_t i = 0; i < n_frames; ++i) (*(iFramesBeg + i))->mIdVex = SIZE_MAX;
     }
 
     void reset() {
@@ -194,7 +191,7 @@ public:
       for (size_t i = 0; i < n_frames; ++i) {
         Frame::Ptr &pFrame = *(iFramesBeg + i);
         auto vFrame = static_cast<g2o::VertexSE3Expmap *>(this->vertex(i));
-        vFrame->setEstimate(Sophus::toG2O(pFrame->mPose.T_imu_world));
+        vFrame->setEstimate(Sophus::toG2O(T_cam0_imu * pFrame->mPose.T_imu_world));
       }
       // Vertex: 地图点
       if (!only_pose) {
@@ -207,6 +204,94 @@ public:
         }
       }
     }
+
+    bool is_bad_mappts(size_t i) {
+      // 只有一个观测, 而且是 EdgeSE3ProjectDNP
+      return edgeMappts[i].empty() || (!only_pose && edgeMappts[i].size() == 1 && edgeMappts[i][0]->dimension() == 2);
+    }
+
+    size_t outlier_rejection(bool clean_obs, bool detect_depth_positive = false) {
+      size_t n = 0, m = 0;
+      long double sumvar = 0;
+      // 假设误差项的均值为 0, 累计方差
+      for (size_t i = 0; i < n_mappts; i++) {
+        if (edgeMappts[i].empty()) continue;
+        for (auto e: edgeMappts[i]) {
+          if (e->level()) continue;
+          double chi2 = e->chi2();
+          if (!std::isfinite(chi2) || chi2 > 1e9) continue;
+          n++;
+          sumvar += chi2;
+        }
+      }
+      // 根据方差计算阈值
+      Eigen::Vector4f th = thresh * float(sumvar / (long double) n);
+      for (size_t i = 0; i < n_mappts; i++) {
+        if (edgeMappts[i].empty()) continue;
+        auto it = edgeMappts[i].begin();
+        while (it != edgeMappts[i].end()) {
+          if ((*it)->level()) continue;
+          int d = (*it)->dimension();
+          double chi2 = (*it)->chi2();
+          if (chi2 < th[d] && (!detect_depth_positive ||
+                               static_cast<g2o::ProjectEdgeData *>((*it)->userData())->is_depth_positive)) {
+            ++it;
+          } else {
+            // 离群点筛除
+            m++;
+            this->removeEdge(*it);
+            edgeMappts[i].erase(it);
+            if (clean_obs) {
+              int edge_id = (*it)->id(), frame_id = edge_id / n_mappts, mappt_id = edge_id % n_mappts;
+              auto itMappt = iMapptsBeg + mappt_id;
+              if (itMappt->expired()) continue;
+              itMappt->lock()->erase_obs(*(iFramesBeg + frame_id));
+            }
+          }
+        }
+        // 有效观测不足
+        if (is_bad_mappts(i)) {
+          for (auto e: edgeMappts[i]) this->removeEdge(e);
+          edgeMappts[i].clear();
+        }
+      }
+      return m;
+    }
+
+    void print_edge() {
+      LOG(INFO) << "----- Edges -----";
+      for (auto *e_: this->edges()) {
+        auto e = static_cast<Edge *>(e_);
+        if (e->level() == 1) continue;
+        if (e->dimension() == 2) {
+          auto ed = static_cast<g2o::EdgeSE3ProjectDNPonlyPose *>(e);
+          LOG(INFO) << ed->measurement().transpose() << " -> " << ed->error().transpose();
+        } else {
+          auto ed = static_cast<g2o::EdgeStereoSE3ProjectDNPonlyPose *>(e);
+          LOG(INFO) << ed->measurement().transpose() << " -> " << ed->error().transpose();
+        }
+      }
+      LOG(INFO) << "----- Edges -----";
+    }
+
+    void apply_result() {
+      // Frame: 位姿
+      for (size_t i = 0; i < n_frames; ++i) {
+        auto v = static_cast<g2o::VertexSE3Expmap *>(this->vertex(i));
+        if (v) (*(iFramesBeg + i))->mPose.set_pose(T_imu_cam0 * g2o::toSE3(v->estimate()));
+      }
+      // Mappoint: 位置
+      if (!only_pose) {
+        for (size_t i = 0; i < n_mappts; ++i) {
+          if ((iMapptsBeg + i)->expired()) continue;
+          auto pMappt = (iMapptsBeg + i)->lock();
+          auto v = static_cast<g2o::VertexPointXYZ *>(this->vertex(n_frames + i));
+          if (v) pMappt->set_pos(v->estimate().cast<float>());
+        }
+      }
+    }
+
+protected:
 
     Vertex *add_frame(size_t id, Frame::Ptr &pFrame) {
       pFrame->mIdVex = id;
@@ -229,13 +314,7 @@ public:
       auto pFrame = wpf.lock();
       // 获取 Frame 顶点
       auto vFrame = this->vertex(pFrame->mIdVex);
-      if (!vFrame) {
-        if (only_pose || !pFrame->is_keyframe()) return nullptr;
-        vFrame = add_frame(id_vex, pFrame);
-        vFrame->setFixed(true);
-        this->addVertex(vFrame);
-        id_vex++;
-      }
+      if (!vFrame) return nullptr;
       Edge *eObs;
       Eigen::Vector3d Pc = pFrame->mvUnprojs0[idx].cast<double>();
       // 双目标记, 双目观测的 z 为实际值的相反数
@@ -273,88 +352,6 @@ public:
       eObs->setVertex(0, vFrame);
       if (!only_pose) eObs->setVertex(1, static_cast<g2o::VertexPointXYZ *>(vMappt));
       return eObs;
-    }
-
-    size_t valid_mappts() { return n_mappts - badMappt.size(); }
-
-    size_t outlier_rejection(bool detect_depth_positive = false) {
-      size_t n = 0, m = 0;
-      long double sumvar = 0;
-      // 假设误差项的均值为 0, 累计方差
-      for (size_t i = 0; i < n_mappts; i++) {
-        if (edgeMappt[i].empty()) continue;
-        for (auto e: edgeMappt[i]) {
-          if (e->level()) continue;
-          double chi2 = e->chi2();
-          n++;
-          if (std::isfinite(chi2) && chi2 < 1e9) sumvar += chi2;
-        }
-      }
-      // 根据方差计算阈值
-      Eigen::Vector4f th = thresh * float(sumvar / (long double) n);
-      for (size_t i = 0; i < n_mappts; i++) {
-        if (edgeMappt[i].empty()) continue;
-        auto it = edgeMappt[i].begin();
-        while (it != edgeMappt[i].end()) {
-          if ((*it)->level()) continue;
-          double chi2 = (*it)->chi2();
-          if (chi2 < th[(*it)->dimension()] &&
-              (!detect_depth_positive || static_cast<g2o::ProjectEdgeData *>((*it)->userData())->is_depth_positive)) {
-            ++it;
-          } else {
-            // 离群点筛除
-            m++;
-            (*it)->setLevel(1);
-            edgeMappt[i].erase(it);
-          }
-        }
-        // 离群地图点标记
-        if (edgeMappt[i].size() < 2) {
-          for (auto e: edgeMappt[i]) e->setLevel(1);
-          badMappt.push_back(i);
-          edgeMappt[i].clear();
-        }
-      }
-      return m;
-    }
-
-    void print_edge() {
-      LOG(INFO) << "----- Edges -----";
-      for (auto *e_: this->edges()) {
-        auto e = static_cast<Edge *>(e_);
-        if (e->level() == 1) continue;
-        if (e->dimension() == 2) {
-          auto ed = static_cast<g2o::EdgeSE3ProjectDNPonlyPose *>(e);
-          LOG(INFO) << ed->measurement().transpose() << " -> " << ed->error().transpose();
-        } else {
-          auto ed = static_cast<g2o::EdgeStereoSE3ProjectDNPonlyPose *>(e);
-          LOG(INFO) << ed->measurement().transpose() << " -> " << ed->error().transpose();
-        }
-      }
-      LOG(INFO) << "----- Edges -----";
-    }
-
-    void apply_result(bool clear_mp) {
-      // Frame: 位姿
-      for (size_t i = 0; i < n_frames; ++i) {
-        auto v = static_cast<g2o::VertexSE3Expmap *>(this->vertex(i));
-        if (v) (*(iFramesBeg + i))->mPose.set_pose(g2o::toSE3(v->estimate()));
-      }
-      // Mappoint: 离群点
-      for (size_t i: badMappt) {
-        if ((iMapptsBeg + i)->expired()) continue;
-        auto pMappt = (iMapptsBeg + i)->lock();
-        if (clear_mp) pMappt->clear();
-      }
-      // Mappoint: 位置
-      if (!only_pose) {
-        for (size_t i = 0; i < n_mappts; ++i) {
-          if ((iMapptsBeg + i)->expired()) continue;
-          auto pMappt = (iMapptsBeg + i)->lock();
-          auto v = static_cast<g2o::VertexPointXYZ *>(this->vertex(n_frames + i));
-          if (v) pMappt->set_pos(v->estimate().cast<float>());
-        }
-      }
     }
 };
 

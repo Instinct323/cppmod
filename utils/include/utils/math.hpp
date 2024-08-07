@@ -7,6 +7,10 @@
 
 namespace math {
 
+// clamp
+template<typename T>
+T clamp(T value, T amin, T amax) { return value < amin ? amin : (value > amax ? amax : value); }
+
 
 // std::vector -> Eigen
 template<typename T>

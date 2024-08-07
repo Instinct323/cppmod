@@ -1,0 +1,63 @@
+dataset: "/home/workbench/data/kitti"
+seq_id: 0
+
+
+tracker:
+  min_matches: 15
+  max_matches: 30
+  key_matches_radio: 0.5
+  lost_timeout: 3.0
+
+  cam0:
+    type: "Pinhole"
+    resolution: [ 1241, 376 ]
+    intrinsics: [ 718.856, 718.856, 607.1928, 185.2157 ]
+    dist_coeffs: [ 0, 0, 0, 0 ]
+    T_cam_imu:
+      - [ -1, 0, 0, 0.537166 ]
+      - [ 0, 0, -1, 0 ]
+      - [ 0, -1, 0, 0 ]
+
+  cam1:
+    type: "Pinhole"
+    resolution: [ 1241, 376 ]
+    intrinsics: [ 718.856, 718.856, 607.1928, 185.2157 ]
+    dist_coeffs: [ 0, 0, 0, 0 ]
+    T_cam_imu:
+      - [ -1, 0, 0, -0.537166 ]
+      - [ 0, 0, -1, 0 ]
+      - [ 0, -1, 0, 0 ]
+
+  orb0:
+    nfeatures: 1000
+    scale_factor: 1.2
+    nlevels: 8
+    lapping_area: [ 0, 1241 ]
+
+  orb1:
+    nfeatures: 1000
+    scale_factor: 1.2
+    nlevels: 8
+    lapping_area: [ 0, 1241 ]
+
+  matcher:
+    drop: 0.1
+
+
+viewer:
+  fps: 45
+  title: "Feature Map"
+  resolution: [ 960, 480 ]
+  panel_radio: 0.3
+  camera_focal: 200
+  view_point: [ 0, 3.5, 3.5 ]
+  view_up_axis: 6
+
+  imu_size: 0.3
+  mp_size: 2
+  trail_size: 30
+  sample_stride: 20
+
+  lead_color: [ 1.0, 0.0, 0.0 ]
+  trail_color: [ 0.0, 1.0, 0.0 ]
+  mp_color: [ 0.0, 0.0, 1.0 ]

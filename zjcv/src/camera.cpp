@@ -134,31 +134,4 @@ float KannalaBrandt::solveWZ(float wx, float wy, size_t iterations) const {
   return wz;
 }
 
-
-void Pinhole::stereo_rectify(Pinhole *cam_right) {
-  ASSERT(this->mImgSize == cam_right->mImgSize, "Image size must be the same")
-  Sophus::SE3f Trl = this->T_cam_imu.inverse() * cam_right->T_cam_imu;
-  cv::Mat P1, P2, Q;
-  // 双目矫正
-  cv::stereoRectify(this->getK(), this->get_distcoeffs(), cam_right->getK(), cam_right->get_distcoeffs(), mImgSize,
-                    Eigen::toCvMat<float>(Trl.rotationMatrix()), Eigen::toCvMat<float>(Trl.translation()),
-                    this->mRectR, cam_right->mRectR, P1, P2, Q);
-  // 重新初始化畸变矫正映射
-  cv::initUndistortRectifyMap(this->getK(), this->get_distcoeffs(), this->mRectR, P1, mImgSize, CV_32FC1, this->mMap1, this->mMap2);
-  cv::initUndistortRectifyMap(cam_right->getK(), cam_right->get_distcoeffs(), cam_right->mRectR, P2, mImgSize, CV_32FC1,
-                              cam_right->mMap1, cam_right->mMap2);
-  // 原地修改相机内参
-  int paramPos[2][4] = {{0, 1, 0, 1},
-                        {0, 1, 2, 2}};
-  for (int i = 0; i < 4; i++) {
-    this->set_param(i, P1.at<float>(paramPos[0][i], paramPos[1][i]), true);
-    cam_right->set_param(i, P2.at<float>(paramPos[0][i], paramPos[1][i]), true);
-  }
-  // 原地修改相机位姿
-  Sophus::SE3f R1(cv::toEigen<float>(this->mRectR), Eigen::Vector3f::Zero()),
-      R2(cv::toEigen<float>(cam_right->mRectR), Eigen::Vector3f::Zero());
-  this->T_cam_imu = R1 * this->T_cam_imu;
-  cam_right->T_cam_imu = R2 * cam_right->T_cam_imu;
-}
-
 }

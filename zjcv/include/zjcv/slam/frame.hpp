@@ -39,6 +39,7 @@ public:
 
     // Processed data
     ZJCV_BUILTIN Ptr mpRefFrame;
+    ZJCV_BUILTIN int mnMappts = 0;
     ZJCV_BUILTIN IMU::MovingPose mPose;
     ZJCV_BUILTIN Sophus::Joint mJoint;
 
@@ -65,7 +66,7 @@ public:
     ZJCV_BUILTIN const Eigen::Vector3f &get_pos() { return mPose.T_imu_world.translation(); }
 
     // pangolin 绘图
-    ZJCV_BUILTIN void show_in_opengl(float imu_size, const float *imu_color);
+    ZJCV_BUILTIN void show_in_opengl(float imu_size, const float *imu_color, bool show_cam = false);
 
     ZJCV_CUSTOM void process();
 
@@ -75,7 +76,6 @@ public:
     std::vector<cv::KeyPoint> mvKps0, mvKps1;
     cv::Mat mDesc0, mDesc1;
     std::vector<cv::DMatch> mStereoMatches, mRefToThisMatches;
-    std::unique_ptr<cv::GridDict> mpGridDict;
 
     bool match_previous(float &radio);
 

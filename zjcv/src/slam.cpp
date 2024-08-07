@@ -15,6 +15,14 @@ feature::Map::Ptr Atlas::create_map() {
 }
 
 
+void Atlas::run() {
+  while (mpSystem->mbRunning) {
+    // todo: 调用 Map 类内方法优化关键帧及地图点
+    LOG(FATAL) << "Not implemented";
+  }
+}
+
+
 // System
 System::System(const YAML::Node &cfg
 ) : mCfg(cfg), mpAtlas(new Atlas(this, cfg["atlas"])), mpTracker(new Tracker(this, cfg["tracker"])),
@@ -39,7 +47,7 @@ void System::stop() {
 Tracker::Tracker(System *pSystem, const YAML::Node &cfg
 ) : mpSystem(pSystem),
     MIN_MATCHES(cfg["min_matches"].as<int>()), MAX_MATCHES(cfg["max_matches"].as<int>()),
-    KEY_MATCHES_RADIO(cfg["key_matches_radio"].as<int>()), LOST_TIMEOUT(cfg["lost_timeout"].as<double>()),
+    KEY_MATCHES_RADIO(cfg["key_matches_radio"].as<float>()), LOST_TIMEOUT(cfg["lost_timeout"].as<double>()),
 
     mpCam0(camera::from_yaml(cfg["cam0"])), mpCam1(camera::from_yaml(cfg["cam1"])),
     mpIMU(IMU::Device::from_yaml(cfg["imu"])) {
@@ -59,9 +67,7 @@ void Tracker::grab_image(const double &timestamp, const cv::Mat &img0, const cv:
   ASSERT(!is_inertial() || timestamp <= mpIMUpreint->mtEnd, "Grab image before IMU data is integrated")
   ASSERT(is_monocular() == img1.empty(), "Invalid image pair")
   mpLastFrame = mpCurFrame;
-  mpCurFrame = std::make_shared<Frame>(mpSystem, timestamp, img0, img1);
-  // 如果是第一帧, 补充位姿
-  if (!mpLastFrame) mpCurFrame->mPose.set_zero();
+  mpCurFrame = std::make_shared<feature::Frame>(mpSystem, timestamp, img0, img1);
   mpCurFrame->process();
 }
 
@@ -111,7 +117,7 @@ size_t Frame::KEY_COUNT = 0;
 Frame::Frame(System *pSystem, const double &timestamp,
              const cv::Mat &img0, const cv::Mat &img1
 ) : mpSystem(pSystem), mId(++FRAME_COUNT), mTimestamp(timestamp), mImg0(img0), mImg1(img1),
-    mJoint(&mPose.T_imu_world) {}
+    mpRefFrame(pSystem->mpTracker->mpRefFrame), mJoint(&mPose.T_imu_world) {}
 
 
 void Frame::update_pose() { mPose.set_pose(mJoint.get()); }
@@ -120,8 +126,11 @@ void Frame::update_pose() { mPose.set_pose(mJoint.get()); }
 int Frame::stereo_triangulation(const Frame::Ptr &shared_this, const std::vector<cv::DMatch> &stereo_matches) {
   int cnt = 0;
   if (!stereo_matches.empty()) {
-    Sophus::SE3f T_cam1_cam0 = mpSystem->mpTracker->T_cam1_cam0,
-        T_imu_cam0 = mpSystem->mpTracker->mpCam0->T_cam_imu.inverse();
+    const Sophus::SE3f &T_cam1_cam0 = mpSystem->mpTracker->T_cam1_cam0,
+        Identity,
+        T_imu_cam0 = mpSystem->mpTracker->mpCam0->T_cam_imu.inverse(),
+        T_world_cam0 = mPose.T_world_imu * T_imu_cam0;
+
     for (auto m: stereo_matches) {
       int i = m.queryIdx, j = m.trainIdx;
       // 余弦判断
@@ -130,7 +139,7 @@ int Frame::stereo_triangulation(const Frame::Ptr &shared_this, const std::vector
       if (Eigen::cos(P0_cam0, P0_cam1) > STEREO_OBS_COS_THRESH) continue;
       // 三角化
       Eigen::Vector3f P_cam0;
-      float rep_error = Sophus::triangulation({P0_cam0, P1_cam1}, {Sophus::SE3f(), T_cam1_cam0}, P_cam0);
+      float rep_error = Sophus::triangulation({P0_cam0, P1_cam1}, {Identity, T_cam1_cam0}, P_cam0);
       if (rep_error >= 0) {
         cnt += 1;
         mvUnprojs0[i][2] = -P_cam0[2];
@@ -139,7 +148,7 @@ int Frame::stereo_triangulation(const Frame::Ptr &shared_this, const std::vector
           mvpMappts[i] = mpSystem->get_cur_map()->create_mappoint(mId);
           mvpMappts[i]->add_obs(shared_this, i);
         }
-        mvpMappts[i]->set_pos(T_imu_cam0 * P_cam0);
+        mvpMappts[i]->set_pos(T_world_cam0 * P_cam0);
       }
     }
   }
@@ -176,17 +185,33 @@ int Frame::connect_frame(Frame::Ptr &shared_this, Frame::Ptr &ref, std::vector<c
 }
 
 
-void Frame::mark_keyframe() { mIdKey = ++KEY_COUNT; }
+void Frame::mark_keyframe() {
+  if (mIdKey > KEY_COUNT) return;
+  mIdKey = ++KEY_COUNT;
+  for (Mappoint::Ptr &m: mvpMappts) if (m) mnMappts++;
+}
 
 
 void Frame::prune() { for (Mappoint::Ptr &m: mvpMappts) if (m) m->prune(); }
 
 
-void Frame::show_in_opengl(float imu_size, const float *imu_color) {
+void Frame::show_in_opengl(float imu_size, const float *imu_color, bool show_cam) {
   // Frame
   glColor3fv(imu_color);
-  pangolin::OpenGlMatrix Twc = mPose.T_world_imu.matrix();
-  pangolin::draw_imu(Twc, imu_size);
+  pangolin::OpenGlMatrix Tcw = mPose.T_imu_world.matrix();
+  pangolin::draw_imu(Tcw, imu_size);
+  // camera
+  if (show_cam) {
+    const Sophus::SE3f &T_imu_world = mPose.T_imu_world,
+        T_cam0_world = mpSystem->mpTracker->mpCam0->T_cam_imu * T_imu_world;
+    glColor3f(0.f, 0.f, 0.f);
+    pangolin::draw_imu(T_cam0_world.matrix(), imu_size);
+    if (mpSystem->mpTracker->is_stereo()) {
+      glColor3f(0.f, 1.f, 1.f);
+      const Sophus::SE3f T_cam1_world = mpSystem->mpTracker->mpCam1->T_cam_imu * T_imu_world;
+      pangolin::draw_imu(T_cam1_world.matrix(), imu_size);
+    }
+  }
 }
 
 
@@ -201,6 +226,7 @@ Mappoint::Ptr Map::create_mappoint(size_t id_frame) {
 
 void Map::insert_keyframe(const std::shared_ptr<Frame> &pKF) {
   pKF->mark_keyframe();
+  mpSystem->mpTracker->mpRefFrame = mpSystem->mpTracker->mpCurFrame;
   {
     parallel::ScopedLock lock(apKeyFrames.mutex);
     apKeyFrames->push_back(pKF);
@@ -215,9 +241,18 @@ void Map::insert_keyframe(const std::shared_ptr<Frame> &pKF) {
 }
 
 
+void Map::prune(int i) {
+  parallel::ScopedLock lock(apMappts.mutex);
+  auto it = std::remove_if(
+      apMappts->begin() + i, apMappts->end(),
+      [](const std::weak_ptr<Mappoint> &wpMappt) { return wpMappt.expired(); });
+  apMappts->erase(it, apMappts->end());
+}
+
+
 void Map::draw() const {
   Viewer::Ptr &viewer = mpSystem->mpViewer;
-  if (!viewer) return;
+  assert(viewer);
   auto it_beg = apKeyFrames->end() - std::min(viewer->trail_size, apKeyFrames->size());
   if (it_beg == apKeyFrames->end()) return;
   // Frame
@@ -226,23 +261,24 @@ void Map::draw() const {
     for (auto it = it_beg; it != apKeyFrames->end(); ++it) {
       (*it)->show_in_opengl(viewer->imu_size, viewer->trail_color.data());
     }
-    if (it_beg + 1 == apKeyFrames->end()) return;
-    glBegin(GL_LINES);
-    glColor3fv(viewer->trail_color.data());
-    glVertex3fv((*it_beg)->get_pos().data());
-    for (auto it = it_beg + 1; it != apKeyFrames->end() - 1; ++it) {
-      glVertex3fv((*it)->get_pos().data());
-      glVertex3fv((*it)->get_pos().data());
+    if (it_beg + 1 != apKeyFrames->end()) {
+      glBegin(GL_LINES);
+      glColor3fv(viewer->trail_color.data());
+      glVertex3fv((*it_beg)->get_pos().data());
+      for (auto it = it_beg + 1; it != apKeyFrames->end() - 1; ++it) {
+        glVertex3fv((*it)->get_pos().data());
+        glVertex3fv((*it)->get_pos().data());
+      }
+      glVertex3fv(apKeyFrames->back()->get_pos().data());
+      glEnd();
     }
-    glVertex3fv(apKeyFrames->back()->get_pos().data());
-    glEnd();
   }
   // MapPoints
   glPointSize(viewer->mp_size);
   glBegin(GL_POINTS);
   glColor3fv(viewer->mp_color.data());
   {
-    parallel::ScopedLock lock1(apTmpMappts.mutex);
+    parallel::ScopedLock lock(apTmpMappts.mutex);
     for (auto &wpMappt: *apTmpMappts) {
       if (wpMappt.expired()) continue;
       auto pMappt = wpMappt.lock();
@@ -251,7 +287,7 @@ void Map::draw() const {
     }
   }
   {
-    parallel::ScopedLock lock1(apMappts.mutex);
+    parallel::ScopedLock lock(apMappts.mutex);
     for (auto &wpMappt: *apMappts) {
       if (wpMappt.expired()) continue;
       auto pMappt = wpMappt.lock();
@@ -270,6 +306,12 @@ void Mappoint::prune() {
       apObs->begin(), apObs->end(),
       [](const Observation &obs) { return obs.first.expired(); });
   apObs->erase(begit, apObs->end());
+  // 只剩下一个观测, 而且不是双目观测
+  if (apObs->size() == 1) {
+    auto [wpf, i] = apObs->front();
+    float d = wpf.lock()->mvUnprojs0[i][2];
+    if (d > 0) mbBad = true;
+  }
 }
 
 
@@ -316,35 +358,37 @@ void Mappoint::merge(Mappoint::Ptr &shared_this, Mappoint::Ptr &other) {
     wpf.lock()->mvpMappts[idx] = shared_this;
   }
   other->apObs->clear();
+  if (!other->mbBad) set_pos(other->mPos);
 }
 
 
 // optimize
-bool optimize_pose(const Frame::Ptr &pFrame, const Frame::Ptr &pRefFrame, bool only_pose) {
+bool optimize_pose(System *pSystem, const Frame::Ptr &pFrame, const Frame::Ptr &pRefFrame, bool only_pose) {
   std::vector<std::shared_ptr<Frame>> vpFrames = {pFrame};
-  auto &apMapppts = pFrame->mpSystem->get_cur_map()->apTmpMappts;
+  if (!only_pose) vpFrames.push_back(pRefFrame);
+  auto &apMappts = pSystem->get_cur_map()->apTmpMappts;
 
   // 优化对象: 当前帧, 临时地图点
-  apMapppts.mutex.lock();
+  apMappts.mutex.lock();
   BundleAdjustment<g2o::LinearSolverDense> ba(
-      pRefFrame->mId, only_pose,
-      vpFrames.begin(), vpFrames.end(), apMapppts->begin(), apMapppts->end());
-  apMapppts.mutex.unlock();
+      pSystem->mpTracker->mpCam0->T_cam_imu, pRefFrame->mId, only_pose,
+      vpFrames.begin(), vpFrames.end(), apMappts->begin(), apMappts->end());
+  apMappts.mutex.unlock();
 
   // fail: 关键点过少
-  const int &MIN_MATCHES = pFrame->mpSystem->mpTracker->MIN_MATCHES;
-  if (ba.valid_mappts() < MIN_MATCHES) return false;
-  ba.reset();
+  const int &MIN_MATCHES = pSystem->mpTracker->MIN_MATCHES;
 
   // 去除无效点; 粗筛外点, 去除负深度点; 精筛外点; 精化位姿
   for (int i = 0; i < 4; ++i) {
-    ba.initializeOptimization(0);
+    if (ba.edges().size() < MIN_MATCHES) return false;
+    if (i < 2) ba.reset();
+    if (!ba.initializeOptimization(0)) return false;
     ba.optimize(10);
-    ba.outlier_rejection(i == 1);
-    if (ba.valid_mappts() < MIN_MATCHES) break;
+    ba.outlier_rejection(true, i == 1);
+    pSystem->set_desc("ba-edges", ba.edges().size());
   }
-  parallel::ScopedLock lock(apMapppts.mutex);
-  ba.apply_result(!only_pose);
+  parallel::ScopedLock lock(apMappts.mutex);
+  ba.apply_result();
   return true;
 }
 

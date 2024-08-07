@@ -24,7 +24,6 @@ void slam::Tracker::run() {
   math::ValueSlicer<double> slicer(&std::get<4>(storage));
   auto pbar = indicators::getProgressBar(std::get<0>(storage).size());
 
-  std::vector<std::pair<double, Sophus::Joint>> joints;
   while (!pbar.is_completed()) {
     int i = pbar.current();
     cv::Mat imgLeft = grayloader(std::get<1>(storage)[i]), imgRight = grayloader(std::get<3>(storage)[i]);
@@ -44,11 +43,11 @@ void slam::Tracker::run() {
   }
 
   // 写入位姿
-  LOG(INFO) << "Wait for writing pose...";
+  /* LOG(INFO) << "Wait for writing pose...";
   std::ofstream ofs("pose.txt");
   for (const auto [ts, joint]: joints)
     ofs << std::fixed << size_t(ts * 1e9) << " " << joint.get() << std::endl;
-  ofs.close();
+  ofs.close(); */
 }
 
 

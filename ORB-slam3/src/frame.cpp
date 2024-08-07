@@ -7,36 +7,38 @@
 
 #include "zjcv/slam.hpp"
 
-namespace slam {
+#define GRID_SIZE 32
+
+namespace slam::feature {
 
 
-bool Frame::match_previous(float &radio) {
+bool Frame::match_previous(float &ref_radio) {
   Tracker::Ptr &pTracker = mpSystem->mpTracker;
   auto &ref_mappts = mpRefFrame->mvpMappts;
   const camera::Base::Ptr &pCam0 = pTracker->mpCam0;
 
   // 利用已有地图点进行匹配
-  cv::GridDict &grid_dict = *mpRefFrame->mpGridDict;
+  cv::GridDict grid_dict(mvKps0.begin(), mvKps0.end(), mImg0.size(), {GRID_SIZE, GRID_SIZE});
   for (int d = 0; d <= 2; d++) {
     cv::Mat_<uchar> mask(mpRefFrame->mvKps0.size(), mvKps0.size(), uchar(0));
 
     // 将地图点投影到当前帧
-    int n = 0;
     Sophus::SE3f T_cam0_world = pCam0->T_cam_imu * mPose.T_imu_world;
     for (int i = 0; i < ref_mappts.size(); ++i) {
       if (!ref_mappts[i] || ref_mappts[i]->is_invalid()) continue;
       cv::Point2f pt = pCam0->project(T_cam0_world * ref_mappts[i]->mPos);
       if (pt.x < 0 || pt.x >= mImg0.cols || pt.y < 0 || pt.y >= mImg0.rows) continue;
-      n++;
       grid_dict(pt.x, pt.y, d).copyTo(mask.row(i));
     }
 
     // 余弦相似度筛选
-    pTracker->mpMatcher->search(mpRefFrame->mDesc0, mDesc0, mask.t(), mRefToThisMatches);
-    cv::cosine_filter(mpRefFrame->mvUnprojs0, mvUnprojs0, mRefToThisMatches, 0.8660);
+    mRefToThisMatches.clear();
+    pTracker->mpMatcher->search(mpRefFrame->mDesc0, mDesc0, mask, mRefToThisMatches);
+    if (mRefToThisMatches.empty()) LOG(WARNING) << "No matches found";
+    cv::drop_last(mRefToThisMatches, 0.1);
     cv::make_one2one(mRefToThisMatches, true);
-    radio = float(mRefToThisMatches.size()) / n;
 
+    ref_radio = float(mRefToThisMatches.size()) / mpRefFrame->mnMappts;
     if (mRefToThisMatches.size() > pTracker->MIN_MATCHES) return true;
   }
 
@@ -50,10 +52,10 @@ void Frame::process() {
   Tracker::Ptr &pTracker = mpSystem->mpTracker;
   Ptr &pLastFrame = pTracker->mpLastFrame;
   Ptr &pCurFrame = pTracker->mpCurFrame;
-  mpRefFrame = pTracker->mpRefFrame;
   const camera::Base::Ptr &pCam0 = pTracker->mpCam0, &pCam1 = pTracker->mpCam1;
 
   int lap_cnt0, lap_cnt1;
+  bool ok;
   bool is_keyframe = !mpRefFrame;
   mpSystem->set_desc("id", mId);
 
@@ -65,54 +67,57 @@ void Frame::process() {
     mvUnprojs0.reserve(mvKps0.size());
     for (auto &i: mvKps0) mvUnprojs0.push_back(pCam0->unproject(i.pt));
     mvpMappts = std::vector<std::shared_ptr<Mappoint>>(mvUnprojs0.size(), nullptr);
-
-    // RECENTLY_LOST: 关键点过少
-    if (mvKps0.size() < pTracker->MIN_MATCHES) {
-      pTracker->switch_state(TrackState::RECENTLY_LOST);
-      return;
-    }
+    ok = mvKps0.size() >= pTracker->MIN_MATCHES;
 
     // motion model: 初始化位姿
-    if (pTracker->is_inertial()) {
-      if (mpRefFrame) mPose.predict_from(mpRefFrame->mPose, pTracker->mpIMUpreint.get());
-    } else if (pLastFrame) {
-      pLastFrame->update_pose();
-      mPose.predict_from(pLastFrame->mPose);
+    if (pLastFrame) {
+      if (pTracker->is_inertial()) {
+        mPose.predict_from(mpRefFrame->mPose, pTracker->mpIMUpreint.get());
+      } else {
+        pLastFrame->update_pose();
+        mPose.predict_from(pLastFrame->mPose);
+      }
+    } else {
+      mPose.set_zero();
     }
   }
 
   // feature matching: 修正位姿
-  if (mpRefFrame) {
+  if (ok && mpRefFrame) {
     mpRefFrame->prune();
-    bool ok;
-    float ref_radio = 1.;
+    mpSystem->set_desc("n-mappts", mpRefFrame->mnMappts);
+    float ref_radio = 0.;
 
     // Monocular: 第一帧关键帧
     if (pTracker->is_monocular() && mpSystem->get_cur_map()->apKeyFrames->size() == 1) {
-      cv::GridDict &grid_dict = *mpRefFrame->mpGridDict;
+      cv::GridDict grid_dict(mvKps0.begin(), mvKps0.end(), mImg0.size(), {GRID_SIZE, GRID_SIZE});
       cv::Mat_<uchar> mask(mpRefFrame->mvKps0.size(), mvKps0.size(), uchar(0));
       for (int i = 0; i < mvKps0.size(); i++) {
         cv::Point2f &pt = mvKps0[i].pt;
+        if (pt.x < 0 || pt.x >= mImg0.cols || pt.y < 0 || pt.y >= mImg0.rows) continue;
         grid_dict(pt.x, pt.y, 0).copyTo(mask.row(i));
       }
       // 余弦相似度筛选
       pTracker->mpMatcher->search(mpRefFrame->mDesc0, mDesc0, mask.t(), mRefToThisMatches);
       cv::cosine_filter(mpRefFrame->mvUnprojs0, mvUnprojs0, mRefToThisMatches, 0.8660);
       cv::make_one2one(mRefToThisMatches, true);
-      // 为地图点添加观测
-      connect_frame(pCurFrame, mpRefFrame, mRefToThisMatches);
-      ok = optimize_pose(pCurFrame, mpRefFrame, false);
-      // 计算双目观测的余弦夹角
+      ok = mRefToThisMatches.size() > pTracker->MIN_MATCHES;
       if (ok) {
-        int invalid = 0;
-        const Sophus::SE3f &T_cur_world = mPose.T_imu_world;
-        for (auto &m: mRefToThisMatches) {
-          const Eigen::Vector3f &P0_world = mpRefFrame->mvUnprojs0[m.queryIdx], &P1_cur = mvUnprojs0[m.trainIdx];
-          Eigen::Vector3f P0_cur = T_cur_world * P0_world;
-          if (Eigen::cos(P0_cur, P1_cur) > STEREO_OBS_COS_THRESH) invalid++;
+        // 为地图点添加观测
+        connect_frame(pCurFrame, mpRefFrame, mRefToThisMatches);
+        ok = optimize_pose(mpSystem, pCurFrame, mpRefFrame, false);
+        // 计算双目观测的余弦夹角
+        if (ok) {
+          int invalid = 0;
+          const Sophus::SE3f &T_cur_world = mPose.T_imu_world;
+          for (auto &m: mRefToThisMatches) {
+            const Eigen::Vector3f &P0_world = mpRefFrame->mvUnprojs0[m.queryIdx], &P1_cur = mvUnprojs0[m.trainIdx];
+            Eigen::Vector3f P0_cur = T_cur_world * P0_world;
+            if (Eigen::cos(P0_cur, P1_cur) > STEREO_OBS_COS_THRESH) invalid++;
+          }
+          // 无效匹配比例
+          ref_radio = float(invalid) / mRefToThisMatches.size();
         }
-        // 无效匹配比例
-        ref_radio = float(invalid) / mRefToThisMatches.size();
       }
 
     } else {
@@ -121,25 +126,25 @@ void Frame::process() {
       if (ok) {
         // 为地图点添加观测
         connect_frame(pCurFrame, mpRefFrame, mRefToThisMatches);
-        ok = optimize_pose(pCurFrame, mpRefFrame, true);
+        ok = optimize_pose(mpSystem, pCurFrame, mpRefFrame, true);
       }
     }
 
-    // Keyframe: 无效匹配比例 / 匹配成功率 衰减到临界
-    if (ref_radio < pTracker->KEY_MATCHES_RADIO) is_keyframe = true;
     mpSystem->set_desc("ref-radio", (boost::format("%.2f") % ref_radio).str());
     // 根据位姿信息更新
     if (ok) {
       pLastFrame->update_pose();
       mPose.update_velocity(pLastFrame->mPose);
       mJoint = Sophus::Joint(&mpRefFrame->mPose.T_imu_world, mPose.T_imu_world * mpRefFrame->mPose.T_world_imu);
+      // Keyframe: 无效匹配比例 / 匹配成功率 衰减到临界
+      if (ref_radio < pTracker->KEY_MATCHES_RADIO) is_keyframe = true;
     }
+  }
 
-    // RECENTLY_LOST: 关键点过少
-    if (!ok) {
-      pTracker->switch_state(TrackState::RECENTLY_LOST);
-      return;
-    }
+  // RECENTLY_LOST
+  if (!ok) {
+    pTracker->switch_state(TrackState::RECENTLY_LOST);
+    return;
   }
 
   // Keyframe: 信息扩充
@@ -170,20 +175,16 @@ void Frame::process() {
         cv::cosine_filter(mvUnprojs0, mvUnprojs1, stereo_matches, 0.9848);
         stereo_matches.shrink_to_fit();
         mStereoMatches = stereo_matches;
-
         stereo_triangulation(pCurFrame, stereo_matches);
-        mpSystem->set_desc("stereo-match", stereo_matches.size());
       }
 
     } else if (mpRefFrame) {
-      // todo Monocular: 扩充地图点
+      // todo Monocular: 清理地图点, 扩充地图点
 
     }
 
     // 标记为关键帧
-    pTracker->mpRefFrame = pCurFrame;
     mpSystem->get_cur_map()->insert_keyframe(pCurFrame);
-    mpGridDict = std::make_unique<cv::GridDict>(mvKps0.begin(), mvKps0.end(), mImg0.size(), cv::Size(16, 16));
     mpSystem->set_desc("id-key", mIdKey);
   }
   pTracker->switch_state(TrackState::OK);
@@ -205,11 +206,13 @@ void Frame::draw() {
     cv::imshow("Reference", toshow);
   }
   // Stereo
-  if (!mStereoMatches.empty()) {
-    cv::Mat img1 = mImg1.clone(), toshow;
+  if (mpRefFrame && !mpRefFrame->mStereoMatches.empty()) {
+    cv::Mat img0 = mpRefFrame->mImg0.clone(), img1 = mpRefFrame->mImg1.clone(), toshow;
+    pTracker->mpCam0->undistort(img0, img0);
     pTracker->mpCam1->undistort(img1, img1);
+    cv::cvtColor(img0, img0, cv::COLOR_GRAY2BGR);
     cv::cvtColor(img1, img1, cv::COLOR_GRAY2BGR);
-    cv::drawMatches(img0, mvKps0, img1, mvKps1, mStereoMatches, toshow);
+    cv::drawMatches(img0, mpRefFrame->mvKps0, img1, mpRefFrame->mvKps1, mpRefFrame->mStereoMatches, toshow);
     cv::imshow("Stereo", toshow);
   }
 }
