@@ -10,19 +10,19 @@ g2o::SE3Quat toG2O(const Sophus::SE3f &T) {
 
 
 float triangulation(const std::vector<Eigen::Vector3f> &vP_cam,
-                    const std::vector<Sophus::SE3f> &vT_cam_ref,
+                    const std::vector<Sophus::SE3f> &vT_ref_cam,
                     Eigen::Vector3f &P_ref) {
   size_t n = vP_cam.size();
   if (n < 2) return -1;
   Eigen::MatrixXf equ_set(2 * n, 4);
   for (int i = 0; i < n; ++i) {
-    // T_cam_ref * P_ref = z * P_cam 等价:
-    // 1. (T_cam_ref[0] - x * T_cam_ref[2]) * P_ref = 0
-    // 2. (T_cam_ref[1] - y * T_cam_ref[2]) * P_ref = 0
-    Eigen::Matrix<float, 3, 4> T_cam_ref = vT_cam_ref[i].matrix3x4();
-    equ_set.block<2, 4>(2 * i, 0) = T_cam_ref.block<2, 4>(0, 0) - vP_cam[i].head(2) * T_cam_ref.row(2);
+    // T_ref_cam * P_ref = z * P_cam 等价:
+    // 1. (T_ref_cam[0] - x * T_ref_cam[2]) * P_ref = 0
+    // 2. (T_ref_cam[1] - y * T_ref_cam[2]) * P_ref = 0
+    Eigen::Matrix<float, 3, 4> T_ref_cam = vT_ref_cam[i].matrix3x4();
+    equ_set.block<2, 4>(2 * i, 0) = T_ref_cam.block<2, 4>(0, 0) - vP_cam[i].head(2) * T_ref_cam.row(2);
   }
-  // A[2n, 4]: n 个 (T_cam_ref[:2] - p2D * T_cam_ref[2])
+  // A[2n, 4]: n 个 (T_ref_cam[:2] - p2D * T_ref_cam[2])
   // V[4, 4]: AV = US, 每一列对应一个可能的 P_ref
   // 由于特征向量 S 最后一个值最小, 故 US (即 AV) 的最后一列趋近于零, 即 V 的最后一列为解
   auto svd = equ_set.jacobiSvd(Eigen::ComputeThinV);
@@ -33,7 +33,7 @@ float triangulation(const std::vector<Eigen::Vector3f> &vP_cam,
   // 检验点在相机平面上的深度
   float reproj_error = 0;
   for (int i = 0; i < n; ++i) {
-    Eigen::Vector3f P_cam = vT_cam_ref[i] * P_ref;
+    Eigen::Vector3f P_cam = vT_ref_cam[i] * P_ref;
     if (P_cam[2] < 1e-4) return -1;
     reproj_error = std::max(reproj_error, ((P_cam.head(2) / P_cam[2]) - vP_cam[i].head(2)).squaredNorm());
   }

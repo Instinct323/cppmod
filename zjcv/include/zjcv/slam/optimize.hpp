@@ -22,8 +22,8 @@
 
 
 #define G2O_EDGE_PROJECT_MAP \
-  const g2o::SE3Quat &T_cw = static_cast<VertexSE3Expmap *>(_vertices[0])->estimate(); \
-  Eigen::Vector3d Pc = T_cw.map(Pw); \
+  const g2o::SE3Quat &T_wc = static_cast<VertexSE3Expmap *>(_vertices[0])->estimate(); \
+  Eigen::Vector3d Pc = T_wc.map(Pw); \
   static_cast<ProjectEdgeData *>(this->userData())->is_depth_positive = Pc[2] > 0; \
   if (is_depth_positive) { Pc[2] += 1e-2; } \
   else { Pc[2] -= 1e-2; }
@@ -191,7 +191,7 @@ public:
       for (size_t i = 0; i < n_frames; ++i) {
         Frame::Ptr &pFrame = *(iFramesBeg + i);
         auto vFrame = static_cast<g2o::VertexSE3Expmap *>(this->vertex(i));
-        vFrame->setEstimate(Sophus::toG2O(T_cam0_imu * pFrame->mPose.T_imu_world));
+        vFrame->setEstimate(Sophus::toG2O(T_imu_cam0 * pFrame->mPose.T_world_imu));
       }
       // Vertex: 地图点
       if (!only_pose) {
@@ -278,7 +278,7 @@ public:
       // Frame: 位姿
       for (size_t i = 0; i < n_frames; ++i) {
         auto v = static_cast<g2o::VertexSE3Expmap *>(this->vertex(i));
-        if (v) (*(iFramesBeg + i))->mPose.set_pose(T_imu_cam0 * g2o::toSE3(v->estimate()));
+        if (v) (*(iFramesBeg + i))->mPose.set_pose(T_cam0_imu * g2o::toSE3(v->estimate()));
       }
       // Mappoint: 位置
       if (!only_pose) {

@@ -41,7 +41,6 @@ public:
     ZJCV_BUILTIN Ptr mpRefFrame;
     ZJCV_BUILTIN int mnMappts = 0;
     ZJCV_BUILTIN IMU::MovingPose mPose;
-    ZJCV_BUILTIN Sophus::Joint mJoint;
 
     ZJCV_BUILTIN explicit Frame(System *pSystem, const double &timestamp, const cv::Mat &img0, const cv::Mat &img1);
 

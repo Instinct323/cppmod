@@ -57,8 +57,6 @@ Tracker::Tracker(System *pSystem, const YAML::Node &cfg
   if (is_stereo()) {
     // 校对相机类型
     ASSERT(mpCam0->get_type() == mpCam1->get_type(), "Camera0 and Camera1 must be the same type")
-    T_cam0_cam1 = mpCam0->T_cam_imu * mpCam1->T_cam_imu.inverse();
-    T_cam1_cam0 = T_cam0_cam1.inverse();
   }
 }
 
@@ -117,29 +115,25 @@ size_t Frame::KEY_COUNT = 0;
 Frame::Frame(System *pSystem, const double &timestamp,
              const cv::Mat &img0, const cv::Mat &img1
 ) : mpSystem(pSystem), mId(++FRAME_COUNT), mTimestamp(timestamp), mImg0(img0), mImg1(img1),
-    mpRefFrame(pSystem->mpTracker->mpRefFrame), mJoint(&mPose.T_imu_world) {}
-
-
-void Frame::update_pose() { mPose.set_pose(mJoint.get()); }
+    mpRefFrame(pSystem->mpTracker->mpRefFrame) {}
 
 
 int Frame::stereo_triangulation(const Frame::Ptr &shared_this, const std::vector<cv::DMatch> &stereo_matches) {
   int cnt = 0;
   if (!stereo_matches.empty()) {
-    const Sophus::SE3f &T_cam1_cam0 = mpSystem->mpTracker->T_cam1_cam0,
+    const Sophus::SE3f &T_cam0_cam1 = mpSystem->mpTracker->mpCam1->T_cam_imu.inverse() * mpSystem->mpTracker->mpCam0->T_cam_imu,
         Identity,
-        T_imu_cam0 = mpSystem->mpTracker->mpCam0->T_cam_imu.inverse(),
-        T_world_cam0 = mPose.T_world_imu * T_imu_cam0;
+        T_cam0_world = mPose.T_imu_world * mpSystem->mpTracker->mpCam0->T_cam_imu;
 
     for (auto m: stereo_matches) {
       int i = m.queryIdx, j = m.trainIdx;
       // 余弦判断
       const Eigen::Vector3f &P0_cam0 = mvUnprojs0[i], &P1_cam1 = mvUnprojs1[j];
-      Eigen::Vector3f P0_cam1 = T_cam1_cam0 * P0_cam0;
-      if (Eigen::cos(P0_cam0, P0_cam1) > STEREO_OBS_COS_THRESH) continue;
+      Eigen::Vector3f P1_cam0 = T_cam0_cam1 * P0_cam0;
+      if (Eigen::cos(P0_cam0, P1_cam0) > STEREO_OBS_COS_THRESH) continue;
       // 三角化
       Eigen::Vector3f P_cam0;
-      float rep_error = Sophus::triangulation({P0_cam0, P1_cam1}, {Identity, T_cam1_cam0}, P_cam0);
+      float rep_error = Sophus::triangulation({P0_cam0, P1_cam1}, {Identity, T_cam0_cam1}, P_cam0);
       if (rep_error >= 0) {
         cnt += 1;
         mvUnprojs0[i][2] = -P_cam0[2];
@@ -148,7 +142,7 @@ int Frame::stereo_triangulation(const Frame::Ptr &shared_this, const std::vector
           mvpMappts[i] = mpSystem->get_cur_map()->create_mappoint(mId);
           mvpMappts[i]->add_obs(shared_this, i);
         }
-        mvpMappts[i]->set_pos(T_world_cam0 * P_cam0);
+        mvpMappts[i]->set_pos(T_cam0_world * P_cam0);
       }
     }
   }
@@ -201,16 +195,14 @@ void Frame::show_in_opengl(float imu_size, const float *imu_color, bool show_cam
   pangolin::OpenGlMatrix Tcw = mPose.T_imu_world.matrix();
   pangolin::draw_imu(Tcw, imu_size);
   // camera
-  if (show_cam) {
+  if (show_cam && mpSystem->mpTracker->is_stereo()) {
     const Sophus::SE3f &T_imu_world = mPose.T_imu_world,
-        T_cam0_world = mpSystem->mpTracker->mpCam0->T_cam_imu * T_imu_world;
-    glColor3f(0.f, 0.f, 0.f);
+        T_cam0_world = T_imu_world * mpSystem->mpTracker->mpCam0->T_cam_imu,
+        T_cam1_world = T_imu_world * mpSystem->mpTracker->mpCam1->T_cam_imu;
+    glColor3f(0.f, 1.f, 1.f);
     pangolin::draw_imu(T_cam0_world.matrix(), imu_size);
-    if (mpSystem->mpTracker->is_stereo()) {
-      glColor3f(0.f, 1.f, 1.f);
-      const Sophus::SE3f T_cam1_world = mpSystem->mpTracker->mpCam1->T_cam_imu * T_imu_world;
-      pangolin::draw_imu(T_cam1_world.matrix(), imu_size);
-    }
+    glColor3f(0.f, 0.f, 0.f);
+    pangolin::draw_imu(T_cam1_world.matrix(), imu_size);
   }
 }
 

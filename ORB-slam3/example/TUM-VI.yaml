@@ -54,10 +54,10 @@ tracker:
 viewer:
   fps: 45
   title: "Feature Map"
-  resolution: [ 960, 480 ]
-  panel_radio: 0.3
+  resolution: [ 640, 480 ]
+  panel_ratio: 0.
   camera_focal: 300
-  view_point: [ 0., 3.5, 0. ]
+  view_point: [ 0., 3.5, 3.5 ]
   view_up_axis: 6
 
   imu_size: 0.3

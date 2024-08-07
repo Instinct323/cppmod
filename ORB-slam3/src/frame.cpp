@@ -19,14 +19,14 @@ bool Frame::match_previous(float &ref_radio) {
 
   // 利用已有地图点进行匹配
   cv::GridDict grid_dict(mvKps0.begin(), mvKps0.end(), mImg0.size(), {GRID_SIZE, GRID_SIZE});
+  Sophus::SE3f T_world_cam0 = pCam0->T_cam_imu.inverse() * mPose.T_world_imu;
   for (int d = 0; d <= 2; d++) {
     cv::Mat_<uchar> mask(mpRefFrame->mvKps0.size(), mvKps0.size(), uchar(0));
 
     // 将地图点投影到当前帧
-    Sophus::SE3f T_cam0_world = pCam0->T_cam_imu * mPose.T_imu_world;
     for (int i = 0; i < ref_mappts.size(); ++i) {
       if (!ref_mappts[i] || ref_mappts[i]->is_invalid()) continue;
-      cv::Point2f pt = pCam0->project(T_cam0_world * ref_mappts[i]->mPos);
+      cv::Point2f pt = pCam0->project(T_world_cam0 * ref_mappts[i]->mPos);
       if (pt.x < 0 || pt.x >= mImg0.cols || pt.y < 0 || pt.y >= mImg0.rows) continue;
       grid_dict(pt.x, pt.y, d).copyTo(mask.row(i));
     }
@@ -74,7 +74,6 @@ void Frame::process() {
       if (pTracker->is_inertial()) {
         mPose.predict_from(mpRefFrame->mPose, pTracker->mpIMUpreint.get());
       } else {
-        pLastFrame->update_pose();
         mPose.predict_from(pLastFrame->mPose);
       }
     } else {
@@ -109,10 +108,9 @@ void Frame::process() {
         // 计算双目观测的余弦夹角
         if (ok) {
           int invalid = 0;
-          const Sophus::SE3f &T_cur_world = mPose.T_imu_world;
           for (auto &m: mRefToThisMatches) {
             const Eigen::Vector3f &P0_world = mpRefFrame->mvUnprojs0[m.queryIdx], &P1_cur = mvUnprojs0[m.trainIdx];
-            Eigen::Vector3f P0_cur = T_cur_world * P0_world;
+            Eigen::Vector3f P0_cur = mPose.T_world_imu * P0_world;
             if (Eigen::cos(P0_cur, P1_cur) > STEREO_OBS_COS_THRESH) invalid++;
           }
           // 无效匹配比例
@@ -133,9 +131,7 @@ void Frame::process() {
     mpSystem->set_desc("ref-radio", (boost::format("%.2f") % ref_radio).str());
     // 根据位姿信息更新
     if (ok) {
-      pLastFrame->update_pose();
       mPose.update_velocity(pLastFrame->mPose);
-      mJoint = Sophus::Joint(&mpRefFrame->mPose.T_imu_world, mPose.T_imu_world * mpRefFrame->mPose.T_world_imu);
       // Keyframe: 无效匹配比例 / 匹配成功率 衰减到临界
       if (ref_radio < pTracker->KEY_MATCHES_RADIO) is_keyframe = true;
     }

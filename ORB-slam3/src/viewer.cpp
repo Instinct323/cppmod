@@ -37,7 +37,6 @@ void Viewer::run() {
   Tracker::Ptr pTracker = mpSystem->mpTracker;
   pangolin::Figure::Ptr pgl_fig = pangolin::Figure::from_yaml(cfg);
 
-  // 创建面板
   pangolin::Var<Vec3> pos("ui.P", Vec3());
   while (mpSystem->mbRunning) {
     timer.reset();

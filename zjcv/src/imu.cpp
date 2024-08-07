@@ -96,7 +96,8 @@ void MovingPose::predict_from(const MovingPose &prev, const Preintegration *prei
     v.translation() = v0 + iV + R0 * (preint->iV + preint->Jva * deltaB.a + preint->Jvw * deltaB.w);
 
   } else {
-    set_pose(prev.v * prev.T_imu_world);
+    // T_world_cur = T_last_cur * T_world_last
+    set_pose(prev.v * prev.T_world_imu);
   }
 }
 

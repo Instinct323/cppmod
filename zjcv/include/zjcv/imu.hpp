@@ -123,12 +123,12 @@ public:
     }
 
     void set_pose(const Sophus::SE3f &T) {
-      T_imu_world = T;
-      T_world_imu = T.inverse();
+      T_world_imu = T;
+      T_imu_world = T.inverse();
     }
 
-    // T_cur_last
-    void update_velocity(const MovingPose &prev) { v = T_imu_world * prev.T_world_imu; }
+    // T_last_cur
+    void update_velocity(const MovingPose &prev) { v = T_world_imu * prev.T_imu_world; }
 
     void predict_from(const MovingPose &prev, const Preintegration *preint = nullptr, bool update = false);
 };
