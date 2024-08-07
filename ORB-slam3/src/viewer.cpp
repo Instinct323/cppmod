@@ -37,6 +37,7 @@ void Viewer::run() {
   Tracker::Ptr pTracker = mpSystem->mpTracker;
   pangolin::Figure::Ptr pgl_fig = pangolin::Figure::from_yaml(cfg);
 
+  glLineWidth(1);
   pangolin::Var<Vec3> pos("ui.P", Vec3());
   while (mpSystem->mbRunning) {
     timer.reset();
@@ -51,7 +52,7 @@ void Viewer::run() {
         pangolin::OpenGlMatrix Tiw(T_imu_world.matrix());
         pgl_fig->follow(Tiw);
         // 绘制当前帧
-        pFrame->show_in_opengl(imu_size, lead_color.data(), true);
+        pFrame->show_in_opengl(imu_size, lead_color.data());
         {
           parallel::ScopedLock lock(cur_map->apKeyFrames.mutex);
           if (cur_map->apKeyFrames->size()) {

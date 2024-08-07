@@ -8,10 +8,10 @@ namespace pangolin {
 
 void draw_imu(const OpenGlMatrix &Tcw, float w) {
   float h = w * 0.75, z = w * 0.6;
-  float pts[4][3] = {{-w, h, z},
-                     {w,  h, z},
-                     {w,  h, -z},
-                     {-w, h, -z}};
+  float pts[4][3] = {{-w, -h, z},
+                     {w,  -h, z},
+                     {w,  -h, -z},
+                     {-w, -h, -z}};
 
   glPushMatrix();
 #ifdef HAVE_GLES
