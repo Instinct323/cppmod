@@ -38,27 +38,29 @@ public:
  */
 class PriorityThread : public ThreadPtr {
 
+protected:
+    static std::atomic_size_t cnt;
+    size_t timestamp, priority;
+
 public:
-    static std::atomic_size_t mCnt;
-
-    size_t mTimestamp, mPriority;
-
     PriorityThread() = default;
 
     template<typename Callable, typename... Args>
     explicit PriorityThread(size_t priority, Callable &&f, Args &&... args
-    ): mTimestamp(++mCnt), mPriority(priority), ThreadPtr(new std::thread(f, args...)) {}
+    ): timestamp(++cnt), priority(priority), ThreadPtr(new std::thread(f, args...)) {}
 
     // 根据优先级和时间戳的排序
     bool operator<(PriorityThread &other) const {
-      if (mPriority != other.mPriority) {
+      if (priority != other.priority) {
         // 高优先级 先出队
-        return mPriority < other.mPriority;
+        return priority < other.priority;
       } else {
         // 同优先级, 早创建的 先出队
-        return mTimestamp > other.mTimestamp;
+        return timestamp > other.timestamp;
       }
     }
+
+    friend class PriorityThreadPool;
 };
 
 
@@ -68,24 +70,47 @@ class PriorityThreadPool : public std::vector<PriorityThread> {
 public:
     PriorityThreadPool() { reserve(thread_pool_size); }
 
-    // 阻塞等待
-    void join(size_t priority = 0) { while (!empty() && back().mPriority >= priority) pop(); }
-
-    // 高优先级线程出队
-    void pop() {
-      if (back()->joinable()) back()->join();
-      pop_back();
-    }
-
     // 创建线程并入队
     template<typename Callable, typename... Args>
     PriorityThread emplace(size_t priority, Callable &&f, Args &&... args) {
-      if (size() >= thread_pool_size) pop();
+      if (size() >= thread_pool_size) pop(priority);
       // 线程池有空位时
       PriorityThread t(priority, f, args...);
       push_back(t);
       std::sort(begin(), end());
       return t;
+    }
+
+    // 阻塞等待
+    void join(size_t priority = 0) {
+      for (auto it = rbegin(); it != rend(); ++it) {
+        if (it->priority < priority) break;
+        if ((*it)->joinable()) (*it)->join();
+        erase((it + 1).base());
+      }
+    }
+
+protected:
+
+    // 高优先级线程出队
+    void pop(size_t priority) {
+      for (auto it = rbegin(); it != rend(); ++it) {
+        // 当前优先级存在
+        if (it->priority == priority) {
+          if ((*it)->joinable()) (*it)->join();
+          erase((it + 1).base());
+          return;
+        }
+        // 当前优先级不存在
+        if (it->priority < priority) {
+          // 多于两倍并发数时, 等待队尾线程
+          if (size() >= 2 * thread_pool_size) {
+            if (back()->joinable()) back()->join();
+            pop_back();
+          }
+          return;
+        }
+      }
     }
 };
 

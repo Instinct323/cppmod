@@ -356,7 +356,7 @@ void Mappoint::merge(Mappoint::Ptr &shared_this, Mappoint::Ptr &other) {
     wpf.lock()->mvpMappts[idx] = shared_this;
   }
   other->apObs->clear();
-  if (!other->mbBad) set_pos(other->mPos);
+  if (mbBad && !other->mbBad) set_pos(other->mPos);
 }
 
 
