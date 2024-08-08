@@ -24,8 +24,8 @@ float cosine_filter(const std::vector<Eigen::Vector3f> &unprojs0,
                     std::vector<cv::DMatch> &matches,
                     float thresh);
 
-// dx Pauta Criterion
-float dx_filter(const std::vector<Eigen::Vector3f> &unprojs0,
+// dy Pauta Criterion
+float dy_filter(const std::vector<Eigen::Vector3f> &unprojs0,
                 const std::vector<Eigen::Vector3f> &unprojs1,
                 std::vector<cv::DMatch> &matches,
                 float sigma_factor,

@@ -44,10 +44,12 @@ void Viewer::run() {
     feature::Frame::Ptr pFrame = pTracker->mpLastFrame;
     if (pFrame) {
       auto &cur_map = mpSystem->mpAtlas->mpCurMap;
+      // ----- OpenCV -----
+      auto thread1 = parallel::thread_pool.emplace(1, &feature::Frame::draw, pFrame.get());
       if (pTracker->mState == TrackState::OK) {
+        // ----- Pangolin -----
         const Sophus::SE3f &T_imu_world = pFrame->mPose.T_imu_world;
         pos = Vec3{T_imu_world.translation()};
-        // ----- Pangolin -----
         pgl_fig->clear();
         pangolin::OpenGlMatrix Tiw(T_imu_world.matrix());
         pgl_fig->follow(Tiw);
@@ -67,8 +69,7 @@ void Viewer::run() {
         cur_map->draw();
         pgl_fig->draw();
       }
-      // ----- OpenCV -----
-      pFrame->draw();
+      thread1->join();
     }
     // 检查系统状态
     if (!pgl_fig->is_running()) mpSystem->mbRunning = false;

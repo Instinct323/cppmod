@@ -182,11 +182,17 @@ int Frame::connect_frame(Frame::Ptr &shared_this, Frame::Ptr &ref, std::vector<c
 void Frame::mark_keyframe() {
   if (mIdKey > KEY_COUNT) return;
   mIdKey = ++KEY_COUNT;
-  for (Mappoint::Ptr &m: mvpMappts) if (m) mnMappts++;
+  for (Mappoint::Ptr &m: mvpMappts) {
+    if (m) {
+      if (m->is_invalid()) {
+        m->clear();
+      } else { mnMappts++; }
+    }
+  }
+  mImg1 = cv::Mat();
+  mvUnprojs1.clear();
+  mvUnprojs1.shrink_to_fit();
 }
-
-
-void Frame::prune() { for (Mappoint::Ptr &m: mvpMappts) if (m) m->prune(); }
 
 
 void Frame::show_in_opengl(float imu_size, const float *imu_color, bool show_cam) {
@@ -227,7 +233,7 @@ void Map::insert_keyframe(const std::shared_ptr<Frame> &pKF) {
   parallel::ScopedLock lock0(apMappts.mutex), lock1(apTmpMappts.mutex);
   apMappts->reserve(apMappts->size() + apTmpMappts->size());
   for (auto &pMappt: *apTmpMappts) {
-    if (pMappt.expired()) continue;
+    if (pMappt.expired() || pMappt.lock()->is_invalid()) continue;
     apMappts->push_back(pMappt);
   }
 }
@@ -367,16 +373,14 @@ bool optimize_pose(System *pSystem, const Frame::Ptr &pFrame, const Frame::Ptr &
       vpFrames.begin(), vpFrames.end(), apMappts->begin(), apMappts->end());
   apMappts.mutex.unlock();
 
-  // fail: 关键点过少
-  const int &MIN_MATCHES = pSystem->mpTracker->MIN_MATCHES;
-
   // 去除无效点; 粗筛外点, 去除负深度点; 精筛外点; 精化位姿
   for (int i = 0; i < 4; ++i) {
-    if (ba.edges().size() < MIN_MATCHES) return false;
-    if (i < 2) ba.reset();
+    // fail: 关键点过少
+    if (ba.edges().size() < pSystem->mpTracker->MIN_MATCHES) return false;
+    if (i < 3) ba.reset();
     if (!ba.initializeOptimization(0)) return false;
     ba.optimize(10);
-    ba.outlier_rejection(true, i == 1);
+    ba.outlier_rejection(i == 1);
     pSystem->set_desc("ba-edges", ba.edges().size());
   }
   parallel::ScopedLock lock(apMappts.mutex);

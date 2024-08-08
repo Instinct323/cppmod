@@ -79,7 +79,7 @@ float cosine_filter(const std::vector<Eigen::Vector3f> &unprojs0,
 }
 
 
-float dx_filter(const std::vector<Eigen::Vector3f> &unprojs0,
+float dy_filter(const std::vector<Eigen::Vector3f> &unprojs0,
                 const std::vector<Eigen::Vector3f> &unprojs1,
                 std::vector<cv::DMatch> &matches,
                 float sigma_factor,
@@ -87,15 +87,15 @@ float dx_filter(const std::vector<Eigen::Vector3f> &unprojs0,
   if (matches.empty()) return 0;
   float org = matches.size();
 
-  std::vector<float> dx;
+  std::vector<float> dy;
   for (cv::DMatch &m: matches) {
-    dx.push_back(unprojs0[m.queryIdx][0] - unprojs1[m.trainIdx][0]);
+    dy.push_back(unprojs0[m.queryIdx][1] - unprojs1[m.trainIdx][1]);
   }
-  math::PautaCriterion<float> is_inlier(dx, sigma_factor);
+  math::PautaCriterion<float> is_inlier(dy, sigma_factor);
   if (mean) *mean = is_inlier.mMean;
 
   for (int i = matches.size() - 1; i >= 0; i--) {
-    if (!is_inlier(dx[i])) matches.erase(matches.begin() + i);
+    if (!is_inlier(dy[i])) matches.erase(matches.begin() + i);
   }
   return float(matches.size()) / org;
 }

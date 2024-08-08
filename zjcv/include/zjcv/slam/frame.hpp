@@ -31,7 +31,7 @@ public:
     // Origin data
     ZJCV_BUILTIN size_t mId, mIdKey = 0, mIdVex = SIZE_MAX;
     ZJCV_BUILTIN const double mTimestamp;
-    ZJCV_BUILTIN const cv::Mat mImg0, mImg1;
+    ZJCV_BUILTIN cv::Mat mImg0, mImg1;
 
     // Features
     ZJCV_BUILTIN std::vector<Eigen::Vector3f> mvUnprojs0, mvUnprojs1;
@@ -46,9 +46,6 @@ public:
 
     ZJCV_BUILTIN bool is_keyframe() { return mIdKey > 0; }
 
-    // 使用 Joint 更新位姿
-    ZJCV_BUILTIN void update_pose();
-
     // 根据匹配, 三角化地图点
     ZJCV_BUILTIN int stereo_triangulation(const Frame::Ptr &shared_this, const std::vector<cv::DMatch> &stereo_matches = {});
 
@@ -57,9 +54,6 @@ public:
 
     // 标记为关键帧
     ZJCV_BUILTIN void mark_keyframe();
-
-    // 裁剪占用空间
-    ZJCV_BUILTIN void prune();
 
     // 世界坐标
     ZJCV_BUILTIN const Eigen::Vector3f &get_pos() { return mPose.T_imu_world.translation(); }
@@ -74,10 +68,13 @@ public:
 #ifdef ZJCV_ORB_SLAM
     std::vector<cv::KeyPoint> mvKps0, mvKps1;
     cv::Mat mDesc0, mDesc1;
-    std::vector<cv::DMatch> mStereoMatches, mRefToThisMatches;
+    std::vector<cv::DMatch> mRefToThisMatches;
 
-    bool match_previous(float &radio);
+    bool monocular_init(float &ref_radio, Ptr pCurFrame);
 
+    void match_stereo(int lap_cnt0);
+
+    bool match_previous(float &ref_radio);
 #endif
 
 };

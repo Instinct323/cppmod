@@ -34,7 +34,7 @@ public:
 
     ZJCV_BUILTIN void insert_keyframe(const std::shared_ptr<Frame> &pKF);
 
-    ZJCV_BUILTIN void prune(int i);
+    ZJCV_BUILTIN void prune(int i = 0);
 
     ZJCV_BUILTIN void draw() const;
 

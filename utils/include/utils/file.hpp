@@ -32,6 +32,7 @@ bool is_invalid(const Node &node);
 // 矩阵判断
 void assert_matrix(const Node &node);
 
+
 // std::vector 转换
 template<typename T>
 std::vector<T> toVec(const YAML::Node &node) {

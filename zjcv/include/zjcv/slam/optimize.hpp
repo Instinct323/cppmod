@@ -210,7 +210,7 @@ public:
       return edgeMappts[i].empty() || (!only_pose && edgeMappts[i].size() == 1 && edgeMappts[i][0]->dimension() == 2);
     }
 
-    size_t outlier_rejection(bool clean_obs, bool detect_depth_positive = false) {
+    size_t outlier_rejection(bool detect_depth_positive = false) {
       size_t n = 0, m = 0;
       long double sumvar = 0;
       // 假设误差项的均值为 0, 累计方差
@@ -241,12 +241,10 @@ public:
             m++;
             this->removeEdge(*it);
             edgeMappts[i].erase(it);
-            if (clean_obs) {
-              int edge_id = (*it)->id(), frame_id = edge_id / n_mappts, mappt_id = edge_id % n_mappts;
-              auto itMappt = iMapptsBeg + mappt_id;
-              if (itMappt->expired()) continue;
-              itMappt->lock()->erase_obs(*(iFramesBeg + frame_id));
-            }
+            int edge_id = (*it)->id(), frame_id = edge_id / n_mappts, mappt_id = edge_id % n_mappts;
+            auto itMappt = iMapptsBeg + mappt_id;
+            if (itMappt->expired()) continue;
+            itMappt->lock()->erase_obs(*(iFramesBeg + frame_id));
           }
         }
         // 有效观测不足
@@ -285,6 +283,7 @@ public:
         for (size_t i = 0; i < n_mappts; ++i) {
           if ((iMapptsBeg + i)->expired()) continue;
           auto pMappt = (iMapptsBeg + i)->lock();
+          if (is_bad_mappts(i)) pMappt->set_invalid();
           auto v = static_cast<g2o::VertexPointXYZ *>(this->vertex(n_frames + i));
           if (v) pMappt->set_pos(v->estimate().cast<float>());
         }

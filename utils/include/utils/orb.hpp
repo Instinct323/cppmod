@@ -12,12 +12,6 @@ namespace ORB {
 typedef std::vector<cv::KeyPoint> KeyPoints;
 
 
-// fixme: 亚像素级精化 (模板匹配), 目前效果不佳
-bool matchesSubPix(const cv::Mat &img0, const cv::Mat &img1,
-                   const cv::Point2f &kp0, cv::Point2f &kp1,
-                   int winSize = 5, cv::Size slideSize = {5, 5});
-
-
 // 特征提取器
 class Extractor {
     cv::Ptr<cv::ORB> mpExtractor;
