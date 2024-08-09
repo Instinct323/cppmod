@@ -139,7 +139,7 @@ public:
     // Processed data
     std::vector<std::vector<Edge *>> edgeMappts;
 
-    BundleAdjustment(const Sophus::SE3f &T_cam0_imu, size_t idRefFrame, bool only_pose,
+    explicit BundleAdjustment(const Sophus::SE3f &T_cam0_imu, size_t idRefFrame, bool only_pose,
                      FrameSharedPtrs::iterator iFramesBeg, FrameSharedPtrs::iterator iFramesEnd,
                      MappointWeakPtrs::iterator iMapptsBeg, MappointWeakPtrs::iterator iMapptsEnd
     ) : g2o::Optimizer<6, 3, LinearSolverTp>(),

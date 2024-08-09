@@ -67,7 +67,6 @@ public:
       ASSERT(mpExtractor0, "Extractor0 not found")
       ASSERT((!mpCam1) == (!mpExtractor1), "miss match between Camera1 and Extractor1")
     }
-
 #endif
 
 };

@@ -41,25 +41,29 @@ public:
     ZJCV_BUILTIN Ptr mpRefFrame;
     ZJCV_BUILTIN int mnMappts = 0;
     ZJCV_BUILTIN IMU::MovingPose mPose;
+    ZJCV_BUILTIN Sophus::Joint mJoint;
 
     ZJCV_BUILTIN explicit Frame(System *pSystem, const double &timestamp, const cv::Mat &img0, const cv::Mat &img1);
 
     ZJCV_BUILTIN bool is_keyframe() { return mIdKey > 0; }
 
-    // 根据匹配, 三角化地图点
+    // Triangulate the Mappoints according to the match
     ZJCV_BUILTIN int stereo_triangulation(const Frame::Ptr &shared_this, const std::vector<cv::DMatch> &stereo_matches = {});
 
-    // 根据匹配, 合并两帧的地图点
+    // Merge the Mappoints of the two Frames according to the match
     ZJCV_BUILTIN int connect_frame(Ptr &shared_this, Ptr &ref, std::vector<cv::DMatch> &ref2this);
 
-    // 标记为关键帧
+    // Marked as a key Frame
     ZJCV_BUILTIN void mark_keyframe();
 
-    // 世界坐标
+    // World position
     ZJCV_BUILTIN const Eigen::Vector3f &get_pos() { return mPose.T_imu_world.translation(); }
 
-    // pangolin 绘图
+    // Show in OpenGL
     ZJCV_BUILTIN void show_in_opengl(float imu_size, const float *imu_color, bool show_cam = false);
+
+    //
+    ZJCV_BUILTIN void update_pose() { mPose.set_pose(mJoint.get()); }
 
     ZJCV_CUSTOM void process();
 
@@ -75,6 +79,7 @@ public:
     void match_stereo(int lap_cnt0);
 
     bool match_previous(float &ref_radio);
+
 #endif
 
 };

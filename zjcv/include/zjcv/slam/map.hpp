@@ -26,7 +26,7 @@ public:
     ZJCV_BUILTIN parallel::atomic_ptr<std::vector<std::shared_ptr<Frame>>> apKeyFrames;
     ZJCV_BUILTIN parallel::atomic_ptr<std::vector<std::weak_ptr<Mappoint>>> apMappts, apTmpMappts;
 
-    ZJCV_BUILTIN Map(System *pSystem
+    ZJCV_BUILTIN explicit Map(System *pSystem
     ) : mpSystem(pSystem), apKeyFrames(new std::vector<std::shared_ptr<Frame>>),
         apMappts(new std::vector<std::weak_ptr<Mappoint>>), apTmpMappts(new std::vector<std::weak_ptr<Mappoint>>) {}
 
@@ -36,7 +36,7 @@ public:
 
     ZJCV_BUILTIN void prune(int i = 0);
 
-    ZJCV_BUILTIN void draw() const;
+    ZJCV_BUILTIN void draw(Frame::Ptr pCurFrame = nullptr) const;
 
 #ifdef ZJCV_ORB_SLAM
 #endif

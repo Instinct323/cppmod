@@ -29,13 +29,13 @@ tracker:
       - [ 0, -1, 0, 0 ]
 
   orb0:
-    nfeatures: 1000
+    nfeatures: 800
     scale_factor: 1.2
     nlevels: 8
     lapping_area: [ 0, 1241 ]
 
   orb1:
-    nfeatures: 1000
+    nfeatures: 800
     scale_factor: 1.2
     nlevels: 8
     lapping_area: [ 0, 1241 ]

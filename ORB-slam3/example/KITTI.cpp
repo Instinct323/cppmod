@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
   LOG(INFO) << "Thread pool size: " << parallel::thread_pool_size;
 
   // config
-  YAML::Node cfg = YAML::LoadFile("/home/workbench/cppmod/ORB-slam3/example/KITTI.yaml");
+  YAML::Node cfg = YAML::LoadFile("/home/workbench/cppmod/ORB-slam3/cfg/KITTI.yaml");
   slam::System system(cfg);
   system.mpTracker->reload(cfg["tracker"]);
 
@@ -55,8 +55,8 @@ int main(int argc, char **argv) {
   LOG(INFO) << "Timestamps: " << std::get<0>(storage).size()
             << ", Image0: " << std::get<1>(storage).size()
             << ", Image1: " << std::get<2>(storage).size();
-  LOG(INFO) << "P0:" << std::endl << kitti.load_calib("P0");
-  LOG(INFO) << "P1:" << std::endl << kitti.load_calib("P1");
+  // LOG(INFO) << "P0:" << std::endl << kitti.load_calib("P0");
+  // LOG(INFO) << "P1:" << std::endl << kitti.load_calib("P1");
 
   system.run();
   system.mThreads["tracker"]->join();

@@ -55,8 +55,8 @@ void Frame::match_stereo(int lap_cnt0) {
   pTracker->mpCam1->undistort(mvKps1, mvKps1);
 
   if (lap_cnt0 > 0 && lap_cnt1 > 0) {
-    // 分配右相机特征到行
     cv::Mat mask;
+    // 分配右相机特征到行
     if (pTracker->mpCam0->get_type() == camera::PINHOLE) {
       mask = cv::Mat_<uchar>(lap_cnt0, lap_cnt1);
       cv::HoriDict hori_dict(mvKps1.begin(), mvKps1.begin() + lap_cnt1, mImg1.rows);
@@ -141,6 +141,7 @@ void Frame::process() {
     if (pTracker->is_inertial()) {
       mPose.predict_from(mpRefFrame->mPose, pTracker->mpIMUpreint.get());
     } else {
+      pLastFrame->update_pose();
       mPose.predict_from(pLastFrame->mPose);
     }
   } else {
@@ -170,9 +171,15 @@ void Frame::process() {
     mpSystem->set_desc("ref-radio", (boost::format("%.2f") % ref_radio).str());
     // 根据位姿信息更新
     if (ok) {
+      pLastFrame->update_pose();
       mPose.update_velocity(pLastFrame->mPose);
       // Keyframe: 无效匹配比例 / 匹配成功率 衰减到临界
       if (ref_radio < pTracker->KEY_MATCHES_RADIO) is_keyframe = true;
+      // Common Frame: 修改位姿依赖 T_ref_cur = T_world_cur * T_ref_world
+      if (!is_keyframe) {
+        mJoint = Sophus::Joint(&mpRefFrame->mPose.T_world_imu,
+                               mPose.T_world_imu * mpRefFrame->mPose.T_imu_world);
+      }
     }
   }
 

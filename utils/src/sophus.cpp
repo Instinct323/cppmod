@@ -48,9 +48,8 @@ Sophus::Sim3f align_trajectory(const std::vector<Eigen::Vector3f> &pts1,
   // 计算质心
   Eigen::Vector3d centroid1 = Eigen::Vector3d::Zero(), centroid2 = Eigen::Vector3d::Zero();
   for (int i = 0; i < n; ++i) {
-    Eigen::Vector3d p1 = pts1[i].cast<double>(), p2 = pts2[i].cast<double>();
-    centroid1 += p1;
-    centroid2 += p2;
+    centroid1 += pts1[i].cast<double>();
+    centroid2 += pts2[i].cast<double>();
   }
   centroid1 /= n;
   centroid2 /= n;

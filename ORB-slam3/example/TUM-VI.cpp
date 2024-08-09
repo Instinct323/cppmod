@@ -57,7 +57,7 @@ int main(int argc, char **argv) {
   LOG(INFO) << "Thread pool size: " << parallel::thread_pool_size;
 
   // config
-  YAML::Node cfg = YAML::LoadFile("/home/workbench/cppmod/ORB-slam3/example/TUM-VI.yaml");
+  YAML::Node cfg = YAML::LoadFile("/home/workbench/cppmod/ORB-slam3/cfg/TUM-VI.yaml");
   slam::System system(cfg);
   system.mpTracker->reload(cfg["tracker"]);
 

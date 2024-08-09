@@ -36,7 +36,7 @@ public:
     ZJCV_BUILTIN bool mbBad = true;
     ZJCV_BUILTIN Eigen::Vector3f mPos;
 
-    // Frame 创建, Map 清理
+    // Created by Frame, cleaned up by Map
     ZJCV_BUILTIN explicit Mappoint(System *pSystem, size_t id_frame
     ) : mpSystem(pSystem), mIdFrame(id_frame), apObs(new std::vector<Observation>) {}
 

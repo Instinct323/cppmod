@@ -40,23 +40,23 @@ class PriorityThread : public ThreadPtr {
 
 protected:
     static std::atomic_size_t cnt;
-    size_t timestamp, priority;
+    size_t id, priority;
 
 public:
     PriorityThread() = default;
 
     template<typename Callable, typename... Args>
     explicit PriorityThread(size_t priority, Callable &&f, Args &&... args
-    ): timestamp(++cnt), priority(priority), ThreadPtr(new std::thread(f, args...)) {}
+    ): id(++cnt), priority(priority), ThreadPtr(new std::thread(f, args...)) {}
 
     // 根据优先级和时间戳的排序
     bool operator<(PriorityThread &other) const {
       if (priority != other.priority) {
-        // 高优先级 先出队
+        // 不同优先级: 高优先级先出
         return priority < other.priority;
       } else {
-        // 同优先级, 早创建的 先出队
-        return timestamp > other.timestamp;
+        // 同优先级: 先入先出
+        return id > other.id;
       }
     }
 
@@ -76,41 +76,56 @@ public:
       if (size() >= thread_pool_size) pop(priority);
       // 线程池有空位时
       PriorityThread t(priority, f, args...);
-      push_back(t);
-      std::sort(begin(), end());
+      ScopedLock lock(mutex);
+      auto it = std::lower_bound(begin(), end(), t);
+      insert(it, t);
       return t;
     }
 
     // 阻塞等待
     void join(size_t priority = 0) {
-      for (auto it = rbegin(); it != rend(); ++it) {
-        if (it->priority < priority) break;
-        if ((*it)->joinable()) (*it)->join();
-        erase((it + 1).base());
+      std::vector<PriorityThread> to_remove;
+      {
+        ScopedLock lock(mutex);
+        for (auto it = rbegin(); it != rend(); ++it) {
+          if (it->priority < priority) break;
+          if ((*it).priority == priority) to_remove.push_back(*it);
+        }
       }
+      for (auto &t: to_remove) remove(t);
     }
 
 protected:
+    std::mutex mutex;
+
+    // 阻塞并删除指定线程
+    void remove(PriorityThread &t) {
+      if (t->joinable()) t->join();
+      ScopedLock lock(mutex);
+      auto it = std::lower_bound(begin(), end(), t);
+      if (it != end() && *it == t) erase(it);
+    }
 
     // 高优先级线程出队
     void pop(size_t priority) {
-      for (auto it = rbegin(); it != rend(); ++it) {
-        // 当前优先级存在
-        if (it->priority == priority) {
-          if ((*it)->joinable()) (*it)->join();
-          erase((it + 1).base());
-          return;
-        }
-        // 当前优先级不存在
-        if (it->priority < priority) {
-          // 多于两倍并发数时, 等待队尾线程
-          if (size() >= 2 * thread_pool_size) {
-            if (back()->joinable()) back()->join();
-            pop_back();
+      PriorityThread t;
+      {
+        ScopedLock lock(mutex);
+        for (auto it = rbegin(); it != rend(); ++it) {
+          // 存在同级别线程
+          if (it->priority == priority) {
+            t = *it;
+            break;
           }
-          return;
+          // 不存在同级别线程
+          if (it->priority < priority) {
+            // 多于两倍并发数时, 等待队尾线程
+            if (size() >= 2 * thread_pool_size) t = back();
+            break;
+          }
         }
       }
+      if (t) remove(t);
     }
 };
 

@@ -34,6 +34,7 @@ void System::run() {
   mbRunning = true;
   mThreads["tracker"] = parallel::thread_pool.emplace(0, &Tracker::run, mpTracker);
   mThreads["viewer"] = parallel::thread_pool.emplace(0, &Viewer::run, mpViewer);
+  // mThreads["atlas"] = parallel::thread_pool.emplace(0, &Atlas::run, mpAtlas);
 }
 
 
@@ -115,36 +116,41 @@ size_t Frame::KEY_COUNT = 0;
 Frame::Frame(System *pSystem, const double &timestamp,
              const cv::Mat &img0, const cv::Mat &img1
 ) : mpSystem(pSystem), mId(++FRAME_COUNT), mTimestamp(timestamp), mImg0(img0), mImg1(img1),
-    mpRefFrame(pSystem->mpTracker->mpRefFrame) {}
+    mpRefFrame(pSystem->mpTracker->mpRefFrame), mJoint(&mPose.T_world_imu) {}
 
 
 int Frame::stereo_triangulation(const Frame::Ptr &shared_this, const std::vector<cv::DMatch> &stereo_matches) {
-  int cnt = 0;
+  std::atomic_int cnt = 0;
   if (!stereo_matches.empty()) {
     const Sophus::SE3f &T_cam0_cam1 = mpSystem->mpTracker->mpCam1->T_cam_imu.inverse() * mpSystem->mpTracker->mpCam0->T_cam_imu,
         Identity,
         T_cam0_world = mPose.T_imu_world * mpSystem->mpTracker->mpCam0->T_cam_imu;
-
+    // 三角剖分, 生成地图点
+    auto task = [this, &shared_this, &cnt, &Identity, &T_cam0_cam1, &T_cam0_world
+    ](int i, const Eigen::Vector3f &P0_cam0, const Eigen::Vector3f &P1_cam1) {
+        Eigen::Vector3f P_cam0;
+        float rep_error = Sophus::triangulation({P0_cam0, P1_cam1}, {Identity, T_cam0_cam1}, P_cam0);
+        if (rep_error >= 0) {
+          cnt += 1;
+          mvUnprojs0[i][2] = -P_cam0[2];
+          // 创建地图点
+          if (!mvpMappts[i]) {
+            mvpMappts[i] = mpSystem->get_cur_map()->create_mappoint(mId);
+            mvpMappts[i]->add_obs(shared_this, i);
+          }
+          mvpMappts[i]->set_pos(T_cam0_world * P_cam0);
+        }
+    };
     for (auto m: stereo_matches) {
       int i = m.queryIdx, j = m.trainIdx;
       // 余弦判断
       const Eigen::Vector3f &P0_cam0 = mvUnprojs0[i], &P1_cam1 = mvUnprojs1[j];
       Eigen::Vector3f P1_cam0 = T_cam0_cam1 * P0_cam0;
       if (Eigen::cos(P0_cam0, P1_cam0) > STEREO_OBS_COS_THRESH) continue;
-      // 三角化
-      Eigen::Vector3f P_cam0;
-      float rep_error = Sophus::triangulation({P0_cam0, P1_cam1}, {Identity, T_cam0_cam1}, P_cam0);
-      if (rep_error >= 0) {
-        cnt += 1;
-        mvUnprojs0[i][2] = -P_cam0[2];
-        // 创建地图点
-        if (!mvpMappts[i]) {
-          mvpMappts[i] = mpSystem->get_cur_map()->create_mappoint(mId);
-          mvpMappts[i]->add_obs(shared_this, i);
-        }
-        mvpMappts[i]->set_pos(T_cam0_world * P_cam0);
-      }
+      // 三角剖分线程
+      parallel::thread_pool.emplace(1, task, i, P0_cam0, P1_cam1);
     }
+    parallel::thread_pool.join(1);
   }
   return cnt;
 }
@@ -248,20 +254,32 @@ void Map::prune(int i) {
 }
 
 
-void Map::draw() const {
+void Map::draw(Frame::Ptr pCurFrame) const {
   Viewer::Ptr &viewer = mpSystem->mpViewer;
   assert(viewer);
-  auto it_beg = apKeyFrames->end() - std::min(viewer->trail_size, apKeyFrames->size());
-  if (it_beg == apKeyFrames->end()) return;
+  // Current Frame
+  if (pCurFrame) {
+    pCurFrame->show_in_opengl(viewer->imu_size, viewer->lead_color.data());
+    parallel::ScopedLock lock(apKeyFrames.mutex);
+    if (apKeyFrames->size()) {
+      glColor3fv(viewer->trail_color.data());
+      glBegin(GL_LINES);
+      glVertex3fv(pCurFrame->get_pos().data());
+      glVertex3fv(apKeyFrames->back()->get_pos().data());
+      glEnd();
+    }
+  }
   // Frame
   {
-    parallel::ScopedLock lock0(apKeyFrames.mutex);
+    parallel::ScopedLock lock(apKeyFrames.mutex);
+    auto it_beg = apKeyFrames->end() - std::min(viewer->trail_size, apKeyFrames->size());
+    if (it_beg == apKeyFrames->end()) return;
     for (auto it = it_beg; it != apKeyFrames->end(); ++it) {
       (*it)->show_in_opengl(viewer->imu_size, viewer->trail_color.data());
     }
     if (it_beg + 1 != apKeyFrames->end()) {
-      glBegin(GL_LINES);
       glColor3fv(viewer->trail_color.data());
+      glBegin(GL_LINES);
       glVertex3fv((*it_beg)->get_pos().data());
       for (auto it = it_beg + 1; it != apKeyFrames->end() - 1; ++it) {
         glVertex3fv((*it)->get_pos().data());
@@ -273,8 +291,8 @@ void Map::draw() const {
   }
   // MapPoints
   glPointSize(viewer->mp_size);
-  glBegin(GL_POINTS);
   glColor3fv(viewer->mp_color.data());
+  glBegin(GL_POINTS);
   {
     parallel::ScopedLock lock(apTmpMappts.mutex);
     for (auto &wpMappt: *apTmpMappts) {
@@ -286,9 +304,10 @@ void Map::draw() const {
   }
   {
     parallel::ScopedLock lock(apMappts.mutex);
-    for (auto &wpMappt: *apMappts) {
-      if (wpMappt.expired()) continue;
-      auto pMappt = wpMappt.lock();
+    for (auto it = apMappts->end() - std::min(viewer->trail_size * apTmpMappts->size(), apMappts->size());
+         it != apMappts->end(); ++it) {
+      if (it->expired()) continue;
+      auto pMappt = it->lock();
       if (pMappt->is_invalid()) continue;
       glVertex3fv(pMappt->mPos.data());
     }

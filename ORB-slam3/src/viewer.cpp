@@ -45,30 +45,16 @@ void Viewer::run() {
     if (pFrame) {
       auto &cur_map = mpSystem->mpAtlas->mpCurMap;
       // ----- OpenCV -----
-      auto thread1 = parallel::thread_pool.emplace(1, &feature::Frame::draw, pFrame.get());
-      if (pTracker->mState == TrackState::OK) {
-        // ----- Pangolin -----
-        const Sophus::SE3f &T_imu_world = pFrame->mPose.T_imu_world;
-        pos = Vec3{T_imu_world.translation()};
-        pgl_fig->clear();
-        pangolin::OpenGlMatrix Tiw(T_imu_world.matrix());
-        pgl_fig->follow(Tiw);
-        // 绘制当前帧
-        pFrame->show_in_opengl(imu_size, lead_color.data());
-        {
-          parallel::ScopedLock lock(cur_map->apKeyFrames.mutex);
-          if (cur_map->apKeyFrames->size()) {
-            glColor3fv(trail_color.data());
-            glBegin(GL_LINES);
-            glVertex3fv(pFrame->get_pos().data());
-            glVertex3fv(cur_map->apKeyFrames->back()->get_pos().data());
-            glEnd();
-          }
-        }
-        // 绘制地图
-        cur_map->draw();
-        pgl_fig->draw();
-      }
+      auto thread1 = parallel::thread_pool.emplace(2, &feature::Frame::draw, pFrame.get());
+      // ----- Pangolin -----
+      const Sophus::SE3f &T_imu_world = pFrame->mPose.T_imu_world;
+      pos = Vec3{T_imu_world.translation()};
+      pgl_fig->clear();
+      pangolin::OpenGlMatrix Tiw(T_imu_world.matrix());
+      pgl_fig->follow(Tiw);
+      // 绘制地图
+      cur_map->draw(pFrame);
+      pgl_fig->draw();
       thread1->join();
     }
     // 检查系统状态

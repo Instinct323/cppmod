@@ -36,13 +36,13 @@ tracker:
     gyro_walk: 0.000022   # rad/s^1.5
 
   orb0:
-    nfeatures: 1000
+    nfeatures: 500
     scale_factor: 1.2
     nlevels: 8
     lapping_area: [ 0, 511 ]
 
   orb1:
-    nfeatures: 1000
+    nfeatures: 500
     scale_factor: 1.2
     nlevels: 8
     lapping_area: [ 0, 511 ]

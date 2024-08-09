@@ -45,16 +45,17 @@ Eigen::Matrix3<T> rightJacobian(const Eigen::Vector3<T> &omega) {
 
 // 关节
 class Joint {
-    const Sophus::SE3f *S_ref;
-    Sophus::SE3f T_cur_ref;
+    const Sophus::SE3f *T_world_ref;
+    Sophus::SE3f T_ref_cur;
 
 public:
-    explicit Joint(const Sophus::SE3f *S_ref,
-                   const Sophus::SE3f &T_cur_ref = Sophus::SE3f()) : S_ref(S_ref), T_cur_ref(T_cur_ref) {}
+    explicit Joint(const Sophus::SE3f *T_world_ref,
+                   const Sophus::SE3f &T_ref_cur = Sophus::SE3f()) : T_world_ref(T_world_ref), T_ref_cur(T_ref_cur) {}
 
-    void set(const Sophus::SE3f &T_cr) { this->T_cur_ref = T_cr; }
+    void set(const Sophus::SE3f &T_rc) { this->T_ref_cur = T_rc; }
 
-    Sophus::SE3f get() const { return *S_ref * T_cur_ref; }
+    // T_world_cur
+    Sophus::SE3f get() const { return T_ref_cur * (*T_world_ref); }
 };
 
 
