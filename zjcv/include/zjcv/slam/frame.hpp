@@ -35,6 +35,7 @@ public:
 
     // Features
     ZJCV_BUILTIN std::vector<Eigen::Vector3f> mvUnprojs0, mvUnprojs1;
+    // todo: std::map<int, std::shared_ptr<Mappoint>> mmpMappts;
     ZJCV_BUILTIN std::vector<std::shared_ptr<Mappoint>> mvpMappts;
 
     // Processed data
@@ -62,12 +63,10 @@ public:
     // Show in OpenGL
     ZJCV_BUILTIN void show_in_opengl(float imu_size, const float *imu_color, bool show_cam = false);
 
-    //
+    // Update the pose
     ZJCV_BUILTIN void update_pose() { mPose.set_pose(mJoint.get()); }
 
     ZJCV_CUSTOM void process();
-
-    ZJCV_CUSTOM void draw();
 
 #ifdef ZJCV_ORB_SLAM
     std::vector<cv::KeyPoint> mvKps0, mvKps1;
@@ -80,8 +79,8 @@ public:
 
     bool match_previous(float &ref_radio);
 
+    void draw();
 #endif
-
 };
 
 }

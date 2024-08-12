@@ -20,6 +20,8 @@ namespace feature {
 
 typedef std::pair<std::weak_ptr<Frame>, int> Observation;
 
+class Map;
+
 
 class Mappoint {
 
@@ -36,10 +38,6 @@ public:
     ZJCV_BUILTIN bool mbBad = true;
     ZJCV_BUILTIN Eigen::Vector3f mPos;
 
-    // Created by Frame, cleaned up by Map
-    ZJCV_BUILTIN explicit Mappoint(System *pSystem, size_t id_frame
-    ) : mpSystem(pSystem), mIdFrame(id_frame), apObs(new std::vector<Observation>) {}
-
     ZJCV_BUILTIN void prune();
 
     ZJCV_BUILTIN void add_obs(const Frame::Ptr &pFrame, const int &idx);
@@ -55,6 +53,13 @@ public:
     ZJCV_BUILTIN void clear();
 
     ZJCV_BUILTIN void merge(Ptr &shared_this, Ptr &other);
+
+    ZJCV_BUILTIN friend class Map;
+
+protected:
+    // Created by Frame, cleaned up by Map
+    ZJCV_BUILTIN explicit Mappoint(System *pSystem, size_t id_frame
+    ) : mpSystem(pSystem), mIdFrame(id_frame), apObs(new std::vector<Observation>) {}
 
 #ifdef ZJCV_ORB_SLAM
 #endif

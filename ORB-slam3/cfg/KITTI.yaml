@@ -4,7 +4,7 @@ seq_id: 0
 
 tracker:
   min_matches: 15
-  max_matches: 30
+  max_matches: 45
   key_matches_radio: 0.5
   lost_timeout: 3.0
 

@@ -4,7 +4,6 @@
 #include "utils/cv.hpp"
 #include "utils/indicators.hpp"
 #include "utils/glog.hpp"
-#include "utils/math.hpp"
 #include "zjcv/dataset/kitti.hpp"
 #include "zjcv/imu.hpp"
 #include "zjcv/slam.hpp"
@@ -31,6 +30,12 @@ void slam::Tracker::run() {
     indicators::set_desc(pbar, mpSystem->get_desc(), false);
     pbar.tick();
   }
+
+  LOG(INFO) << "Wait for writing pose...";
+  std::ofstream ofs("pose.txt");
+  for (feature::Frame::Ptr keyframe: *mpSystem->get_cur_map()->apKeyFrames)
+    ofs << std::fixed << size_t(keyframe->mTimestamp * 1e9) << " " << keyframe->mPose.T_world_imu << std::endl;
+  ofs.close();
 }
 
 

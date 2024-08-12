@@ -56,7 +56,7 @@ public:
 
     // Lowe's ratio test
     void search_with_lowe(const cv::Mat &desc0, const cv::Mat &desc1,
-                          const cv::Mat &mask, std::vector<cv::DMatch> &matches, float ratio);
+                          const cv::Mat &mask, std::vector<cv::DMatch> &matches, float ratio = 0.7);
 };
 
 }

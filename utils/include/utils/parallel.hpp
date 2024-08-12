@@ -112,8 +112,8 @@ protected:
       {
         ScopedLock lock(mutex);
         for (auto it = rbegin(); it != rend(); ++it) {
-          // 存在同级别线程
-          if (it->priority == priority) {
+          // 存在同级别线程 / 已完成线程
+          if (it->priority == priority || !(*it)->joinable()) {
             t = *it;
             break;
           }

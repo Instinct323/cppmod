@@ -17,6 +17,11 @@ feature::Map::Ptr Atlas::create_map() {
 
 void Atlas::run() {
   while (mpSystem->mbRunning) {
+    sleep(1);
+    feature::Map::Ptr cur_map = mpCurMap;
+    if (cur_map->apKeyFrames->size() > cur_map->miKeyFrame + 5) {
+      cur_map->local_mapping();
+    }
     // todo: 调用 Map 类内方法优化关键帧及地图点
     LOG(FATAL) << "Not implemented";
   }
@@ -40,7 +45,8 @@ void System::run() {
 
 void System::stop() {
   mbRunning = false;
-  parallel::thread_pool.join();
+  parallel::thread_pool.join(0);
+  mThreads.clear();
 }
 
 
@@ -221,7 +227,7 @@ void Frame::show_in_opengl(float imu_size, const float *imu_color, bool show_cam
 
 // Map
 Mappoint::Ptr Map::create_mappoint(size_t id_frame) {
-  auto pMappt = std::make_shared<Mappoint>(mpSystem, id_frame);
+  auto pMappt = std::shared_ptr<Mappoint>(new Mappoint(mpSystem, id_frame));
   parallel::ScopedLock lock(apTmpMappts.mutex);
   apTmpMappts->push_back(pMappt);
   return pMappt;
@@ -238,19 +244,54 @@ void Map::insert_keyframe(const std::shared_ptr<Frame> &pKF) {
   // 整理临时地图点
   parallel::ScopedLock lock0(apMappts.mutex), lock1(apTmpMappts.mutex);
   apMappts->reserve(apMappts->size() + apTmpMappts->size());
-  for (auto &pMappt: *apTmpMappts) {
-    if (pMappt.expired() || pMappt.lock()->is_invalid()) continue;
-    apMappts->push_back(pMappt);
+  for (auto &wpMappt: *apTmpMappts) {
+    if (wpMappt.expired()) continue;
+    auto pMappt = wpMappt.lock();
+    if (pMappt->is_invalid()) continue;
+    pMappt->prune();
+    if (pMappt->apObs->size() < 2) continue;
+    apMappts->push_back(wpMappt);
   }
 }
 
 
-void Map::prune(int i) {
-  parallel::ScopedLock lock(apMappts.mutex);
+void Map::prune_mappts() {
   auto it = std::remove_if(
-      apMappts->begin() + i, apMappts->end(),
-      [](const std::weak_ptr<Mappoint> &wpMappt) { return wpMappt.expired(); });
+      apMappts->begin() + miMappt, apMappts->end(),
+      [](const std::weak_ptr<Mappoint> &wpMappt) {
+          // weak_ptr 失效 / 观测点不足
+          if (wpMappt.expired()) return true;
+          auto pMappt = wpMappt.lock();
+          return pMappt->apObs->size() > 1;
+      });
   apMappts->erase(it, apMappts->end());
+}
+
+
+void Map::local_mapping() {
+  // 清理地图点
+  apMappts.mutex.lock();
+  prune_mappts();
+  apKeyFrames.mutex.lock();
+  auto it_frame_beg = apKeyFrames->begin() + miKeyFrame;
+  feature::BundleAdjustment<g2o::LinearSolverEigen> ba(
+      mpSystem->mpTracker->mpCam0->T_cam_imu, (*it_frame_beg)->mId, false,
+      it_frame_beg, apKeyFrames->end(),
+      apMappts->begin() + miMappt, apMappts->end()
+  );
+  // 记录优化的终点
+  miKeyFrame = apKeyFrames->size();
+  miMappt = apMappts->size();
+  apMappts.mutex.unlock();
+  apMappts.mutex.unlock();
+  // 优化并应用结果
+  ba.setVerbose(true);
+  ba.reset();
+  ba.initializeOptimization(0);
+  ba.optimize(10);
+  ba.outlier_rejection(true);
+  ba.apply_result();
+  ba.print_edge();
 }
 
 
@@ -399,7 +440,7 @@ bool optimize_pose(System *pSystem, const Frame::Ptr &pFrame, const Frame::Ptr &
     if (i < 3) ba.reset();
     if (!ba.initializeOptimization(0)) return false;
     ba.optimize(10);
-    ba.outlier_rejection(i == 1);
+    ba.outlier_rejection(i >= 1);
     pSystem->set_desc("ba-edges", ba.edges().size());
   }
   parallel::ScopedLock lock(apMappts.mutex);

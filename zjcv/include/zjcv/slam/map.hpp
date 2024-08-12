@@ -23,6 +23,8 @@ public:
 
     ZJCV_BUILTIN System *mpSystem;
 
+    // Memory
+    ZJCV_BUILTIN int miKeyFrame = 0, miMappt = 0;
     ZJCV_BUILTIN parallel::atomic_ptr<std::vector<std::shared_ptr<Frame>>> apKeyFrames;
     ZJCV_BUILTIN parallel::atomic_ptr<std::vector<std::weak_ptr<Mappoint>>> apMappts, apTmpMappts;
 
@@ -34,9 +36,12 @@ public:
 
     ZJCV_BUILTIN void insert_keyframe(const std::shared_ptr<Frame> &pKF);
 
-    ZJCV_BUILTIN void prune(int i = 0);
+    ZJCV_BUILTIN void local_mapping();
 
     ZJCV_BUILTIN void draw(Frame::Ptr pCurFrame = nullptr) const;
+
+protected:
+    ZJCV_BUILTIN void prune_mappts();
 
 #ifdef ZJCV_ORB_SLAM
 #endif

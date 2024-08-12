@@ -23,8 +23,8 @@ bool Frame::monocular_init(float &ref_radio, Frame::Ptr pCurFrame) {
     if (pt.x < 0 || pt.x >= mImg0.cols || pt.y < 0 || pt.y >= mImg0.rows) continue;
     grid_dict(pt.x, pt.y, 0).copyTo(mask.row(i));
   }
-  // 余弦相似度筛选
-  pTracker->mpMatcher->search(mpRefFrame->mDesc0, mDesc0, mask.t(), mRefToThisMatches);
+
+  pTracker->mpMatcher->search_with_lowe(mpRefFrame->mDesc0, mDesc0, mask.t(), mRefToThisMatches);
   cv::make_one2one(mRefToThisMatches, true);
   ok = mRefToThisMatches.size() > pTracker->MIN_MATCHES;
 
@@ -65,7 +65,7 @@ void Frame::match_stereo(int lap_cnt0) {
     // Lowe's ratio test
     std::vector<cv::DMatch> stereo_matches;
     pTracker->mpMatcher->search_with_lowe(mDesc0.rowRange(0, lap_cnt0), mDesc1.rowRange(0, lap_cnt1),
-                                          mask, stereo_matches, 0.7);
+                                          mask, stereo_matches);
     // unproject
     mvUnprojs1.reserve(mvKps1.size());
     for (auto &i: mvKps1) mvUnprojs1.push_back(pTracker->mpCam1->unproject(i.pt));
@@ -73,7 +73,6 @@ void Frame::match_stereo(int lap_cnt0) {
     cv::drop_last(stereo_matches, 0.1);
     cv::make_one2one(stereo_matches, true);
     cv::cosine_filter(mvUnprojs0, mvUnprojs1, stereo_matches, 0.9848);
-    stereo_matches.shrink_to_fit();
     stereo_triangulation(pTracker->mpCurFrame, stereo_matches);
 
     mvKps1.clear();
@@ -103,7 +102,6 @@ bool Frame::match_previous(float &ref_radio) {
       grid_dict(pt.x, pt.y, d).copyTo(mask.row(i));
     }
 
-    // 余弦相似度筛选
     mRefToThisMatches.clear();
     pTracker->mpMatcher->search(mpRefFrame->mDesc0, mDesc0, mask, mRefToThisMatches);
     if (mRefToThisMatches.empty()) LOG(WARNING) << "No matches found";
@@ -192,6 +190,10 @@ void Frame::process() {
   // Keyframe: 信息扩充
   if (is_keyframe) {
 
+    // 标记为关键帧
+    mpSystem->get_cur_map()->insert_keyframe(pCurFrame);
+    mpSystem->set_desc("id-key", mIdKey);
+
     // Stereo: 检测右相机特征, 三角化地图点
     if (pTracker->is_stereo()) {
       match_stereo(lap_cnt0);
@@ -200,10 +202,6 @@ void Frame::process() {
       // todo Monocular: 清理地图点, 扩充地图点
 
     }
-
-    // 标记为关键帧
-    mpSystem->get_cur_map()->insert_keyframe(pCurFrame);
-    mpSystem->set_desc("id-key", mIdKey);
   }
   pTracker->switch_state(TrackState::OK);
 }
