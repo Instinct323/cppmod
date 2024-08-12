@@ -38,7 +38,7 @@ public:
     explicit KannalaBrandt(const cv::Size imgSize, const Vectorf &intrinsics, const Vectorf &distCoeffs,
                            const Sophus::SE3f &T_cam_imu = Sophus::SE3f()
     ) : Base(imgSize, intrinsics, distCoeffs, T_cam_imu), mUnprojectCache(mImgSize, CV_32FC3) {
-      ASSERT(distCoeffs.size() == 4, "Distortion coefficients size must be 4")
+      assert(distCoeffs.size() == 4 && "Distortion coefficients size must be 4");
       make_unproject_cache();
     }
 

@@ -1,10 +1,11 @@
 #ifndef ZJCV__CAMERA_HPP
 #define ZJCV__CAMERA_HPP
 
+#include <yaml-cpp/yaml.h>
+
 #include "camera/base.hpp"
 #include "camera/kannala_brandt.hpp"
 #include "camera/pinhole.hpp"
-#include "utils/file.hpp"
 
 namespace camera {
 

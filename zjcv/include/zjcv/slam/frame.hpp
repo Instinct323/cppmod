@@ -1,9 +1,9 @@
 #ifndef ZJCV__SLAM__FRAME_HPP
 #define ZJCV__SLAM__FRAME_HPP
 
+#include <map>
 #include <opencv2/opencv.hpp>
 
-#include "utils/cv.hpp"
 #include "utils/sophus.hpp"
 #include "zjcv/imu.hpp"
 #include "zjcv/zjcv.hpp"
@@ -35,8 +35,7 @@ public:
 
     // Features
     ZJCV_BUILTIN std::vector<Eigen::Vector3f> mvUnprojs0, mvUnprojs1;
-    // todo: std::map<int, std::shared_ptr<Mappoint>> mmpMappts;
-    ZJCV_BUILTIN std::vector<std::shared_ptr<Mappoint>> mvpMappts;
+    ZJCV_BUILTIN std::map<int, std::shared_ptr<Mappoint>> mmpMappts;
 
     // Processed data
     ZJCV_BUILTIN Ptr mpRefFrame;
@@ -49,7 +48,7 @@ public:
     ZJCV_BUILTIN bool is_keyframe() { return mIdKey > 0; }
 
     // Triangulate the Mappoints according to the match
-    ZJCV_BUILTIN int stereo_triangulation(const Frame::Ptr &shared_this, const std::vector<cv::DMatch> &stereo_matches = {});
+    ZJCV_BUILTIN int stereo_triangulation(const Frame::Ptr &shared_this, const std::vector<cv::DMatch> &left2right = {});
 
     // Merge the Mappoints of the two Frames according to the match
     ZJCV_BUILTIN int connect_frame(Ptr &shared_this, Ptr &ref, std::vector<cv::DMatch> &ref2this);

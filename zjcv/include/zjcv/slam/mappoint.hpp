@@ -10,7 +10,6 @@
 #include "frame.hpp"
 #include "zjcv/zjcv.hpp"
 
-
 namespace slam {
 
 class System;
@@ -31,7 +30,7 @@ public:
     ZJCV_BUILTIN System *mpSystem;
 
     // Raw data
-    ZJCV_BUILTIN size_t mIdFrame;
+    ZJCV_BUILTIN size_t mIdVex = SIZE_MAX;
     ZJCV_BUILTIN parallel::atomic_ptr<std::vector<Observation>> apObs;
 
     // Processed data
@@ -58,8 +57,8 @@ public:
 
 protected:
     // Created by Frame, cleaned up by Map
-    ZJCV_BUILTIN explicit Mappoint(System *pSystem, size_t id_frame
-    ) : mpSystem(pSystem), mIdFrame(id_frame), apObs(new std::vector<Observation>) {}
+    ZJCV_BUILTIN explicit Mappoint(System *pSystem
+    ) : mpSystem(pSystem), apObs(new std::vector<Observation>) {}
 
 #ifdef ZJCV_ORB_SLAM
 #endif

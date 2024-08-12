@@ -1,6 +1,7 @@
 #include <boost/format.hpp>
 
 #include "utils/glog.hpp"
+#include "utils/pangolin.hpp"
 #include "zjcv/dataset/base.hpp"
 #include "zjcv/slam.hpp"
 

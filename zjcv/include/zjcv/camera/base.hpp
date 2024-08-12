@@ -35,7 +35,7 @@ public:
                   const Sophus::SE3f &T_cam_imu = Sophus::SE3f()
     ) : mImgSize(imgSize), mvParam(intrinsics), T_cam_imu(T_cam_imu) {
       // 内参: fx, fy, cx, cy
-      ASSERT(intrinsics.size() == 4, "Intrinsics size must be 4")
+      assert(intrinsics.size() == 4 && "Intrinsics size must be 4");
       mvParam.insert(mvParam.end(), distCoeffs.begin(), distCoeffs.end());
     }
 

@@ -21,14 +21,13 @@ float make_one2one(std::vector<cv::DMatch> &matches, bool ordered) {
   float org = matches.size();
 
   if (!ordered) std::sort(matches.begin(), matches.end());
-  std::set<int> query, train;
+  std::set<int> train;
 
   auto it = matches.begin();
   while (it != matches.end()) {
-    if (query.count(it->queryIdx) || train.count(it->trainIdx)) {
+    if (train.count(it->trainIdx)) {
       matches.erase(it);
     } else {
-      query.insert(it->queryIdx);
       train.insert(it->trainIdx);
       it++;
     }

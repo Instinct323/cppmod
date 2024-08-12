@@ -1,4 +1,3 @@
-#include "utils/glog.hpp"
 #include "utils/sophus.hpp"
 #include "zjcv/imu.hpp"
 
@@ -21,11 +20,11 @@ void Preintegration::reset(double tStart) {
 
 
 void Preintegration::integrate(const double &tCurframe, const std::vector<double> &vTimestamp, const std::vector<Sample> &vSample) {
-  ASSERT(vTimestamp.size() == vSample.size(), "Preintegration: The size of vTimestamp and vSample must be equal")
+  assert(vTimestamp.size() == vSample.size() && "Preintegration: The size of vTimestamp and vSample must be equal");
   size_t n = vTimestamp.size();
   if (n > 0) {
-    ASSERT(mtEnd <= vTimestamp[0] && vTimestamp[n - 1] <= tCurframe,
-           "Preintegration: timestamp must be in ascending order")
+    assert(mtEnd <= vTimestamp[0] && vTimestamp[n - 1] <= tCurframe &&
+           "Preintegration: timestamp must be in ascending order");
     int cnt = mMeasurements.size();
     if (n == 1) {
       mMeasurements.emplace_back(tCurframe - mtEnd, vSample[0]);

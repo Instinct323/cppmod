@@ -1,6 +1,7 @@
 #include <g2o/solvers/dense/linear_solver_dense.h>
 #include <g2o/solvers/eigen/linear_solver_eigen.h>
 
+#include "utils/pangolin.hpp"
 #include "utils/sophus.hpp"
 #include "zjcv/slam.hpp"
 
@@ -35,7 +36,7 @@ System::System(const YAML::Node &cfg
 
 
 void System::run() {
-  ASSERT(parallel::thread_pool_size > 2, "The hardware concurrency is insufficient, please adjust the thread limit manually")
+  assert(parallel::thread_pool_size > 2 && "The hardware concurrency is insufficient, please adjust the thread limit manually");
   mbRunning = true;
   mThreads["tracker"] = parallel::thread_pool.emplace(0, &Tracker::run, mpTracker);
   mThreads["viewer"] = parallel::thread_pool.emplace(0, &Viewer::run, mpViewer);
@@ -59,18 +60,18 @@ Tracker::Tracker(System *pSystem, const YAML::Node &cfg
     mpCam0(camera::from_yaml(cfg["cam0"])), mpCam1(camera::from_yaml(cfg["cam1"])),
     mpIMU(IMU::Device::from_yaml(cfg["imu"])) {
 
-  ASSERT(!is_inertial(), "Not implemented")
-  ASSERT(mpCam0, "Camera0 not found")
+  assert(!is_inertial() && "Not implemented");
+  assert(mpCam0 && "Camera0 not found");
   if (is_stereo()) {
     // 校对相机类型
-    ASSERT(mpCam0->get_type() == mpCam1->get_type(), "Camera0 and Camera1 must be the same type")
+    assert(mpCam0->get_type() == mpCam1->get_type() && "Camera0 and Camera1 must be the same type");
   }
 }
 
 
 void Tracker::grab_image(const double &timestamp, const cv::Mat &img0, const cv::Mat &img1) {
-  ASSERT(!is_inertial() || timestamp <= mpIMUpreint->mtEnd, "Grab image before IMU data is integrated")
-  ASSERT(is_monocular() == img1.empty(), "Invalid image pair")
+  assert(!is_inertial() || timestamp <= mpIMUpreint->mtEnd && "Grab image before IMU data is integrated");
+  assert(is_monocular() == img1.empty() && "Invalid image pair");
   mpLastFrame = mpCurFrame;
   mpCurFrame = std::make_shared<feature::Frame>(mpSystem, timestamp, img0, img1);
   mpCurFrame->process();
@@ -79,7 +80,7 @@ void Tracker::grab_image(const double &timestamp, const cv::Mat &img0, const cv:
 
 void Tracker::grab_imu(const double &tCurframe, const std::vector<double> &vTimestamp, const std::vector<IMU::Sample> &vSample) {
   if (!mpIMUpreint) {
-    ASSERT(is_inertial(), "Not inertial tracker")
+    assert(is_inertial() && "Not inertial tracker");
     mpIMUpreint = std::make_shared<IMU::Preintegration>(mpIMU.get(), vTimestamp.empty() ? tCurframe : vTimestamp[0]);
   }
   mpIMUpreint->integrate(tCurframe, vTimestamp, vSample);
@@ -106,7 +107,7 @@ Viewer::Viewer(System *pSystem, const YAML::Node &cfg
     imu_size(cfg["imu_size"].as<float>()), mp_size(cfg["mp_size"].as<float>()), trail_size(cfg["trail_size"].as<size_t>()),
     lead_color(YAML::toEigen<float>(cfg["lead_color"])), trail_color(YAML::toEigen<float>(cfg["trail_color"])),
     mp_color(YAML::toEigen<float>(cfg["mp_color"])) {
-  ASSERT(delay > 0, "Viewer: The delay must be greater than 0")
+  assert(delay > 0 && "Viewer: The delay must be greater than 0");
 }
 
 
@@ -125,9 +126,9 @@ Frame::Frame(System *pSystem, const double &timestamp,
     mpRefFrame(pSystem->mpTracker->mpRefFrame), mJoint(&mPose.T_world_imu) {}
 
 
-int Frame::stereo_triangulation(const Frame::Ptr &shared_this, const std::vector<cv::DMatch> &stereo_matches) {
+int Frame::stereo_triangulation(const Frame::Ptr &shared_this, const std::vector<cv::DMatch> &left2right) {
   std::atomic_int cnt = 0;
-  if (!stereo_matches.empty()) {
+  if (!left2right.empty()) {
     const Sophus::SE3f &T_cam0_cam1 = mpSystem->mpTracker->mpCam1->T_cam_imu.inverse() * mpSystem->mpTracker->mpCam0->T_cam_imu,
         Identity,
         T_cam0_world = mPose.T_imu_world * mpSystem->mpTracker->mpCam0->T_cam_imu;
@@ -140,14 +141,15 @@ int Frame::stereo_triangulation(const Frame::Ptr &shared_this, const std::vector
           cnt += 1;
           mvUnprojs0[i][2] = -P_cam0[2];
           // 创建地图点
-          if (!mvpMappts[i]) {
-            mvpMappts[i] = mpSystem->get_cur_map()->create_mappoint(mId);
-            mvpMappts[i]->add_obs(shared_this, i);
+          auto it = mmpMappts.find(i);
+          if (it == mmpMappts.end()) {
+            it = mmpMappts.insert({i, mpSystem->get_cur_map()->create_mappoint()}).first;
+            it->second->add_obs(shared_this, i);
           }
-          mvpMappts[i]->set_pos(T_cam0_world * P_cam0);
+          it->second->set_pos(T_cam0_world * P_cam0);
         }
     };
-    for (auto m: stereo_matches) {
+    for (auto m: left2right) {
       int i = m.queryIdx, j = m.trainIdx;
       // 余弦判断
       const Eigen::Vector3f &P0_cam0 = mvUnprojs0[i], &P1_cam1 = mvUnprojs1[j];
@@ -167,24 +169,24 @@ int Frame::connect_frame(Frame::Ptr &shared_this, Frame::Ptr &ref, std::vector<c
   int n = std::min(int(ref2this.size()), mpSystem->mpTracker->MAX_MATCHES);
   for (int i = 0; i < n; ++i) {
     const cv::DMatch &m = ref2this[i];
-    auto mpit_ref = ref->mvpMappts.begin() + m.queryIdx;
-    auto mpit_cur = mvpMappts.begin() + m.trainIdx;
+    auto mpit_ref = ref->mmpMappts.find(m.queryIdx);
+    auto mpit_cur = mmpMappts.find(m.trainIdx);
     // 合并: 当前帧 -> 参考帧
-    if (*mpit_ref) {
-      if (*mpit_cur) {
-        (*mpit_ref)->merge((*mpit_ref), (*mpit_cur));
+    if (mpit_ref != ref->mmpMappts.end()) {
+      if (mpit_cur != mmpMappts.end()) {
+        mpit_ref->second->merge(mpit_ref->second, mpit_cur->second);
       } else {
-        (*mpit_ref)->add_obs(shared_this, m.trainIdx);
+        mpit_ref->second->add_obs(shared_this, m.trainIdx);
       }
-      *mpit_cur = *mpit_ref;
+      mmpMappts[m.trainIdx] = mpit_ref->second;
     } else {
       // 合并: 参考帧 -> 当前帧
-      if (!*mpit_cur) {
-        *mpit_cur = mpSystem->get_cur_map()->create_mappoint(ref->mId);
-        (*mpit_cur)->add_obs(shared_this, m.trainIdx);
+      if (mpit_cur == mmpMappts.end()) {
+        mpit_cur = mmpMappts.insert({m.trainIdx, mpSystem->get_cur_map()->create_mappoint()}).first;
+        mpit_cur->second->add_obs(shared_this, m.trainIdx);
       }
-      (*mpit_cur)->add_obs(ref, m.queryIdx);
-      *mpit_ref = *mpit_cur;
+      mpit_cur->second->add_obs(ref, m.queryIdx);
+      ref->mmpMappts[m.queryIdx] = mpit_cur->second;
     }
   }
   return n;
@@ -194,12 +196,10 @@ int Frame::connect_frame(Frame::Ptr &shared_this, Frame::Ptr &ref, std::vector<c
 void Frame::mark_keyframe() {
   if (mIdKey > KEY_COUNT) return;
   mIdKey = ++KEY_COUNT;
-  for (Mappoint::Ptr &m: mvpMappts) {
-    if (m) {
-      if (m->is_invalid()) {
-        m->clear();
-      } else { mnMappts++; }
-    }
+  for (auto &pair: mmpMappts) {
+    if (pair.second->is_invalid()) {
+      pair.second->clear();
+    } else { mnMappts++; }
   }
   mImg1 = cv::Mat();
   mvUnprojs1.clear();
@@ -226,8 +226,8 @@ void Frame::show_in_opengl(float imu_size, const float *imu_color, bool show_cam
 
 
 // Map
-Mappoint::Ptr Map::create_mappoint(size_t id_frame) {
-  auto pMappt = std::shared_ptr<Mappoint>(new Mappoint(mpSystem, id_frame));
+Mappoint::Ptr Map::create_mappoint() {
+  auto pMappt = std::shared_ptr<Mappoint>(new Mappoint(mpSystem));
   parallel::ScopedLock lock(apTmpMappts.mutex);
   apTmpMappts->push_back(pMappt);
   return pMappt;
@@ -235,7 +235,6 @@ Mappoint::Ptr Map::create_mappoint(size_t id_frame) {
 
 
 void Map::insert_keyframe(const std::shared_ptr<Frame> &pKF) {
-  pKF->mark_keyframe();
   mpSystem->mpTracker->mpRefFrame = mpSystem->mpTracker->mpCurFrame;
   {
     parallel::ScopedLock lock(apKeyFrames.mutex);
@@ -276,8 +275,7 @@ void Map::local_mapping() {
   auto it_frame_beg = apKeyFrames->begin() + miKeyFrame;
   feature::BundleAdjustment<g2o::LinearSolverEigen> ba(
       mpSystem->mpTracker->mpCam0->T_cam_imu, (*it_frame_beg)->mId, false,
-      it_frame_beg, apKeyFrames->end(),
-      apMappts->begin() + miMappt, apMappts->end()
+      it_frame_beg, apKeyFrames->end()
   );
   // 记录优化的终点
   miKeyFrame = apKeyFrames->size();
@@ -302,7 +300,7 @@ void Map::draw(Frame::Ptr pCurFrame) const {
   if (pCurFrame) {
     pCurFrame->show_in_opengl(viewer->imu_size, viewer->lead_color.data());
     parallel::ScopedLock lock(apKeyFrames.mutex);
-    if (apKeyFrames->size()) {
+    if (!apKeyFrames->empty()) {
       glColor3fv(viewer->trail_color.data());
       glBegin(GL_LINES);
       glVertex3fv(pCurFrame->get_pos().data());
@@ -385,7 +383,7 @@ void Mappoint::erase_obs(const Frame::Ptr &pFrame) {
     if (it->first.expired()) continue;
     if (it->first.lock() == pFrame) {
       apObs->erase(it);
-      pFrame->mvpMappts[it->second] = nullptr;
+      pFrame->mmpMappts.erase(it->second);
       return;
     }
   }
@@ -402,7 +400,7 @@ void Mappoint::clear() {
   parallel::ScopedLock lock(apObs.mutex);
   for (auto [wpf, i]: *apObs) {
     if (wpf.expired()) continue;
-    wpf.lock()->mvpMappts[i] = nullptr;
+    wpf.lock()->mmpMappts.erase(i);
   }
   apObs->clear();
 }
@@ -413,7 +411,7 @@ void Mappoint::merge(Mappoint::Ptr &shared_this, Mappoint::Ptr &other) {
   apObs->insert(apObs->end(), other->apObs->begin(), other->apObs->end());
   for (auto &[wpf, idx]: *other->apObs) {
     if (wpf.expired()) continue;
-    wpf.lock()->mvpMappts[idx] = shared_this;
+    wpf.lock()->mmpMappts[idx] = shared_this;
   }
   other->apObs->clear();
   if (mbBad && !other->mbBad) set_pos(other->mPos);
@@ -421,17 +419,18 @@ void Mappoint::merge(Mappoint::Ptr &shared_this, Mappoint::Ptr &other) {
 
 
 // optimize
+template<template<typename> class LinearSolverTp>
+std::mutex BundleAdjustment<LinearSolverTp>::mtxIdVex;
+
+
 bool optimize_pose(System *pSystem, const Frame::Ptr &pFrame, const Frame::Ptr &pRefFrame, bool only_pose) {
   std::vector<std::shared_ptr<Frame>> vpFrames = {pFrame};
   if (!only_pose) vpFrames.push_back(pRefFrame);
-  auto &apMappts = pSystem->get_cur_map()->apTmpMappts;
 
   // 优化对象: 当前帧, 临时地图点
-  apMappts.mutex.lock();
   BundleAdjustment<g2o::LinearSolverDense> ba(
       pSystem->mpTracker->mpCam0->T_cam_imu, pRefFrame->mId, only_pose,
-      vpFrames.begin(), vpFrames.end(), apMappts->begin(), apMappts->end());
-  apMappts.mutex.unlock();
+      vpFrames.begin(), vpFrames.end());
 
   // 去除无效点; 粗筛外点, 去除负深度点; 精筛外点; 精化位姿
   for (int i = 0; i < 4; ++i) {
@@ -443,7 +442,6 @@ bool optimize_pose(System *pSystem, const Frame::Ptr &pFrame, const Frame::Ptr &
     ba.outlier_rejection(i >= 1);
     pSystem->set_desc("ba-edges", ba.edges().size());
   }
-  parallel::ScopedLock lock(apMappts.mutex);
   ba.apply_result();
   return true;
 }

@@ -2,10 +2,7 @@
 #define UTILS__ORB_HPP
 
 #include <opencv2/opencv.hpp>
-#include <utility>
 #include <yaml-cpp/yaml.h>
-
-#include "glog.hpp"
 
 namespace ORB {
 
@@ -27,8 +24,8 @@ public:
               int nlevels = 8,
               std::pair<int, int> lappingArea = {-1, -1}
     ) : mpExtractor(cv::ORB::create(nfeatures, scaleFactor, nlevels)), mLappingArea(std::move(lappingArea)) {
-      ASSERT((mLappingArea.first == -1 && mLappingArea.second == -1) ||
-             (0 <= mLappingArea.first < mLappingArea.second), "Invalid lapping area")
+      assert((mLappingArea.first == -1 && mLappingArea.second == -1) ||
+             (0 <= mLappingArea.first < mLappingArea.second) && "Invalid lapping area");
     }
 
     /**

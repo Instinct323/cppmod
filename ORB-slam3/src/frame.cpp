@@ -1,10 +1,8 @@
 #include <boost/format.hpp>
 #include <memory>
 
+#include "utils/cv.hpp"
 #include "utils/eigen.hpp"
-
-#define ZJCV_ORB_SLAM
-
 #include "zjcv/slam.hpp"
 
 #define GRID_SIZE 32
@@ -24,7 +22,7 @@ bool Frame::monocular_init(float &ref_radio, Frame::Ptr pCurFrame) {
     grid_dict(pt.x, pt.y, 0).copyTo(mask.row(i));
   }
 
-  pTracker->mpMatcher->search_with_lowe(mpRefFrame->mDesc0, mDesc0, mask.t(), mRefToThisMatches);
+  pTracker->mpMatcher->search(mpRefFrame->mDesc0, mDesc0, mask, mRefToThisMatches);
   cv::make_one2one(mRefToThisMatches, true);
   ok = mRefToThisMatches.size() > pTracker->MIN_MATCHES;
 
@@ -84,7 +82,6 @@ void Frame::match_stereo(int lap_cnt0) {
 
 bool Frame::match_previous(float &ref_radio) {
   Tracker::Ptr &pTracker = mpSystem->mpTracker;
-  auto &ref_mappts = mpRefFrame->mvpMappts;
   const camera::Base::Ptr &pCam0 = pTracker->mpCam0;
 
   // 利用已有地图点进行匹配
@@ -94,12 +91,12 @@ bool Frame::match_previous(float &ref_radio) {
     cv::Mat_<uchar> mask(mpRefFrame->mvKps0.size(), mvKps0.size(), uchar(0));
 
     // 将地图点投影到当前帧
-    for (int i = 0; i < ref_mappts.size(); ++i) {
-      if (!ref_mappts[i] || ref_mappts[i]->is_invalid()) continue;
-      ref_mappts[i]->prune();
-      cv::Point2f pt = pCam0->project(T_world_cam0 * ref_mappts[i]->mPos);
+    for (auto &pair: mpRefFrame->mmpMappts) {
+      if (pair.second->is_invalid()) continue;
+      pair.second->prune();
+      cv::Point2f pt = pCam0->project(T_world_cam0 * pair.second->mPos);
       if (pt.x < 0 || pt.x >= mImg0.cols || pt.y < 0 || pt.y >= mImg0.rows) continue;
-      grid_dict(pt.x, pt.y, d).copyTo(mask.row(i));
+      grid_dict(pt.x, pt.y, d).copyTo(mask.row(pair.first));
     }
 
     mRefToThisMatches.clear();
@@ -132,7 +129,6 @@ void Frame::process() {
   pCam0->undistort(mvKps0, mvKps0);
   mvUnprojs0.reserve(mvKps0.size());
   for (auto &i: mvKps0) mvUnprojs0.push_back(pCam0->unproject(i.pt));
-  mvpMappts = std::vector<std::shared_ptr<Mappoint>>(mvUnprojs0.size(), nullptr);
 
   // motion model: 初始化位姿
   if (pLastFrame) {
@@ -189,10 +185,7 @@ void Frame::process() {
 
   // Keyframe: 信息扩充
   if (is_keyframe) {
-
-    // 标记为关键帧
     mpSystem->get_cur_map()->insert_keyframe(pCurFrame);
-    mpSystem->set_desc("id-key", mIdKey);
 
     // Stereo: 检测右相机特征, 三角化地图点
     if (pTracker->is_stereo()) {
@@ -202,6 +195,10 @@ void Frame::process() {
       // todo Monocular: 清理地图点, 扩充地图点
 
     }
+
+    // 标记为关键帧
+    mark_keyframe();
+    mpSystem->set_desc("id-key", mIdKey);
   }
   pTracker->switch_state(TrackState::OK);
 }

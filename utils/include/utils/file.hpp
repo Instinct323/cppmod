@@ -6,7 +6,6 @@
 #include <yaml-cpp/yaml.h>
 
 #include "eigen.hpp"
-#include "glog.hpp"
 
 namespace CSV {
 
@@ -36,7 +35,7 @@ void assert_matrix(const Node &node);
 // std::vector 转换
 template<typename T>
 std::vector<T> toVec(const YAML::Node &node) {
-  ASSERT(node.IsSequence(), "YAML: Invalid vector format")
+  assert(node.IsSequence() && "YAML: Invalid vector format");
   std::vector<T> vec;
   for (const auto &x: node) vec.push_back(x.as<T>());
   return vec;
@@ -85,7 +84,7 @@ Sophus::SE3<T> toSE3(const Node &node) {
     Eigen::MatrixX<T> matn4 = Eigen::reshape<T>(mat, -1, 4);
     return {Eigen::Quaternion<T>(matn4.template block<3, 3>(0, 0)), matn4.template block<3, 1>(0, 3)};
   }
-  LOG(FATAL) << "YAML: Invalid SE3 format";
+  throw std::invalid_argument("YAML: Invalid SE3 format");
 }
 
 }

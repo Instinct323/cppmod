@@ -6,7 +6,10 @@
 
 #include "zjcv/camera.hpp"
 #include "zjcv/imu.hpp"
+
+#ifdef ZJCV_ORB_SLAM
 #include "utils/orb.hpp"
+#endif
 
 namespace slam {
 
@@ -64,8 +67,8 @@ public:
       mpExtractor0 = ORB::Extractor::from_yaml(cfg["orb0"]);
       mpExtractor1 = ORB::Extractor::from_yaml(cfg["orb1"]);
       mpMatcher = ORB::Matcher::from_yaml(cfg["matcher"]);
-      ASSERT(mpExtractor0, "Extractor0 not found")
-      ASSERT((!mpCam1) == (!mpExtractor1), "miss match between Camera1 and Extractor1")
+      assert(mpExtractor0 && "Extractor0 not found");
+      assert((!mpCam1) == (!mpExtractor1) && "miss match between Camera1 and Extractor1");
     }
 #endif
 

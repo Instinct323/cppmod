@@ -1,5 +1,4 @@
 #include <fstream>
-#include <yaml-cpp/yaml.h>
 
 #include "utils/file.hpp"
 #include "utils/glog.hpp"
@@ -67,7 +66,7 @@ void assert_matrix(const Node &node) {
       }
     }
   }
-  if (!flag) LOG(FATAL) << "YAML: Invalid matrix format";
+  if (!flag) throw std::invalid_argument("YAML: Invalid matrix format");
 }
 
 }

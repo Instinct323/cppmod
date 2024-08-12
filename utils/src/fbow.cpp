@@ -1,4 +1,5 @@
 #include "utils/fbow.hpp"
+#include "utils/glog.hpp"
 #include "utils/indicators.hpp"
 #include "utils/parallel.hpp"
 

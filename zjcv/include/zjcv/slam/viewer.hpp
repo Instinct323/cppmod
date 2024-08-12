@@ -3,10 +3,6 @@
 
 #include <yaml-cpp/yaml.h>
 
-#include "utils/file.hpp"
-#include "utils/glog.hpp"
-#include "utils/pangolin.hpp"
-
 namespace slam {
 
 

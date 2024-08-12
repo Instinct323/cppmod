@@ -3,8 +3,6 @@
 
 #include <Eigen/Core>
 
-#include "glog.hpp"
-
 namespace math {
 
 // clamp
@@ -112,7 +110,7 @@ public:
 
     // 返回切片索引
     std::pair<int, int> operator()(T value) {
-      ASSERT(mIndex < mpValues->size(), "ValueSlicer: The slicer has expired")
+      assert(mIndex < mpValues->size() && "ValueSlicer: The slicer has expired");
       int i = mIndex;
       for (; mIndex < mpValues->size(); ++mIndex) {
         if (!mCompare(mpValues->operator[](mIndex), value)) break;

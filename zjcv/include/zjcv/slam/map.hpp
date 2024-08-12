@@ -32,7 +32,7 @@ public:
     ) : mpSystem(pSystem), apKeyFrames(new std::vector<std::shared_ptr<Frame>>),
         apMappts(new std::vector<std::weak_ptr<Mappoint>>), apTmpMappts(new std::vector<std::weak_ptr<Mappoint>>) {}
 
-    ZJCV_BUILTIN Mappoint::Ptr create_mappoint(size_t id_frame);
+    ZJCV_BUILTIN Mappoint::Ptr create_mappoint();
 
     ZJCV_BUILTIN void insert_keyframe(const std::shared_ptr<Frame> &pKF);
 

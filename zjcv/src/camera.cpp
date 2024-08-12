@@ -1,4 +1,5 @@
 #include "utils/cv.hpp"
+#include "utils/file.hpp"
 #include "zjcv/camera.hpp"
 
 namespace camera {

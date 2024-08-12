@@ -1,4 +1,3 @@
-#include "utils/glog.hpp"
 #include "utils/sophus.hpp"
 
 namespace Sophus {

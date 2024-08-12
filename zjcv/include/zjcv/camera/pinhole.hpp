@@ -25,7 +25,7 @@ public:
     explicit Pinhole(const cv::Size imgSize, const Vectorf &intrinsics, const Vectorf &distCoeffs,
                      const Sophus::SE3f &T_cam_imu = Sophus::SE3f()
     ) : Base(imgSize, intrinsics, distCoeffs, T_cam_imu), mOrgK(getK()) {
-      ASSERT(distCoeffs.size() >= 4, "Distortion coefficients size must be at least 4")
+      assert(distCoeffs.size() >= 4 && "Distortion coefficients size must be at least 4");
       // 计算畸变矫正映射
       cv::initUndistortRectifyMap(mOrgK, distCoeffs, cv::Mat(), mOrgK, mImgSize, CV_32FC1, mMap1, mMap2);
     }

@@ -2,7 +2,6 @@
 
 #include "utils/cv.hpp"
 #include "utils/file.hpp"
-#include "utils/math.hpp"
 #include "utils/orb.hpp"
 
 namespace ORB {
