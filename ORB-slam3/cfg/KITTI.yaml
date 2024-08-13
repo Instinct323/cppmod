@@ -44,13 +44,17 @@ tracker:
     drop: 0.1
 
 
+atlas:
+  local_frames: 4
+
+
 viewer:
   fps: 45
   title: "Feature Map"
   resolution: [ 640, 480 ]
   panel_ratio: 0.
   camera_focal: 150
-  view_point: [ -0.5, 3.5, 2.5 ]
+  view_point: [ -0.5, -3.5, 2.5 ]
   view_up_axis: 6
 
   imu_size: 0.3

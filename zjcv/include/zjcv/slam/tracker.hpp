@@ -28,16 +28,16 @@ public:
 
     ZJCV_BUILTIN System *mpSystem;
 
-    // 配置参数
+    // Config
     ZJCV_BUILTIN const int MIN_MATCHES, MAX_MATCHES;
     ZJCV_BUILTIN const float KEY_MATCHES_RADIO;
     ZJCV_BUILTIN const double LOST_TIMEOUT;
 
-    // 设备信息
+    // Device
     ZJCV_BUILTIN const camera::Base::Ptr mpCam0, mpCam1;
     ZJCV_BUILTIN const IMU::Device::Ptr mpIMU;
 
-    // 帧信息
+    // Frames
     ZJCV_BUILTIN std::shared_ptr<feature::Frame> mpLastFrame, mpCurFrame, mpRefFrame;
     ZJCV_BUILTIN IMU::Preintegration::Ptr mpIMUpreint;
     ZJCV_BUILTIN TrackState mState = LOST;

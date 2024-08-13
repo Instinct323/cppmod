@@ -22,6 +22,7 @@ public:
     ZJCV_BUILTIN typedef std::shared_ptr<Map> Ptr;
 
     ZJCV_BUILTIN System *mpSystem;
+    ZJCV_BUILTIN std::mutex mPosesMutex;
 
     // Memory
     ZJCV_BUILTIN int miKeyFrame = 0, miMappt = 0;
@@ -34,14 +35,13 @@ public:
 
     ZJCV_BUILTIN Mappoint::Ptr create_mappoint();
 
-    ZJCV_BUILTIN void insert_keyframe(const std::shared_ptr<Frame> &pKF);
+    ZJCV_BUILTIN bool insert_keyframe(const std::shared_ptr<Frame> &pKF);
+
+    ZJCV_BUILTIN void prune_mappts(int begin);
 
     ZJCV_BUILTIN void local_mapping();
 
     ZJCV_BUILTIN void draw(Frame::Ptr pCurFrame = nullptr) const;
-
-protected:
-    ZJCV_BUILTIN void prune_mappts();
 
 #ifdef ZJCV_ORB_SLAM
 #endif

@@ -51,6 +51,10 @@ tracker:
     drop: 0.1
 
 
+atlas:
+  local_frames: 5
+
+
 viewer:
   fps: 45
   title: "Feature Map"

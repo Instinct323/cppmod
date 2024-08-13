@@ -18,13 +18,23 @@ feature::Map::Ptr Atlas::create_map() {
 
 void Atlas::run() {
   while (mpSystem->mbRunning) {
-    sleep(1);
-    feature::Map::Ptr cur_map = mpCurMap;
-    if (cur_map->apKeyFrames->size() > cur_map->miKeyFrame + 5) {
-      cur_map->local_mapping();
+    int n_kf = mpCurMap->apKeyFrames->size();
+    mpSystem->set_desc("n-kf", n_kf);
+    int raw_kf = n_kf - mpCurMap->miKeyFrame;
+    mpSystem->set_desc("raw-kf", raw_kf);
+
+    if (!mbSleep) {
+      feature::Map::Ptr cur_map = mpCurMap;
+      if (raw_kf >= LOCAL_FRAMES) {
+        cur_map->local_mapping();
+      }
+      usleep(50000);
     }
-    // todo: 调用 Map 类内方法优化关键帧及地图点
-    LOG(FATAL) << "Not implemented";
+
+    if (mbSleep) {
+      mbSleep = false;
+      sleep(4);
+    }
   }
 }
 
@@ -72,7 +82,10 @@ Tracker::Tracker(System *pSystem, const YAML::Node &cfg
 void Tracker::grab_image(const double &timestamp, const cv::Mat &img0, const cv::Mat &img1) {
   assert(!is_inertial() || timestamp <= mpIMUpreint->mtEnd && "Grab image before IMU data is integrated");
   assert(is_monocular() == img1.empty() && "Invalid image pair");
+
+  parallel::ScopedLock lock(mpSystem->get_cur_map()->mPosesMutex);
   mpLastFrame = mpCurFrame;
+  if (mpLastFrame) mpLastFrame->update_pose();
   mpCurFrame = std::make_shared<feature::Frame>(mpSystem, timestamp, img0, img1);
   mpCurFrame->process();
 }
@@ -234,12 +247,13 @@ Mappoint::Ptr Map::create_mappoint() {
 }
 
 
-void Map::insert_keyframe(const std::shared_ptr<Frame> &pKF) {
-  mpSystem->mpTracker->mpRefFrame = mpSystem->mpTracker->mpCurFrame;
-  {
-    parallel::ScopedLock lock(apKeyFrames.mutex);
-    apKeyFrames->push_back(pKF);
+bool Map::insert_keyframe(const std::shared_ptr<Frame> &pKF) {
+  if (!apKeyFrames.mutex.try_lock()) {
+    mpSystem->mpAtlas->set_sleep();
+    return false;
   }
+  apKeyFrames->push_back(pKF);
+  mpSystem->mpTracker->mpRefFrame = mpSystem->mpTracker->mpCurFrame;
   // 整理临时地图点
   parallel::ScopedLock lock0(apMappts.mutex), lock1(apTmpMappts.mutex);
   apMappts->reserve(apMappts->size() + apTmpMappts->size());
@@ -251,12 +265,14 @@ void Map::insert_keyframe(const std::shared_ptr<Frame> &pKF) {
     if (pMappt->apObs->size() < 2) continue;
     apMappts->push_back(wpMappt);
   }
+  apKeyFrames.mutex.unlock();
+  return true;
 }
 
 
-void Map::prune_mappts() {
+void Map::prune_mappts(int begin) {
   auto it = std::remove_if(
-      apMappts->begin() + miMappt, apMappts->end(),
+      apMappts->begin() + begin, apMappts->end(),
       [](const std::weak_ptr<Mappoint> &wpMappt) {
           // weak_ptr 失效 / 观测点不足
           if (wpMappt.expired()) return true;
@@ -268,28 +284,37 @@ void Map::prune_mappts() {
 
 
 void Map::local_mapping() {
-  // 清理地图点
-  apMappts.mutex.lock();
-  prune_mappts();
-  apKeyFrames.mutex.lock();
+  // fixme
+  parallel::ScopedLock lock(apKeyFrames.mutex);
   auto it_frame_beg = apKeyFrames->begin() + miKeyFrame;
   feature::BundleAdjustment<g2o::LinearSolverEigen> ba(
       mpSystem->mpTracker->mpCam0->T_cam_imu, (*it_frame_beg)->mId, false,
       it_frame_beg, apKeyFrames->end()
   );
-  // 记录优化的终点
-  miKeyFrame = apKeyFrames->size();
-  miMappt = apMappts->size();
-  apMappts.mutex.unlock();
-  apMappts.mutex.unlock();
+  ba.setForceStopFlag(&mpSystem->mpAtlas->mbSleep);
   // 优化并应用结果
-  ba.setVerbose(true);
+  int i = 0;
   ba.reset();
-  ba.initializeOptimization(0);
-  ba.optimize(10);
-  ba.outlier_rejection(true);
-  ba.apply_result();
-  ba.print_edge();
+  for (; i < 2; i++) {
+    ba.initializeOptimization(0);
+    ba.optimize(10);
+    ba.outlier_rejection(true);
+    // 中途退出
+    if (mpSystem->mpAtlas->mbSleep) break;
+  }
+  if (i > 0) {
+    {
+      parallel::ScopedLock lock1(mPosesMutex);
+      ba.apply_result();
+    }
+    miKeyFrame = apKeyFrames->size();
+    // 清理地图点
+    {
+      parallel::ScopedLock lock1(apMappts.mutex);
+      prune_mappts(miMappt);
+      miMappt = apMappts->size();
+    }
+  }
 }
 
 
@@ -297,34 +322,35 @@ void Map::draw(Frame::Ptr pCurFrame) const {
   Viewer::Ptr &viewer = mpSystem->mpViewer;
   assert(viewer);
   // Current Frame
+  auto kf_end = apKeyFrames->end();
+  auto &kf_back = *(kf_end - 1);
+  size_t kf_size = apKeyFrames->size();
   if (pCurFrame) {
     pCurFrame->show_in_opengl(viewer->imu_size, viewer->lead_color.data());
-    parallel::ScopedLock lock(apKeyFrames.mutex);
-    if (!apKeyFrames->empty()) {
+    if (kf_size) {
       glColor3fv(viewer->trail_color.data());
       glBegin(GL_LINES);
       glVertex3fv(pCurFrame->get_pos().data());
-      glVertex3fv(apKeyFrames->back()->get_pos().data());
+      glVertex3fv(kf_back->get_pos().data());
       glEnd();
     }
   }
   // Frame
   {
-    parallel::ScopedLock lock(apKeyFrames.mutex);
-    auto it_beg = apKeyFrames->end() - std::min(viewer->trail_size, apKeyFrames->size());
-    if (it_beg == apKeyFrames->end()) return;
-    for (auto it = it_beg; it != apKeyFrames->end(); ++it) {
+    auto it_beg = kf_end - std::min(viewer->trail_size, kf_size);
+    if (it_beg == kf_end) return;
+    for (auto it = it_beg; it != kf_end; ++it) {
       (*it)->show_in_opengl(viewer->imu_size, viewer->trail_color.data());
     }
-    if (it_beg + 1 != apKeyFrames->end()) {
+    if (it_beg + 1 != kf_end) {
       glColor3fv(viewer->trail_color.data());
       glBegin(GL_LINES);
       glVertex3fv((*it_beg)->get_pos().data());
-      for (auto it = it_beg + 1; it != apKeyFrames->end() - 1; ++it) {
+      for (auto it = it_beg + 1; it != kf_end - 1; ++it) {
         glVertex3fv((*it)->get_pos().data());
         glVertex3fv((*it)->get_pos().data());
       }
-      glVertex3fv(apKeyFrames->back()->get_pos().data());
+      glVertex3fv(kf_back->get_pos().data());
       glEnd();
     }
   }
@@ -383,7 +409,8 @@ void Mappoint::erase_obs(const Frame::Ptr &pFrame) {
     if (it->first.expired()) continue;
     if (it->first.lock() == pFrame) {
       apObs->erase(it);
-      pFrame->mmpMappts.erase(it->second);
+      auto itf = pFrame->mmpMappts.find(it->second);
+      if (itf->second.get() == this) pFrame->mmpMappts.erase(itf);
       return;
     }
   }
@@ -400,7 +427,9 @@ void Mappoint::clear() {
   parallel::ScopedLock lock(apObs.mutex);
   for (auto [wpf, i]: *apObs) {
     if (wpf.expired()) continue;
-    wpf.lock()->mmpMappts.erase(i);
+    auto pf = wpf.lock();
+    auto itf = pf->mmpMappts.find(i);
+    if (itf->second.get() == this) pf->mmpMappts.erase(itf);
   }
   apObs->clear();
 }

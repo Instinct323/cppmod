@@ -133,7 +133,7 @@ public:
     const Eigen::Vector4f thresh = {0, 3.841, 5.991, 7.815};
     Eigen::Matrix2d info2 = Eigen::Matrix2d::Identity();
     Eigen::Matrix3d info3 = Eigen::Matrix3d::Identity();
-    g2o::RobustKernelHuber *rk = nullptr;
+    // g2o::RobustKernelHuber *rk = nullptr;
 
     // Processed data
     std::vector<std::shared_ptr<Mappoint>> vMappts;
@@ -243,7 +243,7 @@ public:
       LOG(INFO) << "----- Edges -----";
     }
 
-    void apply_result() {
+    void apply_result(bool show_error = false) {
       // Frame: 位姿
       for (size_t i = 0; i < n_frames; ++i) {
         auto v = static_cast<g2o::VertexSE3Expmap *>(this->vertex(i));
@@ -258,6 +258,7 @@ public:
           if (v) pMappt->set_pos(v->estimate().cast<float>());
         }
       }
+      if (show_error) print_edge();
     }
 
 protected:
@@ -289,6 +290,7 @@ protected:
           vMappt = static_cast<Vertex *>(new g2o::VertexPointXYZ);
           vMappt->setId(n_frames + pMappt->mIdVex);
           vMappt->setFixed(false);
+          vMappt->setMarginalized(true);
           this->addVertex(vMappt);
         }
       } else if (!only_pose) {

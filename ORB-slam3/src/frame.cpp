@@ -5,7 +5,7 @@
 #include "utils/eigen.hpp"
 #include "zjcv/slam.hpp"
 
-#define GRID_SIZE 32
+#define GRID_SIZE 16
 
 namespace slam::feature {
 
@@ -129,13 +129,13 @@ void Frame::process() {
   pCam0->undistort(mvKps0, mvKps0);
   mvUnprojs0.reserve(mvKps0.size());
   for (auto &i: mvKps0) mvUnprojs0.push_back(pCam0->unproject(i.pt));
+  bool ok = mvKps0.size() >= pTracker->MIN_MATCHES;
 
   // motion model: 初始化位姿
   if (pLastFrame) {
     if (pTracker->is_inertial()) {
       mPose.predict_from(mpRefFrame->mPose, pTracker->mpIMUpreint.get());
     } else {
-      pLastFrame->update_pose();
       mPose.predict_from(pLastFrame->mPose);
     }
   } else {
@@ -143,7 +143,6 @@ void Frame::process() {
   }
 
   // feature matching: 修正位姿
-  bool ok = mvKps0.size() >= pTracker->MIN_MATCHES;
   if (ok && mpRefFrame) {
     mpSystem->set_desc("n-mappts", mpRefFrame->mnMappts);
     float ref_radio = 0.;
@@ -165,15 +164,9 @@ void Frame::process() {
     mpSystem->set_desc("ref-radio", (boost::format("%.2f") % ref_radio).str());
     // 根据位姿信息更新
     if (ok) {
-      pLastFrame->update_pose();
-      mPose.update_velocity(pLastFrame->mPose);
+      if (!pTracker->is_inertial()) mPose.update_velocity(pLastFrame->mPose);
       // Keyframe: 无效匹配比例 / 匹配成功率 衰减到临界
       if (ref_radio < pTracker->KEY_MATCHES_RADIO) is_keyframe = true;
-      // Common Frame: 修改位姿依赖 T_ref_cur = T_world_cur * T_ref_world
-      if (!is_keyframe) {
-        mJoint = Sophus::Joint(&mpRefFrame->mPose.T_world_imu,
-                               mPose.T_world_imu * mpRefFrame->mPose.T_imu_world);
-      }
     }
   }
 
@@ -184,9 +177,7 @@ void Frame::process() {
   }
 
   // Keyframe: 信息扩充
-  if (is_keyframe) {
-    mpSystem->get_cur_map()->insert_keyframe(pCurFrame);
-
+  if (is_keyframe && mpSystem->get_cur_map()->insert_keyframe(pCurFrame)) {
     // Stereo: 检测右相机特征, 三角化地图点
     if (pTracker->is_stereo()) {
       match_stereo(lap_cnt0);
@@ -198,7 +189,11 @@ void Frame::process() {
 
     // 标记为关键帧
     mark_keyframe();
-    mpSystem->set_desc("id-key", mIdKey);
+
+  } else if (mpRefFrame) {
+    // Common Frame: 修改位姿依赖 T_ref_cur = T_world_cur * T_ref_world
+    mJoint = Sophus::Joint(&mpRefFrame->mPose.T_world_imu,
+                           mPose.T_world_imu * mpRefFrame->mPose.T_imu_world);
   }
   pTracker->switch_state(TrackState::OK);
 }
