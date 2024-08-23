@@ -72,9 +72,9 @@ void calib_by_chessboard(std::vector<std::string> &filenames, cv::Mat &distCoeff
 
 void Base::draw_normalized_plane(const cv::Mat &src, cv::Mat &dst) const {
   undistort(src, dst);
-  cv::Mat npMap1 = cv::Mat(mImgSize, CV_32FC1), npMap2 = npMap1.clone();
+  cv::Mat npMap1 = cv::Mat(img_size, CV_32FC1), npMap2 = npMap1.clone();
   // 获取归一化平面边界 (桶形畸变)
-  float x, y, w, h, W = mImgSize.width - 1, H = mImgSize.height - 1;
+  float x, y, w, h, W = img_size.width - 1, H = img_size.height - 1;
   x = this->unproject({0, H / 2})[0], y = this->unproject({W / 2, 0})[1],
   w = this->unproject({W, H / 2})[0] - x, h = this->unproject({W / 2, H})[1] - y;
   LOG(INFO) << "Normalized plane: " << cv::Vec4f(x, y, x + w, y + h);
@@ -98,9 +98,9 @@ float KannalaBrandt::computeR(float theta) const {
 
 void KannalaBrandt::make_unproject_cache() {
   float wx, wy, wz;
-  for (int r = 0; r < mImgSize.height; ++r) {
+  for (int r = 0; r < img_size.height; ++r) {
     wy = (r - mvParam[3]) / mvParam[1];
-    for (int c = 0; c < mImgSize.width; ++c) {
+    for (int c = 0; c < img_size.width; ++c) {
       wx = (c - mvParam[2]) / mvParam[0];
       wz = this->solveWZ(wx, wy);
       mUnprojectCache.at<cv::Vec3f>(r, c) = {wx / wz, wy / wz, 1};

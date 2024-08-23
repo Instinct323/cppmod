@@ -22,18 +22,18 @@ enum CameraType {
 class Base {
 
 protected:
-    cv::Size mImgSize;
     Vectorf mvParam;
     cv::Mat mMap1, mMap2;   // 畸变矫正映射
 
 public:
+    const cv::Size img_size;
     const Sophus::SE3f T_cam_imu;
 
     typedef std::shared_ptr<Base> Ptr;
 
     explicit Base(const cv::Size imgSize, const Vectorf &intrinsics, const Vectorf &distCoeffs,
                   const Sophus::SE3f &T_cam_imu = Sophus::SE3f()
-    ) : mImgSize(imgSize), mvParam(intrinsics), T_cam_imu(T_cam_imu) {
+    ) : img_size(imgSize), mvParam(intrinsics), T_cam_imu(T_cam_imu) {
       // 内参: fx, fy, cx, cy
       assert(intrinsics.size() == 4 && "Intrinsics size must be 4");
       mvParam.insert(mvParam.end(), distCoeffs.begin(), distCoeffs.end());
@@ -54,6 +54,14 @@ public:
     inline size_t get_param_size() const { return mvParam.size(); }
 
     Vectorf get_distcoeffs() const { return {mvParam.begin() + 4, mvParam.end()}; }
+
+    // 像素判定
+    template<typename T>
+    inline bool is_in(const T x, const T y) const {
+      return x >= 0 && x < img_size.width && y >= 0 && y < img_size.height;
+    }
+
+    inline bool is_in(const cv::Point2f &pt) const { return is_in(pt.x, pt.y); }
 
     // 内参矩阵 K
 #define GETK(vp, K) (K << vp[0], 0.f, vp[2], 0.f, vp[1], vp[3], 0.f, 0.f, 1.f)

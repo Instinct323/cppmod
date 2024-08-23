@@ -33,7 +33,7 @@ public:
     }
 
     // groundtruth.txt
-    void load_poses(Timestamps &vTimestamps, Poses &vPoses, const std::string &file = "groundtruth.txt") {
+    void load_pose(Timestamps &vTimestamps, Poses &vPoses, const std::string &file = "groundtruth.txt") {
       assert(vTimestamps.empty() && vPoses.empty());
       TXT::row_mapping(
           mPath + file,

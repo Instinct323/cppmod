@@ -9,7 +9,7 @@
 namespace cv {
 
 // 删除 distance 偏大的匹配
-float drop_last(std::vector<cv::DMatch> &matches, float radio, bool ordered = false);
+float chi2_filter(std::vector<cv::DMatch> &matches, float chi2, bool ordered = false);
 
 // 使匹配一对一
 float make_one2one(std::vector<cv::DMatch> &matches, bool ordered = false);

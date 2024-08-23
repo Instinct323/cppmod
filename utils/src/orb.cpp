@@ -10,7 +10,8 @@ namespace ORB {
 // Extractor
 Extractor::Ptr Extractor::from_yaml(const YAML::Node &cfg) {
   if (YAML::is_invalid(cfg)) return nullptr;
-  auto area = YAML::toVec<int>(cfg["lapping_area"]);
+  std::vector<int> area = YAML::is_invalid(cfg["lapping_area"]) ?
+                          std::vector<int>{-1, -1} : YAML::toVec<int>(cfg["lapping_area"]);
   return Ptr(new Extractor(
       cfg["nfeatures"].as<int>(),
       cfg["scale_factor"].as<float>(),

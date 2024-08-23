@@ -35,6 +35,7 @@ public:
 
     // Device
     ZJCV_BUILTIN const camera::Base::Ptr mpCam0, mpCam1;
+    ZJCV_BUILTIN const float mDepthInvScale = -1;
     ZJCV_BUILTIN const IMU::Device::Ptr mpIMU;
 
     // Frames
@@ -44,11 +45,13 @@ public:
 
     ZJCV_BUILTIN explicit Tracker(System *pSystem, const YAML::Node &cfg);
 
-    ZJCV_BUILTIN inline bool is_inertial() const { return mpIMU != nullptr; }
-
     ZJCV_BUILTIN inline bool is_monocular() const { return mpCam1 == nullptr; }
 
     ZJCV_BUILTIN inline bool is_stereo() const { return mpCam1 != nullptr; }
+
+    ZJCV_BUILTIN inline bool is_depth() const { return mDepthInvScale > 0; }
+
+    ZJCV_BUILTIN inline bool is_inertial() const { return mpIMU != nullptr; }
 
     ZJCV_BUILTIN void grab_imu(const double &tCurframe, const std::vector<double> &vTimestamp, const std::vector<IMU::Sample> &vSample);
 
@@ -68,6 +71,7 @@ public:
       mpExtractor1 = ORB::Extractor::from_yaml(cfg["orb1"]);
       mpMatcher = ORB::Matcher::from_yaml(cfg["matcher"]);
       assert(mpExtractor0 && "Extractor0 not found");
+      assert(mpMatcher && "Matcher not found");
       assert((!mpCam1) == (!mpExtractor1) && "miss match between Camera1 and Extractor1");
     }
 #endif

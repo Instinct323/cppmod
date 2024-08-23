@@ -27,7 +27,7 @@ public:
     Kitti(const Kitti &) = delete;
 
     // times.txt
-    void load_timestamps(Timestamps &vTimestamps, const std::string &file = "times.txt") {
+    void load_timestamp(Timestamps &vTimestamps, const std::string &file = "times.txt") {
       assert(vTimestamps.empty());
       TXT::row_mapping(
           mPath + "sequences/" + mId + "/" + file,
@@ -45,7 +45,7 @@ public:
       }
     }
 
-    void load_poses(Poses &vPoses) {
+    void load_pose(Poses &vPoses) {
       assert(vPoses.empty());
       TXT::row_mapping(
           mPath + "poses/" + mId + ".txt",

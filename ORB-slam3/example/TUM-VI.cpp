@@ -36,18 +36,15 @@ void slam::Tracker::run() {
     //          dataset::IMUsamples(std::get<5>(storage).begin() + j, std::get<5>(storage).begin() + k));
     grab_image(std::get<0>(storage)[i], imgLeft, imgRight);
 
-    mpSystem->set_desc("track-cost", (boost::format("%.1fms") % (1e3 * timer.count())).str());
+    mpSystem->set_desc("track-cost", (boost::format("%.1fms") % (1e3 * timer.elapsed())).str());
     mpSystem->set_desc("state", mState);
     indicators::set_desc(pbar, mpSystem->get_desc(), false);
     pbar.tick();
   }
 
   // 写入位姿
-  /* LOG(INFO) << "Wait for writing pose...";
-  std::ofstream ofs("pose.txt");
-  for (const auto [ts, joint]: joints)
-    ofs << std::fixed << size_t(ts * 1e9) << " " << joint.get() << std::endl;
-  ofs.close(); */
+  LOG(INFO) << "Wait for writing pose...";
+  mpSystem->mpAtlas->export_poses(boost::format("pose-%d.txt"));
 }
 
 

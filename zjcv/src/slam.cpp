@@ -16,6 +16,19 @@ feature::Map::Ptr Atlas::create_map() {
 }
 
 
+void Atlas::export_poses(boost::format fmt) const {
+  for (int i = 0; i < mvpMaps.size(); ++i) {
+    const auto &pMap = mvpMaps[i];
+    std::string filename = (fmt % i).str();
+    std::ofstream ofs(filename);
+    // 写入位姿
+    for (const auto &pKF: *pMap->apKeyFrames)
+      ofs << std::fixed << size_t(pKF->mTimestamp * 1e9) << " " << pKF->mPose.T_world_imu << std::endl;
+    ofs.close();
+  }
+}
+
+
 void Atlas::run() {
   while (mpSystem->mbRunning) {
     int n_kf = mpCurMap->apKeyFrames->size();
@@ -25,7 +38,7 @@ void Atlas::run() {
 
     if (!mbSleep) {
       feature::Map::Ptr cur_map = mpCurMap;
-      if (raw_kf >= LOCAL_FRAMES) {
+      if (raw_kf >= 3) {
         cur_map->local_mapping();
       }
       usleep(50000);
@@ -68,20 +81,31 @@ Tracker::Tracker(System *pSystem, const YAML::Node &cfg
     KEY_MATCHES_RADIO(cfg["key_matches_radio"].as<float>()), LOST_TIMEOUT(cfg["lost_timeout"].as<double>()),
 
     mpCam0(camera::from_yaml(cfg["cam0"])), mpCam1(camera::from_yaml(cfg["cam1"])),
-    mpIMU(IMU::Device::from_yaml(cfg["imu"])) {
+    mDepthInvScale(1 / cfg["depth_scale"].as<float>(-1)), mpIMU(IMU::Device::from_yaml(cfg["imu"])) {
 
-  assert(!is_inertial() && "Not implemented");
   assert(mpCam0 && "Camera0 not found");
+  LOG(INFO) << "Tracker: " << "Camera0 ready";
+  // 双目模式校对
   if (is_stereo()) {
-    // 校对相机类型
     assert(mpCam0->get_type() == mpCam1->get_type() && "Camera0 and Camera1 must be the same type");
+    LOG(INFO) << "Tracker: " << "Camera1 ready";
+  }
+  // 深度相机模式校对
+  if (is_depth()) {
+    assert(is_monocular() && "Depth camera must be monocular");
+    LOG(INFO) << "Tracker: " << "Depth camera ready";
+  }
+  // IMU 模式校对
+  if (is_inertial()) {
+    LOG(FATAL) << "Not implemented";
+    LOG(INFO) << "Tracker: " << "IMU ready";
   }
 }
 
 
 void Tracker::grab_image(const double &timestamp, const cv::Mat &img0, const cv::Mat &img1) {
   assert(!is_inertial() || timestamp <= mpIMUpreint->mtEnd && "Grab image before IMU data is integrated");
-  assert(is_monocular() == img1.empty() && "Invalid image pair");
+  // assert(is_monocular() == img1.empty() && "Invalid image pair");
 
   parallel::ScopedLock lock(mpSystem->get_cur_map()->mPosesMutex);
   mpLastFrame = mpCurFrame;
@@ -129,6 +153,7 @@ namespace feature {
 
 
 // Frame
+bool Frame::mbNegDepth = true;
 size_t Frame::FRAME_COUNT = 0;
 size_t Frame::KEY_COUNT = 0;
 
@@ -137,6 +162,28 @@ Frame::Frame(System *pSystem, const double &timestamp,
              const cv::Mat &img0, const cv::Mat &img1
 ) : mpSystem(pSystem), mId(++FRAME_COUNT), mTimestamp(timestamp), mImg0(img0), mImg1(img1),
     mpRefFrame(pSystem->mpTracker->mpRefFrame), mJoint(&mPose.T_world_imu) {}
+
+
+int Frame::rgbd_init(const Frame::Ptr &shared_this) {
+  assert(mmpMappts.empty() && "The map points have been initialized");
+  int cnt = 0;
+  const Sophus::SE3f T_cam_world = mPose.T_imu_world * mpSystem->mpTracker->mpCam0->T_cam_imu;
+
+  float depth;
+  for (int i = 0; i < mvUnprojs0.size(); ++i) {
+    if (get_depth(i, depth)) {
+      Eigen::Vector3f P_cam = mvUnprojs0[i];
+      P_cam[2] = 1;
+      P_cam *= depth;
+
+      cnt++;
+      auto it = mmpMappts.insert({i, mpSystem->get_cur_map()->create_mappoint()}).first;
+      it->second->add_obs(shared_this, i);
+      it->second->set_pos(T_cam_world * P_cam);
+    }
+  }
+  return cnt;
+}
 
 
 int Frame::stereo_triangulation(const Frame::Ptr &shared_this, const std::vector<cv::DMatch> &left2right) {
@@ -152,7 +199,7 @@ int Frame::stereo_triangulation(const Frame::Ptr &shared_this, const std::vector
         float rep_error = Sophus::triangulation({P0_cam0, P1_cam1}, {Identity, T_cam0_cam1}, P_cam0);
         if (rep_error >= 0) {
           cnt += 1;
-          mvUnprojs0[i][2] = -P_cam0[2];
+          mvUnprojs0[i][2] = mbNegDepth ? -P_cam0[2] : P_cam0[2];
           // 创建地图点
           auto it = mmpMappts.find(i);
           if (it == mmpMappts.end()) {
@@ -388,11 +435,11 @@ void Mappoint::prune() {
       apObs->begin(), apObs->end(),
       [](const Observation &obs) { return obs.first.expired(); });
   apObs->erase(begit, apObs->end());
-  // 只剩下一个观测, 而且不是双目观测
+  // 只剩下一个观测, 而且不是深度观测
   if (apObs->size() == 1) {
     auto [wpf, i] = apObs->front();
-    float d = wpf.lock()->mvUnprojs0[i][2];
-    if (d > 0) mbBad = true;
+    float depth;
+    if (!wpf.lock()->get_depth(i, depth)) mbBad = true;
   }
 }
 

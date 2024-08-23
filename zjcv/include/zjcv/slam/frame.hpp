@@ -26,6 +26,7 @@ public:
     ZJCV_BUILTIN typedef std::shared_ptr<Frame> Ptr;
 
     ZJCV_BUILTIN static size_t FRAME_COUNT, KEY_COUNT;
+    ZJCV_BUILTIN static bool mbNegDepth;
     ZJCV_BUILTIN System *mpSystem;
 
     // Origin data
@@ -47,8 +48,23 @@ public:
 
     ZJCV_BUILTIN bool is_keyframe() { return mIdKey > 0; }
 
+    template<typename T>
+    ZJCV_BUILTIN bool get_depth(int i, T &depth) const {
+      if (mbNegDepth) {
+        if (mvUnprojs0[i](2) > 0) return false;
+        depth = - mvUnprojs0[i][2];
+      } else {
+        if (mvUnprojs0[i](2) < 0) return false;
+        depth = mvUnprojs0[i][2];
+      }
+      return true;
+    }
+
     // Triangulate the Mappoints according to the match
-    ZJCV_BUILTIN int stereo_triangulation(const Frame::Ptr &shared_this, const std::vector<cv::DMatch> &left2right = {});
+    ZJCV_BUILTIN int stereo_triangulation(const Ptr &shared_this, const std::vector<cv::DMatch> &left2right = {});
+
+    // Generate the Mappoints
+    ZJCV_BUILTIN int rgbd_init(const Ptr &shared_this);
 
     // Merge the Mappoints of the two Frames according to the match
     ZJCV_BUILTIN int connect_frame(Ptr &shared_this, Ptr &ref, std::vector<cv::DMatch> &ref2this);

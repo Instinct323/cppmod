@@ -47,12 +47,7 @@ tracker:
     nlevels: 8
     lapping_area: [ 0, 511 ]
 
-  matcher:
-    drop: 0.1
-
-
-atlas:
-  local_frames: 5
+  matcher: none
 
 
 viewer:

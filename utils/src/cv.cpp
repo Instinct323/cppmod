@@ -4,14 +4,19 @@
 namespace cv {
 
 
-float drop_last(std::vector<cv::DMatch> &matches, float radio, bool ordered) {
+float chi2_filter(std::vector<cv::DMatch> &matches, float chi2, bool ordered) {
   if (matches.empty()) return 0;
   float org = matches.size();
 
-  if (radio == 0) return 1;
+  if (chi2 == 0) return 1;
   if (!ordered) std::sort(matches.begin(), matches.end());
 
-  matches.erase(matches.end() - int(org * radio), matches.end());
+  long double sum_dist = 0;
+  for (const cv::DMatch &m: matches) sum_dist += m.distance;
+  float thresh = float(sum_dist / matches.size()) * chi2;
+  auto it = std::lower_bound(matches.begin(), matches.end(), thresh,
+                             [](const cv::DMatch &m, float thresh) { return m.distance < thresh; });
+  matches.erase(it, matches.end());
   return float(matches.size()) / org;
 }
 

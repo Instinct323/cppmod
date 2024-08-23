@@ -8,3 +8,6 @@ target_link_libraries(tumvi zjcv ${UTILS_LIBS})
 
 add_executable(kitti example/KITTI.cpp ${SLAM_SRC})
 target_link_libraries(kitti zjcv ${UTILS_LIBS})
+
+add_executable(rgbd example/TUM-RGBD.cpp ${SLAM_SRC})
+target_link_libraries(rgbd zjcv ${UTILS_LIBS})

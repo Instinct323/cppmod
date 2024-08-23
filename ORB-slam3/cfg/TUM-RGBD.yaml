@@ -1,0 +1,46 @@
+dataset: "/home/workbench/data/rgbd_dataset_freiburg1_xyz"
+vocabulary: "/home/workbench/Repository/dbow2/ORBvoc.bin"
+
+
+tracker:
+  min_matches: 15
+  max_matches: 30
+  key_matches_radio: 0.3
+  lost_timeout: 3.0
+  depth_scale: 5000.0
+
+  cam0:
+    type: "Pinhole"
+    resolution: [ 640, 480 ]
+    intrinsics: [ 517.3, 516.5, 318.6, 255.3 ]
+    dist_coeffs: [ 0.2624, -0.9531, -0.0054, 0.0026 ]
+    T_cam_imu:
+      - [ -1, 0, 0, 0 ]
+      - [ 0, 0, -1, 0 ]
+      - [ 0, -1, 0, 0 ]
+
+  orb0:
+    nfeatures: 500
+    scale_factor: 1.2
+    nlevels: 8
+
+  matcher: none
+
+
+viewer:
+  fps: 45
+  title: "Feature Map"
+  resolution: [ 640, 480 ]
+  panel_ratio: 0.
+  camera_focal: 300
+  view_point: [ 0., 3.5, 3.5 ]
+  view_up_axis: 6
+
+  imu_size: 0.3
+  mp_size: 2
+  trail_size: 30
+  sample_stride: 20
+
+  lead_color: [ 1.0, 0.0, 0.0 ]
+  trail_color: [ 0.0, 1.0, 0.0 ]
+  mp_color: [ 0.0, 0.0, 1.0 ]

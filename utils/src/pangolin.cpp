@@ -58,7 +58,7 @@ void plot_trajectory(YAML::Node cfg,
     pbar.tick();
     cv::imshow("Trajectory", grayloader(vImgFiles[i]));
 
-    int cost = timer.count() * 1e3;
+    int cost = timer.elapsed() * 1e3;
     indicators::set_desc(pbar, "FPS=" + std::to_string(1000 / std::max(delay, cost)), false);
     cv::waitKey(std::max(1, delay - cost));
   }

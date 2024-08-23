@@ -252,10 +252,8 @@ public:
       // Mappoint: 位置
       if (!only_pose) {
         for (size_t i = 0; i < vMappts.size(); ++i) {
-          auto pMappt = vMappts[i];
-          if (is_bad_mappts(i)) pMappt->set_invalid();
           auto v = static_cast<g2o::VertexPointXYZ *>(this->vertex(n_frames + i));
-          if (v) pMappt->set_pos(v->estimate().cast<float>());
+          if (v) vMappts[i]->set_pos(v->estimate().cast<float>());
         }
       }
       if (show_error) print_edge();
@@ -307,9 +305,8 @@ protected:
       assert(vFrame);
       Eigen::Vector3d Pw = pMappt->mPos.cast<double>(),
           Pc = pFrame->mvUnprojs0[obs.first].cast<double>();
-      // 双目标记, 双目观测的 z 为实际值的相反数
-      if (Pc[2] < 0) {
-        Pc[2] = -Pc[2];
+      // 有深度数据时
+      if (pFrame->get_depth(obs.first, Pc[2])) {
         if (only_pose) {
           auto eTmp = new g2o::EdgeStereoSE3ProjectDNPonlyPose;
           eTmp->set_pworld(Pw);

@@ -68,7 +68,7 @@ void Frame::match_stereo(int lap_cnt0) {
     mvUnprojs1.reserve(mvKps1.size());
     for (auto &i: mvKps1) mvUnprojs1.push_back(pTracker->mpCam1->unproject(i.pt));
     // 水平对齐约束, 离群点筛除
-    cv::drop_last(stereo_matches, 0.1);
+    cv::chi2_filter(stereo_matches, 5.991);
     cv::make_one2one(stereo_matches, true);
     cv::cosine_filter(mvUnprojs0, mvUnprojs1, stereo_matches, 0.9848);
     stereo_triangulation(pTracker->mpCurFrame, stereo_matches);
@@ -95,14 +95,14 @@ bool Frame::match_previous(float &ref_radio) {
       if (pair.second->is_invalid()) continue;
       pair.second->prune();
       cv::Point2f pt = pCam0->project(T_world_cam0 * pair.second->mPos);
-      if (pt.x < 0 || pt.x >= mImg0.cols || pt.y < 0 || pt.y >= mImg0.rows) continue;
+      if (!pCam0->is_in(pt)) continue;
       grid_dict(pt.x, pt.y, d).copyTo(mask.row(pair.first));
     }
 
     mRefToThisMatches.clear();
     pTracker->mpMatcher->search(mpRefFrame->mDesc0, mDesc0, mask, mRefToThisMatches);
     if (mRefToThisMatches.empty()) LOG(WARNING) << "No matches found";
-    cv::drop_last(mRefToThisMatches, 0.1);
+    cv::chi2_filter(mRefToThisMatches, 5.991);
     cv::make_one2one(mRefToThisMatches, true);
 
     ref_radio = float(mRefToThisMatches.size()) / mpRefFrame->mnMappts;

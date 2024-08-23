@@ -27,7 +27,7 @@ public:
     ) : Base(imgSize, intrinsics, distCoeffs, T_cam_imu), mOrgK(getK()) {
       assert(distCoeffs.size() >= 4 && "Distortion coefficients size must be at least 4");
       // 计算畸变矫正映射
-      cv::initUndistortRectifyMap(mOrgK, distCoeffs, cv::Mat(), mOrgK, mImgSize, CV_32FC1, mMap1, mMap2);
+      cv::initUndistortRectifyMap(mOrgK, distCoeffs, cv::Mat(), mOrgK, img_size, CV_32FC1, mMap1, mMap2);
     }
 
     Pinhole(const Pinhole &) = delete;
