@@ -1,31 +1,14 @@
 #include <boost/format.hpp>
 #include <memory>
 
-#include "utils/cv.hpp"
+#include "orb.hpp"
 #include "utils/eigen.hpp"
-#include "zjcv/slam.hpp"
-
-#define GRID_SIZE 16
 
 namespace slam::feature {
 
 
 bool Frame::monocular_init(float &ref_radio, Frame::Ptr pCurFrame) {
-  Tracker::Ptr &pTracker = mpSystem->mpTracker;
-  bool ok;
-
-  cv::GridDict grid_dict(mvKps0.begin(), mvKps0.end(), mImg0.size(), {GRID_SIZE, GRID_SIZE});
-  cv::Mat_<uchar> mask(mpRefFrame->mvKps0.size(), mvKps0.size(), uchar(0));
-  for (int i = 0; i < mvKps0.size(); i++) {
-    cv::Point2f &pt = mvKps0[i].pt;
-    if (pt.x < 0 || pt.x >= mImg0.cols || pt.y < 0 || pt.y >= mImg0.rows) continue;
-    grid_dict(pt.x, pt.y, 0).copyTo(mask.row(i));
-  }
-
-  pTracker->mpMatcher->search(mpRefFrame->mDesc0, mDesc0, mask, mRefToThisMatches);
-  cv::make_one2one(mRefToThisMatches, true);
-  ok = mRefToThisMatches.size() > pTracker->MIN_MATCHES;
-
+  bool ok = ORB::search_by_project(mpRefFrame.get(), this, mRefToThisMatches);
   if (ok) {
     // 为地图点添加观测
     connect_frame(pCurFrame, mpRefFrame, mRefToThisMatches);
@@ -82,31 +65,19 @@ void Frame::match_stereo(int lap_cnt0) {
 
 bool Frame::match_previous(float &ref_radio) {
   Tracker::Ptr &pTracker = mpSystem->mpTracker;
-  const camera::Base::Ptr &pCam0 = pTracker->mpCam0;
 
-  // 利用已有地图点进行匹配
-  cv::GridDict grid_dict(mvKps0.begin(), mvKps0.end(), mImg0.size(), {GRID_SIZE, GRID_SIZE});
-  Sophus::SE3f T_world_cam0 = pCam0->T_cam_imu.inverse() * mPose.T_world_imu;
-  for (int d = 0; d <= 2; d++) {
-    cv::Mat_<uchar> mask(mpRefFrame->mvKps0.size(), mvKps0.size(), uchar(0));
-
-    // 将地图点投影到当前帧
-    for (auto &pair: mpRefFrame->mmpMappts) {
-      if (pair.second->is_invalid()) continue;
-      pair.second->prune();
-      cv::Point2f pt = pCam0->project(T_world_cam0 * pair.second->mPos);
-      if (!pCam0->is_in(pt)) continue;
-      grid_dict(pt.x, pt.y, d).copyTo(mask.row(pair.first));
+  if (ORB::search_by_project(mpRefFrame.get(), this, mRefToThisMatches)) {
+    // 关键帧首次匹配, 筛选地图点
+    if (mpRefFrame->mnMappts == 0) {
+      mpRefFrame->mnMappts = mRefToThisMatches.size();
+      for (auto [idx, mp]: mpRefFrame->mmpMappts) {
+        if (mp->apObs->size() < 2) mp->set_invalid();
+      }
+      for (auto &m: mRefToThisMatches) {
+        mpRefFrame->mmpMappts[m.queryIdx]->set_invalid(false);
+      }
     }
-
-    mRefToThisMatches.clear();
-    pTracker->mpMatcher->search(mpRefFrame->mDesc0, mDesc0, mask, mRefToThisMatches);
-    if (mRefToThisMatches.empty()) LOG(WARNING) << "No matches found";
-    cv::chi2_filter(mRefToThisMatches, 5.991);
-    cv::make_one2one(mRefToThisMatches, true);
-
     ref_radio = float(mRefToThisMatches.size()) / mpRefFrame->mnMappts;
-    if (mRefToThisMatches.size() > pTracker->MIN_MATCHES) return true;
   }
 
   // todo: Relocalization: 重定位
@@ -129,6 +100,11 @@ void Frame::process() {
   pCam0->undistort(mvKps0, mvKps0);
   mvUnprojs0.reserve(mvKps0.size());
   for (auto &i: mvKps0) mvUnprojs0.push_back(pCam0->unproject(i.pt));
+  // Depth image
+  if (pTracker->is_depth()) {
+    for (int i = 0; i < mvKps0.size(); i++)
+      mvUnprojs0[i][2] = -mImg1.at<float>(mvKps0[i].pt);
+  }
   bool ok = mvKps0.size() >= pTracker->MIN_MATCHES;
 
   // motion model: 初始化位姿
@@ -147,8 +123,8 @@ void Frame::process() {
     mpSystem->set_desc("n-mappts", mpRefFrame->mnMappts);
     float ref_radio = 0.;
 
-    // Monocular: 第一帧关键帧
-    if (pTracker->is_monocular() && mpSystem->get_cur_map()->apKeyFrames->size() == 1) {
+    if (mpRefFrame->mmpMappts.empty() && pTracker->is_monocular()) {
+      // Monocular: 第一帧关键帧
       ok = monocular_init(ref_radio, pCurFrame);
 
     } else {
@@ -181,6 +157,9 @@ void Frame::process() {
     // Stereo: 检测右相机特征, 三角化地图点
     if (pTracker->is_stereo()) {
       match_stereo(lap_cnt0);
+
+    } else if (pTracker->is_depth()) {
+      init_with_depth(pCurFrame);
 
     } else if (mpRefFrame) {
       // todo Monocular: 清理地图点, 扩充地图点

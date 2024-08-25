@@ -33,14 +33,9 @@ void Atlas::run() {
   while (mpSystem->mbRunning) {
     int n_kf = mpCurMap->apKeyFrames->size();
     mpSystem->set_desc("n-kf", n_kf);
-    int raw_kf = n_kf - mpCurMap->miKeyFrame;
-    mpSystem->set_desc("raw-kf", raw_kf);
 
     if (!mbSleep) {
       feature::Map::Ptr cur_map = mpCurMap;
-      if (raw_kf >= 3) {
-        cur_map->local_mapping();
-      }
       usleep(50000);
     }
 
@@ -63,7 +58,7 @@ void System::run() {
   mbRunning = true;
   mThreads["tracker"] = parallel::thread_pool.emplace(0, &Tracker::run, mpTracker);
   mThreads["viewer"] = parallel::thread_pool.emplace(0, &Viewer::run, mpViewer);
-  // mThreads["atlas"] = parallel::thread_pool.emplace(0, &Atlas::run, mpAtlas);
+  mThreads["atlas"] = parallel::thread_pool.emplace(0, &Atlas::run, mpAtlas);
 }
 
 
@@ -153,7 +148,6 @@ namespace feature {
 
 
 // Frame
-bool Frame::mbNegDepth = true;
 size_t Frame::FRAME_COUNT = 0;
 size_t Frame::KEY_COUNT = 0;
 
@@ -164,8 +158,7 @@ Frame::Frame(System *pSystem, const double &timestamp,
     mpRefFrame(pSystem->mpTracker->mpRefFrame), mJoint(&mPose.T_world_imu) {}
 
 
-int Frame::rgbd_init(const Frame::Ptr &shared_this) {
-  assert(mmpMappts.empty() && "The map points have been initialized");
+int Frame::init_with_depth(const Frame::Ptr &shared_this) {
   int cnt = 0;
   const Sophus::SE3f T_cam_world = mPose.T_imu_world * mpSystem->mpTracker->mpCam0->T_cam_imu;
 
@@ -177,9 +170,11 @@ int Frame::rgbd_init(const Frame::Ptr &shared_this) {
       P_cam *= depth;
 
       cnt++;
-      auto it = mmpMappts.insert({i, mpSystem->get_cur_map()->create_mappoint()}).first;
-      it->second->add_obs(shared_this, i);
-      it->second->set_pos(T_cam_world * P_cam);
+      auto [it, ok] = mmpMappts.insert({i, mpSystem->get_cur_map()->create_mappoint()});
+      if (ok) {
+        it->second->add_obs(shared_this, i);
+        it->second->set_pos(T_cam_world * P_cam);
+      }
     }
   }
   return cnt;
@@ -199,7 +194,7 @@ int Frame::stereo_triangulation(const Frame::Ptr &shared_this, const std::vector
         float rep_error = Sophus::triangulation({P0_cam0, P1_cam1}, {Identity, T_cam0_cam1}, P_cam0);
         if (rep_error >= 0) {
           cnt += 1;
-          mvUnprojs0[i][2] = mbNegDepth ? -P_cam0[2] : P_cam0[2];
+          mvUnprojs0[i][2] = -P_cam0[2];
           // 创建地图点
           auto it = mmpMappts.find(i);
           if (it == mmpMappts.end()) {
@@ -257,9 +252,8 @@ void Frame::mark_keyframe() {
   if (mIdKey > KEY_COUNT) return;
   mIdKey = ++KEY_COUNT;
   for (auto &pair: mmpMappts) {
-    if (pair.second->is_invalid()) {
+    if (pair.second->is_invalid())
       pair.second->clear();
-    } else { mnMappts++; }
   }
   mImg1 = cv::Mat();
   mvUnprojs1.clear();

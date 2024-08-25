@@ -7,6 +7,7 @@ tracker:
   max_matches: 45
   key_matches_radio: 0.5
   lost_timeout: 3.0
+  grid_size: 16
 
   cam0:
     type: "Pinhole"

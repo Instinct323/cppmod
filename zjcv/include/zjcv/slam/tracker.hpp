@@ -62,11 +62,12 @@ public:
     ZJCV_CUSTOM void run();
 
 #ifdef ZJCV_ORB_SLAM
-    // Extractors
+    int GRID_SIZE;
     ORB::Extractor::Ptr mpExtractor0, mpExtractor1;
     ORB::Matcher::Ptr mpMatcher;
 
     void reload(const YAML::Node &cfg) {
+      GRID_SIZE = cfg["grid_size"].as<int>();
       mpExtractor0 = ORB::Extractor::from_yaml(cfg["orb0"]);
       mpExtractor1 = ORB::Extractor::from_yaml(cfg["orb1"]);
       mpMatcher = ORB::Matcher::from_yaml(cfg["matcher"]);

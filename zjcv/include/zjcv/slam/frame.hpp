@@ -26,7 +26,6 @@ public:
     ZJCV_BUILTIN typedef std::shared_ptr<Frame> Ptr;
 
     ZJCV_BUILTIN static size_t FRAME_COUNT, KEY_COUNT;
-    ZJCV_BUILTIN static bool mbNegDepth;
     ZJCV_BUILTIN System *mpSystem;
 
     // Origin data
@@ -40,7 +39,6 @@ public:
 
     // Processed data
     ZJCV_BUILTIN Ptr mpRefFrame;
-    ZJCV_BUILTIN int mnMappts = 0;
     ZJCV_BUILTIN IMU::MovingPose mPose;
     ZJCV_BUILTIN Sophus::Joint mJoint;
 
@@ -50,13 +48,8 @@ public:
 
     template<typename T>
     ZJCV_BUILTIN bool get_depth(int i, T &depth) const {
-      if (mbNegDepth) {
-        if (mvUnprojs0[i](2) > 0) return false;
-        depth = - mvUnprojs0[i][2];
-      } else {
-        if (mvUnprojs0[i](2) < 0) return false;
-        depth = mvUnprojs0[i][2];
-      }
+      if (mvUnprojs0[i](2) >= 0) return false;
+      depth = -mvUnprojs0[i][2];
       return true;
     }
 
@@ -64,7 +57,7 @@ public:
     ZJCV_BUILTIN int stereo_triangulation(const Ptr &shared_this, const std::vector<cv::DMatch> &left2right = {});
 
     // Generate the Mappoints
-    ZJCV_BUILTIN int rgbd_init(const Ptr &shared_this);
+    ZJCV_BUILTIN int init_with_depth(const Ptr &shared_this);
 
     // Merge the Mappoints of the two Frames according to the match
     ZJCV_BUILTIN int connect_frame(Ptr &shared_this, Ptr &ref, std::vector<cv::DMatch> &ref2this);
@@ -84,6 +77,8 @@ public:
     ZJCV_CUSTOM void process();
 
 #ifdef ZJCV_ORB_SLAM
+    int mnMappts = 0;
+
     std::vector<cv::KeyPoint> mvKps0, mvKps1;
     cv::Mat mDesc0, mDesc1;
     std::vector<cv::DMatch> mRefToThisMatches;
@@ -95,6 +90,7 @@ public:
     bool match_previous(float &ref_radio);
 
     void draw();
+
 #endif
 };
 

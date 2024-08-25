@@ -7,6 +7,7 @@ tracker:
   max_matches: 30
   key_matches_radio: 0.3
   lost_timeout: 3.0
+  grid_size: 16
 
   cam0:
     type: "KannalaBrandt"

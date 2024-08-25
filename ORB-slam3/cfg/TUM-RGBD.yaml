@@ -4,9 +4,10 @@ vocabulary: "/home/workbench/Repository/dbow2/ORBvoc.bin"
 
 tracker:
   min_matches: 15
-  max_matches: 30
+  max_matches: 45
   key_matches_radio: 0.3
   lost_timeout: 3.0
+  grid_size: 16
   depth_scale: 5000.0
 
   cam0:

@@ -45,7 +45,7 @@ public:
 
     ZJCV_BUILTIN void set_pos(const Eigen::Vector3f &pos);
 
-    ZJCV_BUILTIN void set_invalid() { mbBad = true; }
+    ZJCV_BUILTIN void set_invalid(bool bad = true) { mbBad = bad; }
 
     ZJCV_BUILTIN bool is_invalid() const { return mbBad; }
 
