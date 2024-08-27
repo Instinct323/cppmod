@@ -23,7 +23,7 @@ void slam::Tracker::run() {
   while (!pbar.is_completed()) {
     int i = pbar.current();
     cv::Mat img = grayloader(std::get<1>(storage)[i]), imgDepth = cv::imread(std::get<3>(storage)[i], -1);
-    imgDepth.convertTo(imgDepth, CV_32F, mDepthInvScale);
+    to_depth(imgDepth);
 
     // 读入数据
     timer.reset();

@@ -8,7 +8,9 @@
 #include "zjcv/imu.hpp"
 
 #ifdef ZJCV_ORB_SLAM
+
 #include "utils/orb.hpp"
+
 #endif
 
 namespace slam {
@@ -53,6 +55,8 @@ public:
 
     ZJCV_BUILTIN inline bool is_inertial() const { return mpIMU != nullptr; }
 
+    ZJCV_BUILTIN inline void to_depth(cv::Mat &src) { src.convertTo(src, CV_32F, mDepthInvScale); }
+
     ZJCV_BUILTIN void grab_imu(const double &tCurframe, const std::vector<double> &vTimestamp, const std::vector<IMU::Sample> &vSample);
 
     ZJCV_BUILTIN void grab_image(const double &timestamp, const cv::Mat &img0, const cv::Mat &img1 = cv::Mat());
@@ -75,6 +79,7 @@ public:
       assert(mpMatcher && "Matcher not found");
       assert((!mpCam1) == (!mpExtractor1) && "miss match between Camera1 and Extractor1");
     }
+
 #endif
 
 };

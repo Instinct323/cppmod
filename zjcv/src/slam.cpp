@@ -79,11 +79,11 @@ Tracker::Tracker(System *pSystem, const YAML::Node &cfg
     mDepthInvScale(1 / cfg["depth_scale"].as<float>(-1)), mpIMU(IMU::Device::from_yaml(cfg["imu"])) {
 
   assert(mpCam0 && "Camera0 not found");
-  LOG(INFO) << "Tracker: " << "Camera0 ready";
+  LOG(INFO) << "Tracker: " << "Camera-0 ready";
   // 双目模式校对
   if (is_stereo()) {
     assert(mpCam0->get_type() == mpCam1->get_type() && "Camera0 and Camera1 must be the same type");
-    LOG(INFO) << "Tracker: " << "Camera1 ready";
+    LOG(INFO) << "Tracker: " << "Camera-1 ready";
   }
   // 深度相机模式校对
   if (is_depth()) {
