@@ -1,0 +1,8 @@
+{
+  "image": "instinct323/cpp-jammy:full",
+  "name": "tongzanjia",
+  "port": "22",
+  "volume": {
+    "D:/Workbench": "/home/workbench"
+  }
+}
