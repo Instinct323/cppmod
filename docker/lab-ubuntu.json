@@ -5,6 +5,6 @@
   "volume": {
     "/data/public_datasets": "/home/rcvlab/public_datasets",
     "/data/public_softwares": "/home/rcvlab/public_softwares",
-    "/home/tongzanjia/workbench": "/home/rcvlab"
+    "/home/tongzanjia/workbench": "/home/workbench"
   }
 }
