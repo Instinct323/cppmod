@@ -26,8 +26,8 @@ target_link_libraries(utils ${UTILS_LIBS})
 target_link_libraries(zjcv ${UTILS_LIBS})
 
 # subdirectory
-add_subdirectory(ORB-slam3)
+# add_subdirectory(ORB-slam3)
 
 # test
 add_executable(test main.cpp)
-target_link_libraries(test utils ${UTILS_LIBS})
+target_link_libraries(test utils ${ZJCV_LIBS})

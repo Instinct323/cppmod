@@ -10,12 +10,15 @@ def execute(cmd, check=True):
 
 
 class DockerCmd(dict):
-    registered = {"image", "name", "port", "volume"}
+    registered = {"file", "image", "name", "port", "volume", "env", "workdir", "cpus", "gpus", "options"}
 
     def __init__(self, file):
         with open(file, "r") as f:
             super().__init__(json.load(f))
         assert set(self.keys()).issubset(self.registered), f"Invalid keys: {set(self.keys()) - self.registered}"
+        # build Dockerfile
+        if Path(self.get("file", "")).is_file():
+            execute(f"docker build -t {self['name']} -f {self['file']} .")
         # name
         self.setdefault("name", Path(file).stem)
         # port
@@ -31,10 +34,17 @@ class DockerCmd(dict):
         # volume
         self["volume"] = [f"{k}:{v}" for k, v in self.get("volume", {}).items()]
         self["volume"].sort()
+        # other
+        self["cpus"] = float(self.get("cpus", os.cpu_count()))
+        self["gpus"] = self.get("gpus", "all")
 
     def export(self) -> str:
         cmd = f"docker run -d "
+        # other
         if self.get("name"): cmd += f"--name {self['name']} "
+        if self.get("workdir"): cmd += f"-w {self['workdir']} "
+        cmd += f"--cpus {self['cpus']} --gpus {self['gpus']} "
+        if self.get("options"): cmd += f"{self['options']} "
         # port: <1st>:22
         ports = self["port"]
         if ports:
@@ -44,6 +54,8 @@ class DockerCmd(dict):
             cmd += f"-p {p}:{p} "
         # volume
         for v in self["volume"]: cmd += f"-v {v} "
+        # env
+        for k, v in self.get("env", {}).items(): cmd += f"-e {k}={v} "
         # image
         cmd += f"{self['image']}"
         return cmd
@@ -54,6 +66,6 @@ if __name__ == '__main__':
     parser.add_argument("json", type=str, help="Docker container configuration file")
     args = parser.parse_args()
 
-    # D:\Software\Anaconda3\envs\torch2\python.exe zjdocker.py D:\Workbench\cppmod\docker\lab-ubuntu.json
+    # D:\Software\Anaconda3\envs\torch2\python bin\new-container.py my-jammy.json
     dcmd = DockerCmd(args.json)
     execute(dcmd.export())

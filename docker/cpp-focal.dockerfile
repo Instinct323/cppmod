@@ -1,35 +1,18 @@
-# docker build -f cpp-focal.dockerfile -t instinct323/cpp-focal .
+# docker build -f cpp-focal.dockerfile -t instinct323/cpp-focal:empty .
 
 FROM ubuntu:20.04
 
-ARG USER=tongzj
-ARG PASSWD='20010323'
-ARG EMAIL='1400721986@qq.com'
-
-# windows: VcXsrv
-ENV DISPLAY='host.docker.internal:0'
 ENV DEBIAN_FRONTEND=noninteractive
-
-RUN useradd -m $USER && \
-    echo $USER:$PASSWD | chpasswd && \
-    echo root:$PASSWD | chpasswd && \
-    usermod -aG sudo $USER
 
 # apt
 RUN apt update && \
-    apt install -y tree unzip wget sudo python3-pip && \
+    apt install -y curl git python3-pip sudo tree unzip wget && \
     apt clean
 
 # setup timezone
 RUN echo 'Asia/Shanghai' > /etc/timezone && \
     ln -s /usr/share/zoneinfo/Etc/UTC /etc/localtime && \
     apt install -q -y --no-install-recommends tzdata
-
-# Git
-RUN apt install -y git && \
-    apt clean && \
-    git config --global user.name $USER && \
-    git config --global user.email $EMAIL
 
 # OpenSSH
 RUN apt install -y openssh-server && \
@@ -43,10 +26,7 @@ RUN apt install -y build-essential cmake gdb && \
     apt clean
 
 ARG BIN=/usr/local/bin
-COPY cpp-bin/*.bash $BIN/
-COPY cpp-bin/ros.key /usr/share/keyrings/ros-archive-keyring.gpg
-COPY cpp-bin/ros.* /tmp/
-RUN chmod +x $BIN/*.bash
+COPY bin/ros.key /usr/share/keyrings/ros-archive-keyring.gpg
+COPY bin/ros.* /tmp/
 
-WORKDIR /home/$USER
 CMD /usr/sbin/sshd -D
