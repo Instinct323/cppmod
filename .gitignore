@@ -1,7 +1,7 @@
 ~$*.*
 
 # ROS2
-*build*
+cmake-build-*
 log
 install
 
