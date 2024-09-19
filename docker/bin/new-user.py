@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import argparse
 import json
 import os
@@ -30,6 +32,6 @@ if __name__ == '__main__':
     parser.add_argument("json", type=str, help="Docker container configuration file")
     args = parser.parse_args()
 
-    # D:\Software\Anaconda3\envs\torch2\python bin\new-user.py user-tongzj.json
+    # python3 bin\new-user.py user-tongzj.json
     ucfg = UserCfg(args.json)
     ucfg.execute()
