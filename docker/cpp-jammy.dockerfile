@@ -15,11 +15,11 @@ RUN echo 'Asia/Shanghai' > /etc/timezone && \
     apt install -q -y --no-install-recommends tzdata
 
 # OpenSSH
-RUN apt install -y openssh-server && \
+RUN apt update && \
+    apt install -y openssh-server && \
     apt clean && \
     mkdir /var/run/sshd && \
-    sed -ri 's/^PermitRootLogin\s+.*/PermitRootLogin yes/' /etc/ssh/sshd_config && \
-    sed -ri 's/UsePAM yes/#UsePAM yes/g' /etc/ssh/sshd_config
+    echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
 
 # C++ toolchain, cmake 3.22.1
 RUN apt install -y build-essential cmake gdb && \

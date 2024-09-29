@@ -158,6 +158,46 @@ public:
     int length() { return static_cast<int>(get(CAP_PROP_FRAME_COUNT)); }
 };
 
+
+/**
+  * @brief 立体深度
+  * @param block_matcher - 立体匹配器
+  * @param fx - 焦距
+  * @param baseline - 基线
+  */
+class StereoDepth {
+
+public:
+    cv::Ptr<cv::StereoSGBM> block_matcher;
+    float fx, baseline;
+
+    StereoDepth(
+        cv::Ptr<cv::StereoSGBM> block_matcher,
+        float fx,
+        float baseline
+    ) : block_matcher(block_matcher), fx(fx), baseline(baseline) {}
+
+    void to_depth(cv::Mat &img_left, cv::Mat &img_right, cv::Mat &depth) {
+      // Compute disparity
+      cv::Mat disparity;
+      block_matcher->compute(img_left, img_right, disparity);
+      disparity.convertTo(disparity, CV_32F, 1 / 16.0f);
+      // Compute depth
+      float scale = fx * baseline;
+      depth = cv::Mat::zeros(disparity.size(), CV_32F);
+      cv::parallel_for_(
+          cv::Range(0, disparity.rows),
+          [&](const cv::Range &range) {
+              for (int i = range.start; i < range.end; i++) {
+                for (int j = 0; j < disparity.cols; j++) {
+                  float d = disparity.at<float>(i, j);
+                  if (d > 0) depth.at<float>(i, j) = scale / d;
+                }
+              }
+          });
+    }
+};
+
 }
 
 #endif

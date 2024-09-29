@@ -1,7 +1,7 @@
 {
   "image": "instinct323/cpp-focal:noetic",
-  "name": "my-focal",
-  "port": "30000-30020",
+  "name": "myfocal",
+  "port": "30001-30020",
   "volume": {
     "D:/Workbench": "/home/workbench"
   },

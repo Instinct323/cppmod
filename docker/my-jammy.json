@@ -1,6 +1,6 @@
 {
-  "image": "instinct323/cpp-jammy:humble",
-  "name": "my-jammy",
+  "image": "instinct323/cpp-jammy",
+  "name": "myjammy",
   "port": "30021-30040",
   "volume": {
     "D:/Workbench": "/home/workbench"
