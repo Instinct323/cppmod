@@ -8,19 +8,19 @@ if (NOT UTILS_FOUND)
   # packages
   find_package(G2O REQUIRED)
   find_package(Glog REQUIRED)
-  find_package(fbow REQUIRED)
   find_package(fmt REQUIRED)
   find_package(OpenCV REQUIRED)
   find_package(Pangolin REQUIRED)
+  find_package(realsense2 REQUIRED)
   find_package(yaml-cpp REQUIRED)
 
   # all library
   set(UTILS_LIBS
           glog::glog
-          ${fbow_LIBS}
           fmt::fmt
           ${OpenCV_LIBS}
           ${Pangolin_LIBRARIES}
+          ${realsense2_LIBRARY}
           yaml-cpp
 
           -lboost_chrono

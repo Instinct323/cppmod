@@ -1,32 +1,34 @@
-#include <cstdlib>
 
-#include "utils/cv.hpp"
 #include "utils/glog.hpp"
-#include "zjcv/dataset/kitti.hpp"
 
+#include <utils/rs.hpp>
 
 int main(int argc, char **argv) {
+#ifdef USE_XSRV
   putenv("DISPLAY=host.docker.internal:0");
+#endif
   glog::Logger logger(argv);
 
-  // config
-  YAML::Node cfg = YAML::LoadFile("/home/workbench/cppmod/ORB-slam3/cfg/KITTI.yaml");
-  dataset::Filenames image0, image1;
+  rs2::context ctx;
+  LOG(INFO) << "There are " << ctx.query_devices().size() << " connected RealSense devices.";
 
-  // 载入并校验数据
-  dataset::Kitti kitti(cfg["dataset"].as<std::string>(), cfg["seq_id"].as<int>());
-  kitti.load_image(image0, "image_0");
-  kitti.load_image(image1, "image_1");
+  rs2::pipeline pipe(ctx);
+  pipe.start();
 
-  auto sgbm = cv::StereoSGBM::create(0, 96, 9);
-  cv::StereoDepth stereo_depth(sgbm, 718.856, 0.537);
-  cv::Mat img_left = cv::imread(image0[0], cv::IMREAD_GRAYSCALE),
-      img_right = cv::imread(image1[0], cv::IMREAD_GRAYSCALE),
-      disparity, depth;
+  while (true) {
+    rs2::frameset frames = pipe.wait_for_frames();
 
-  stereo_depth.to_depth(img_left, img_right, depth);
-  cv::imshow("disparity", depth);
-  cv::waitKey(0);
+    rs2::frame color = frames.get_color_frame();
+    rs2::frame depth = frames.get_depth_frame();
+
+    cv::Mat color_mat = rs2::toCvMat(color);
+    cv::cvtColor(color_mat, color_mat, cv::COLOR_RGB2BGR);
+    cv::Mat depth_mat = rs2::toCvMat(depth);
+
+    cv::imshow("color", color_mat);
+    cv::imshow("depth", depth_mat);
+    if (cv::waitKey(1) == 27) break;
+  }
 
   return 0;
 }

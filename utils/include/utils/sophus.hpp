@@ -5,6 +5,8 @@
 #include <sophus/sim3.hpp>
 #include <g2o/types/slam3d/se3quat.h>
 
+#include "utils/eigen.hpp"
+
 namespace Sophus {
 
 // Sophus -> g2o

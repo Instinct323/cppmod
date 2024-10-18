@@ -1,4 +1,5 @@
 #include "utils/cv.hpp"
+#include "utils/eigen.hpp"
 #include "utils/math.hpp"
 
 namespace cv {

@@ -2,11 +2,29 @@
 #define UTILS__EIGEN_HPP
 
 #include <Eigen/Core>
+#include <Eigen/src/Core/Matrix.h>
 #include <opencv2/opencv.hpp>
 #include <sophus/se3.hpp>
 
 namespace Eigen {
 
+// 兼容 Eigen 3.3.x
+# if !EIGEN_VERSION_AT_LEAST(3, 4, 0)
+template<typename T, int dim>
+using Vector = Eigen::Matrix<T, dim, 1>;
+
+template<typename T>
+using Vector2 = Vector<T, 2>;
+
+template<typename T>
+using Vector3 = Vector<T, 3>;
+
+template<typename T>
+using Matrix3 = Eigen::Matrix<T, 3, 3>;
+
+template<typename T>
+using MatrixX = Eigen::Matrix<T, -1, -1>;
+#endif
 
 // cosine
 template<typename T, int dim>
@@ -47,7 +65,6 @@ Eigen::Matrix<T, 3, 3> normalize_rotation(const Eigen::Matrix<T, 3, 3> &R) {
   Eigen::JacobiSVD<Eigen::Matrix<T, 3, 3>> svd(R, Eigen::ComputeFullU | Eigen::ComputeFullV);
   return svd.matrixU() * svd.matrixV().transpose();
 }
-
 }
 
 #endif

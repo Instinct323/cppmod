@@ -2,12 +2,10 @@ if (NOT ZJCV_FOUND)
 
   # packages
   find_package(utils REQUIRED)
-  find_package(realsense2 REQUIRED)
 
   # all library
   set(ZJCV_LIBS
           ${UTILS_LIBS}
-          ${realsense2_LIBRARY}
   )
 
   # header

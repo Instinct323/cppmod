@@ -3,6 +3,8 @@
 
 #include <Eigen/Core>
 
+#include "utils/eigen.hpp"
+
 namespace math {
 
 // clamp
