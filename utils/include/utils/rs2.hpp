@@ -8,6 +8,8 @@
 
 namespace rs2 {
 
+void devices_profile();
+
 void frames_profile(const rs2::frameset &frames);
 
 // rs2::frame -> cv::Mat

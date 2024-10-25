@@ -1,6 +1,14 @@
-#include "utils/rs.hpp"
+#include "utils/rs2.hpp"
 
 namespace rs2 {
+
+
+void devices_profile() {
+  rs2::context ctx;
+  for (int i = 0; i < ctx.query_devices().size(); i++) {
+    std::cout << "Device " << i << ": " << ctx.query_devices()[i].get_info(RS2_CAMERA_INFO_NAME) << std::endl;
+  }
+}
 
 
 void frames_profile(const rs2::frameset &frames) {

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# https://github.com/IntelRealSense/librealsense/blob/development/doc/distribution_linux.md
+# https://github.com/IntelRealSense/librealsense
 mkdir -p /etc/apt/keyrings
 curl -sSf https://librealsense.intel.com/Debian/librealsense.pgp | tee /etc/apt/keyrings/librealsense.pgp > /dev/null
 
