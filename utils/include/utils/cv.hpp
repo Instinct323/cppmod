@@ -177,26 +177,24 @@ public:
         float baseline
     ) : block_matcher(block_matcher), fx(fx), baseline(baseline) {}
 
-    void to_depth(cv::Mat &img_left, cv::Mat &img_right, cv::Mat &depth) {
+    void to_depth(const cv::Mat &img_left, const cv::Mat &img_right, cv::Mat &depth) {
       // Compute disparity
       cv::Mat disparity;
       block_matcher->compute(img_left, img_right, disparity);
-      disparity.convertTo(disparity, CV_32F, 1 / 16.0f);
-      // Compute depth
-      float scale = fx * baseline;
-      depth = cv::Mat::zeros(disparity.size(), CV_32F);
+      // FIXME: Compute depth
+      float scale = fx * baseline * 5000;
+      depth = cv::Mat::zeros(disparity.size(), CV_16UC1);
       cv::parallel_for_(
           cv::Range(0, disparity.rows),
           [&](const cv::Range &range) {
               for (int i = range.start; i < range.end; i++) {
                 for (int j = 0; j < disparity.cols; j++) {
-                  float d = disparity.at<float>(i, j);
-                  if (d > 0) depth.at<float>(i, j) = scale / d;
+                  float d = disparity.at<float>(i, j) / 16.f;
+                  depth.at<uint16_t>(i, j) = d > 0 ? scale / d : 0;
                 }
               }
           });
     }
-};
 
 }
 

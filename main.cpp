@@ -14,6 +14,7 @@ int main(int argc, char **argv) {
   pipe.start();
   rs2::frames_profile(pipe.wait_for_frames());
 
+
   while (true) {
     rs2::frameset frames = pipe.wait_for_frames();
 
