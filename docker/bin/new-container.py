@@ -8,11 +8,11 @@ from pathlib import Path
 
 def execute(cmd, check=True):
     ret = print(cmd) or os.system(cmd)
-    if check and ret: raise OSError(f"Fail to execute: {cmd}")
+    if check and ret: raise OSError(f"Fail to execute")
 
 
 class DockerCmd(dict):
-    registered = {"file", "image", "name", "port", "volume", "env", "workdir", "cpus", "gpus", "options"}
+    registered = {"file", "image", "name", "port", "volume", "env", "workdir", "options"}
 
     def __init__(self, file):
         with open(file, "r") as f:
@@ -37,15 +37,15 @@ class DockerCmd(dict):
         self["volume"] = [f"{k}:{v}" for k, v in self.get("volume", {}).items()]
         self["volume"].sort()
         # other
-        self["cpus"] = float(self.get("cpus", os.cpu_count()))
-        self["gpus"] = self.get("gpus", "all")
+        # self["cpus"] = float(self.get("cpus", os.cpu_count()))
+        # self["gpus"] = self.get("gpus", "all")
 
     def export(self) -> str:
         cmd = f"docker run -d "
         # other
         if self.get("name"): cmd += f"--name {self['name']} "
         if self.get("workdir"): cmd += f"-w {self['workdir']} "
-        cmd += f"--cpus {self['cpus']} --gpus {self['gpus']} "
+        # cmd += f"--cpus {self['cpus']} --gpus {self['gpus']} "
         if self.get("options"): cmd += f"{self['options']} "
         # port: <1st>:22
         ports = self["port"]
