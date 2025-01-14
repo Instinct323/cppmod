@@ -1,8 +1,12 @@
-# docker build -f cpp-focal.dockerfile -t instinct323/cpp-focal:empty .
+# docker build -f cpp-ubuntu.dockerfile -t instinct323/cpp-focal:empty .
 
-FROM ubuntu:20.04
-
+# CUDA-VERSION: 12.6.3-cudnn-devel
+ARG LSB_RELEASE=20.04
+ARG CUDA_VERSION=12.6.3-cudnn-devel
 ENV DEBIAN_FRONTEND=noninteractive
+
+# FROM ubuntu:${LSB_RELEASE}
+FROM nvidia/cuda:${CUDA_VERSION}-ubuntu${LSB_RELEASE}
 
 # apt
 RUN apt update && \
@@ -21,7 +25,7 @@ RUN apt update && \
     mkdir /var/run/sshd && \
     echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
 
-# C++ toolchain, cmake 3.16.3
+# C++ toolchain, cmake
 RUN apt install -y build-essential cmake gdb && \
     apt clean
 
