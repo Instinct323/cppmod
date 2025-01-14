@@ -1,12 +1,13 @@
 # docker build -f cpp-ubuntu.dockerfile -t instinct323/cpp-focal:empty .
 
-# CUDA-VERSION: 12.6.3-cudnn-devel
+# CUDA-VERSION
 ARG LSB_RELEASE=20.04
-ARG CUDA_VERSION=12.6.3-cudnn-devel
-ENV DEBIAN_FRONTEND=noninteractive
+ARG CUDA_VERSION=11.4.3-cudnn8-devel
 
 # FROM ubuntu:${LSB_RELEASE}
 FROM nvidia/cuda:${CUDA_VERSION}-ubuntu${LSB_RELEASE}
+
+ENV DEBIAN_FRONTEND=noninteractive
 
 # apt
 RUN apt update && \
@@ -15,7 +16,6 @@ RUN apt update && \
 
 # setup timezone
 RUN echo 'Asia/Shanghai' > /etc/timezone && \
-    ln -s /usr/share/zoneinfo/Etc/UTC /etc/localtime && \
     apt install -q -y --no-install-recommends tzdata
 
 # OpenSSH
@@ -25,8 +25,8 @@ RUN apt update && \
     mkdir /var/run/sshd && \
     echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
 
-# C++ toolchain, cmake
-RUN apt install -y build-essential cmake gdb && \
+# C++ toolchain, cmake, nvidia-utils
+RUN apt install -y build-essential cmake gdb nvidia-utils-560 && \
     apt clean
 
 ARG BIN=/usr/local/bin

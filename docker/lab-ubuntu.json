@@ -1,7 +1,7 @@
 {
   "image": "instinct323/cpp-focal:empty",
   "name": "tongzj",
-  "port": "30066-30075",
+  "port": "30001-30010",
   "volume": {
     "/data/public_datasets": "/home/rcvlab/public_datasets",
     "/data/public_softwares": "/home/rcvlab/public_softwares",
