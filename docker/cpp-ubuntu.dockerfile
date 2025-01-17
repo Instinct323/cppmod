@@ -2,7 +2,7 @@
 
 # CUDA-VERSION
 ARG LSB_RELEASE=20.04
-ARG CUDA_VERSION=11.4.3-cudnn8-devel
+ARG CUDA_VERSION=12.2.2-cudnn8-devel
 
 # FROM ubuntu:${LSB_RELEASE}
 FROM nvidia/cuda:${CUDA_VERSION}-ubuntu${LSB_RELEASE}
@@ -19,14 +19,15 @@ RUN echo 'Asia/Shanghai' > /etc/timezone && \
     apt install -q -y --no-install-recommends tzdata
 
 # OpenSSH
+ARG CFG=/etc/ssh/sshd_config
 RUN apt update && \
     apt install -y openssh-server && \
     apt clean && \
     mkdir /var/run/sshd && \
-    echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
+    echo "PermitRootLogin yes" >> $CFG
 
-# C++ toolchain, cmake, nvidia-utils
-RUN apt install -y build-essential cmake gdb nvidia-utils-560 && \
+# C++ toolchain, cmake
+RUN apt install -y build-essential cmake gdb && \
     apt clean
 
 ARG BIN=/usr/local/bin

@@ -1,10 +1,12 @@
 {
-  "image": "instinct323/cpp-focal:empty",
+  "image": "instinct323/cpp-focal",
   "name": "tongzj",
-  "port": "30001-30010",
+  "port": "30081-30090",
   "volume": {
     "/data/public_datasets": "/home/rcvlab/public_datasets",
     "/data/public_softwares": "/home/rcvlab/public_softwares",
     "/home/tongzanjia/workbench": "/home/workbench"
-  }
+  },
+  "workdir": "/home/workbench",
+  "options": "--runtime=nvidia"
 }

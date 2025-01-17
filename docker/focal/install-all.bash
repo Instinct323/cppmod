@@ -1,7 +1,6 @@
 #!/bin/bash
 
 install-eigen.bash
-install-pcl.bash
 install-indicators.bash
 
 install-glog.bash
@@ -12,4 +11,5 @@ install-ceres.bash    # CMAKE 3.16...3.27, REQUIRE eigen, glog
 install-opencv.bash   # CMAKE 3.5.1
 install-g2o.bash    # REQUIRE eigen
 
+install-pcl.bash
 install-pangolin.bash

@@ -1,5 +1,5 @@
 {
-  "image": "instinct323/cpp-focal:empty",
+  "image": "instinct323/cpp-focal",
   "name": "myfocal",
   "port": "30001-30020",
   "volume": {
@@ -8,6 +8,5 @@
   "env": {
     "DISPLAY": "host.docker.internal:0"
   },
-  "workdir": "/home/workbench",
-  "options": ""
+  "workdir": "/home/workbench"
 }
