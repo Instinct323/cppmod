@@ -42,7 +42,6 @@ void slam::Tracker::run() {
 
 
 int main(int argc, char **argv) {
-  putenv("DISPLAY=host.docker.internal:0");
   glog::Logger logger(argv);
   LOG(INFO) << "Thread pool size: " << parallel::thread_pool_size;
 

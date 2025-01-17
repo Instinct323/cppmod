@@ -4,10 +4,6 @@ from launch_ros.actions import *
 
 
 def generate_launch_description():
-    display = SetEnvironmentVariable(
-        name="DISPLAY",
-        value="host.docker.internal:0"
-    )
     node1 = Node(
         package="turtlesim",
         executable="turtlesim_node"

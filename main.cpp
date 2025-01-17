@@ -2,9 +2,6 @@
 #include "utils/rs2.hpp"
 
 int main(int argc, char **argv) {
-#ifdef USE_XSRV
-  putenv("DISPLAY=host.docker.internal:0");
-#endif
   glog::Logger logger(argv);
 
   rs2::context ctx;

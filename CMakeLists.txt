@@ -7,12 +7,6 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 
-# XServer
-option(USE_XSRV "Use XServer" OFF)
-if (USE_XSRV)
-  add_definitions(-DUSE_XSRV)
-endif ()
-
 # CMake module
 list(APPEND CMAKE_MODULE_PATH
         /media/tongzj/Data/cppmod/cmake
