@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3
 
 import argparse
 import json
@@ -32,7 +32,6 @@ class DockerCmd(dict):
                 self["port"].extend(range(s, e + 1))
             else:
                 self["port"].append(int(p))
-        self["port"].sort()
         # volume
         self["volume"] = [f"{k}:{v}" for k, v in self.get("volume", {}).items()]
         self["volume"].sort()

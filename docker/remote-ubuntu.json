@@ -1,11 +1,17 @@
 {
-  "image": "instinct323/cpp-focal",
+  "image": "gsidocker",
   "name": "tongzj",
-  "port": "30081-30090",
+  "port": "30081-30085",
   "volume": {
     "/data/public_datasets": "/home/rcvlab/public_datasets",
     "/data/public_softwares": "/home/rcvlab/public_softwares",
+    "/tmp/.X11-unix": "/tmp/.X11-unix",
     "/home/tongzanjia/workbench": "/home/workbench"
+  },
+  "env": {
+    "DISPLAY": "$DISPLAY",
+    "NVIDIA_DRIVER_CAPABILITIES": "all",
+    "NVIDIA_VISIBLE_DEVICES": "all"
   },
   "workdir": "/home/workbench",
   "options": "--runtime=nvidia"

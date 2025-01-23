@@ -11,6 +11,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # apt
 RUN apt update && \
+    apt upgrade -y && \
     apt install -y curl git python3-pip sudo tree unzip wget && \
     apt clean
 
