@@ -1,5 +1,6 @@
 {
-  "image": "gsidocker",
+  "image": "instinct323/cpp-focal",
+  "file": "cpp-ubuntu.dockerfile",
   "name": "tongzj",
   "port": "30081-30085",
   "volume": {
@@ -14,5 +15,5 @@
     "NVIDIA_VISIBLE_DEVICES": "all"
   },
   "workdir": "/home/workbench",
-  "options": "--runtime=nvidia"
+  "options": "-d --runtime=nvidia"
 }

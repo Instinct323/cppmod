@@ -1,5 +1,6 @@
 {
   "image": "instinct323/cpp-focal",
+  "file": "cpp-ubuntu.dockerfile",
   "name": "myfocal",
   "port": "30001-30020",
   "volume": {
@@ -8,5 +9,6 @@
   "env": {
     "DISPLAY": "host.docker.internal:0"
   },
-  "workdir": "/home/workbench"
+  "workdir": "/home/workbench",
+  "options": "-d"
 }

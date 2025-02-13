@@ -1,6 +1,8 @@
 #include "utils/glog.hpp"
 #include "utils/rs2.hpp"
 
+#include <sophus/se3.h>
+
 int main(int argc, char **argv) {
   glog::Logger logger(argv);
 

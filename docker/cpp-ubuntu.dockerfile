@@ -1,4 +1,4 @@
-# docker build -f cpp-ubuntu.dockerfile -t instinct323/cpp-focal:empty .
+# docker build -t instinct323/cpp-focal:empty -f cpp-ubuntu.dockerfile .
 
 # CUDA-VERSION
 ARG LSB_RELEASE=20.04
@@ -12,7 +12,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # apt
 RUN apt update && \
     apt upgrade -y && \
-    apt install -y curl git python3-pip sudo tree unzip wget && \
+    apt install -y curl git sudo tree unzip wget && \
     apt clean
 
 # setup timezone
@@ -31,6 +31,20 @@ RUN apt update && \
 RUN apt install -y build-essential cmake gdb && \
     apt clean
 
+# Python 3.9
+RUN apt install -y python3.9 python3.9-dev && \
+    apt clean && \
+    update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.9 1
+
+# pip
+RUN apt install -y python3-pip && \
+    apt clean && \
+    pip config set global.timeout 6000 && \
+    pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple && \
+    pip config set global.trusted-host pypi.tuna.tsinghua.edu.cn && \
+    pip install --upgrade pip
+
+# ROS
 ARG BIN=/usr/local/bin
 COPY bin/ros.key /usr/share/keyrings/ros-archive-keyring.gpg
 COPY bin/ros.* /tmp/

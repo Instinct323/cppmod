@@ -48,6 +48,5 @@ __openvino_cache__
 
 # Environments
 .idea
-*.exe
 desktop.ini
 .clion.source.upload.marker

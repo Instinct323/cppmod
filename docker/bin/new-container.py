@@ -14,15 +14,18 @@ def execute(cmd, check=True):
 class DockerCmd(dict):
     registered = {"file", "image", "name", "port", "volume", "env", "workdir", "options"}
 
-    def __init__(self, file):
-        with open(file, "r") as f:
+    def __init__(self, cfg: Path):
+        with cfg.open() as f:
             super().__init__(json.load(f))
         assert set(self.keys()).issubset(self.registered), f"Invalid keys: {set(self.keys()) - self.registered}"
         # build Dockerfile
-        if Path(self.get("file", "")).is_file():
-            execute(f"docker build -t {self['name']} -f {self['file']} .")
+        file = self.get("file")
+        if file:
+            file = (cfg.parent / file).absolute()
+            assert file.is_file(), f"File not found: {file}"
+            execute(f"docker build -t {self['image']} -f {file} .")
         # name
-        self.setdefault("name", Path(file).stem)
+        self.setdefault("name", cfg.stem)
         # port
         port = str(self.get("port", "")).replace(" ", "").split(",")
         self["port"] = []
@@ -40,7 +43,7 @@ class DockerCmd(dict):
         # self["gpus"] = self.get("gpus", "all")
 
     def export(self) -> str:
-        cmd = f"docker run -d "
+        cmd = f"docker run "
         # other
         if self.get("name"): cmd += f"--name {self['name']} "
         if self.get("workdir"): cmd += f"-w {self['workdir']} "
@@ -68,5 +71,5 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # D:\Software\Anaconda3\envs\torch2\python bin\new-container.py my-jammy.json
-    dcmd = DockerCmd(args.json)
+    dcmd = DockerCmd(Path(args.json))
     execute(dcmd.export())
