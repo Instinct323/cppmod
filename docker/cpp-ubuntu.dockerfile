@@ -7,7 +7,10 @@ ARG CUDA_VERSION=12.2.2-cudnn8-devel
 # FROM ubuntu:${LSB_RELEASE}
 FROM nvidia/cuda:${CUDA_VERSION}-ubuntu${LSB_RELEASE}
 
+LABEL maintainer="tongzanjia@qq.com"
+
 ENV DEBIAN_FRONTEND=noninteractive
+WORKDIR /home
 
 # apt
 RUN apt update && \

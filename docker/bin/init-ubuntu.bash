@@ -14,6 +14,7 @@ if [ $(id -u) -eq 0 ]; then
   pip install --upgrade pip
   # for Desktop
   apt install -y kazam
+  xhost +local:
 
 else
   echo "error: permission denied."

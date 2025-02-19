@@ -15,5 +15,5 @@
     "NVIDIA_VISIBLE_DEVICES": "all"
   },
   "workdir": "/home/workbench",
-  "options": "-d --runtime=nvidia"
+  "options": "-itd --network host --ipc=host --privileged --runtime=nvidia"
 }

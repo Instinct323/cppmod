@@ -15,21 +15,22 @@ class DockerCmd(dict):
     registered = {"file", "image", "name", "port", "volume", "env", "workdir", "options"}
 
     def __init__(self, cfg: Path):
+        cfg = cfg.absolute()
+        os.chdir(cfg.parent)
         with cfg.open() as f:
             super().__init__(json.load(f))
         assert set(self.keys()).issubset(self.registered), f"Invalid keys: {set(self.keys()) - self.registered}"
         # build Dockerfile
-        file = self.get("file")
+        file = Path(self.get("file"))
         if file:
-            file = (cfg.parent / file).absolute()
-            assert file.is_file(), f"File not found: {file}"
+            assert file.is_file(), f"File not found: {file.absolute()}"
             execute(f"docker build -t {self['image']} -f {file} .")
         # name
         self.setdefault("name", cfg.stem)
         # port
         port = str(self.get("port", "")).replace(" ", "").split(",")
         self["port"] = []
-        for p in port:
+        for p in filter(None, port):
             if "-" in p:
                 s, e = map(int, p.split("-"))
                 self["port"].extend(range(s, e + 1))
@@ -45,8 +46,8 @@ class DockerCmd(dict):
     def export(self) -> str:
         cmd = f"docker run "
         # other
-        if self.get("name"): cmd += f"--name {self['name']} "
-        if self.get("workdir"): cmd += f"-w {self['workdir']} "
+        if self.get("name"): cmd += f"--name={self['name']} "
+        if self.get("workdir"): cmd += f"--workdir={self['workdir']} "
         # cmd += f"--cpus {self['cpus']} --gpus {self['gpus']} "
         if self.get("options"): cmd += f"{self['options']} "
         # port: <1st>:22
