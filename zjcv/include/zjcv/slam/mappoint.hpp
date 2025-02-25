@@ -3,7 +3,7 @@
 
 #include <map>
 #include <mutex>
-#include <opencv2/opencv.hpp>
+#include <opencv4/opencv2/opencv.hpp>
 #include <set>
 #include <sophus/se3.hpp>
 

@@ -2,7 +2,7 @@
 #define ZJCV__SLAM__FRAME_HPP
 
 #include <map>
-#include <opencv2/opencv.hpp>
+#include <opencv4/opencv2/opencv.hpp>
 
 #include "utils/sophus.hpp"
 #include "zjcv/imu.hpp"

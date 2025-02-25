@@ -2,7 +2,7 @@
 #define ZJCV__CAMERA__BASE_HPP
 
 #include <Eigen/Core>
-#include <opencv2/opencv.hpp>
+#include <opencv4/opencv2/opencv.hpp>
 #include <sophus/se3.hpp>
 
 #include "utils/glog.hpp"

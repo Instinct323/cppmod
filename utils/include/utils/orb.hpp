@@ -1,7 +1,7 @@
 #ifndef UTILS__ORB_HPP
 #define UTILS__ORB_HPP
 
-#include <opencv2/opencv.hpp>
+#include <opencv4/opencv2/opencv.hpp>
 #include <yaml-cpp/yaml.h>
 
 namespace ORB {

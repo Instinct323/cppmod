@@ -3,7 +3,7 @@
 
 #include <librealsense2/rs.hpp>
 #include <map>
-#include <opencv2/opencv.hpp>
+#include <opencv4/opencv2/opencv.hpp>
 #include <sophus/se3.hpp>
 
 namespace rs2 {

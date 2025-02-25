@@ -3,7 +3,7 @@
 
 #include <Eigen/Core>
 #include <Eigen/src/Core/Matrix.h>
-#include <opencv2/opencv.hpp>
+#include <opencv4/opencv2/opencv.hpp>
 #include <sophus/se3.hpp>
 
 namespace Eigen {
