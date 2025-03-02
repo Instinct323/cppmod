@@ -14,5 +14,5 @@
     "QT_X11_NO_MITSHM": "1"
   },
   "workdir": "/home/workbench",
-  "options": "-itd --network=host --ipc=host --privileged --device=/dev/dri --group-add video"
+  "options": "-itd --network=host --ipc=host --privileged  --runtime=nvidia"
 }

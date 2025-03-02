@@ -2,7 +2,7 @@
 
 # CUDA-VERSION
 ARG LSB_RELEASE=20.04
-ARG CUDA_VERSION=12.2.2-cudnn8-devel
+ARG CUDA_VERSION=12.6.3-cudnn-devel
 
 # FROM ubuntu:${LSB_RELEASE}
 FROM nvidia/cuda:${CUDA_VERSION}-ubuntu${LSB_RELEASE}
