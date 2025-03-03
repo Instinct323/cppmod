@@ -45,7 +45,6 @@ RUN update-alternatives --install /usr/bin/python python /usr/bin/python3 1 && \
     pip install --upgrade pip
 
 # ROS
-ARG BIN=/usr/local/bin
 COPY bin/ros.key /usr/share/keyrings/ros-archive-keyring.gpg
 COPY bin/ros.* /tmp/
 
