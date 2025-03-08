@@ -1,8 +1,6 @@
 #include "utils/glog.hpp"
 #include "utils/rs2.hpp"
 
-#include <sophus/se3.h>
-
 int main(int argc, char **argv) {
   glog::Logger logger(argv);
 
@@ -17,8 +15,7 @@ int main(int argc, char **argv) {
   while (true) {
     rs2::frameset frames = pipe.wait_for_frames();
 
-    auto acc = frames.first_or_default(RS2_STREAM_ACCEL);
-    if (acc) {
+    if (auto acc = frames.first_or_default(RS2_STREAM_ACCEL)) {
       auto acc_data = acc.as<rs2::motion_frame>().get_motion_data();
       LOG(INFO) << "Accel: " << acc_data.x << " " << acc_data.y << " " << acc_data.z;
     }

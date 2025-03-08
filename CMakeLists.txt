@@ -9,7 +9,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 
 # CMake module
 list(APPEND CMAKE_MODULE_PATH
-        /media/tongzj/disk/Workbench/cppmod/cmake
+        /media/tongzj/Data/Workbench/cppmod/cmake
 )
 
 # ROS-noetic header
