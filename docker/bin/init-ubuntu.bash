@@ -6,6 +6,7 @@ if [ $(id -u) -eq 0 ]; then
 
   # utils
   apt install -y curl git sudo tree unzip wget
+  apt install -y libnghttp2-dev libssl-dev nghttp2
   apt install -y build-essential cmake gdb
 
   # pip

@@ -15,7 +15,8 @@ WORKDIR /home
 # apt
 RUN apt update && \
     apt upgrade -y && \
-    apt install -y curl git sudo tree unzip wget && apt clean
+    apt install -y curl git sudo tree unzip wget && \
+    apt install -y libnghttp2-dev libssl-dev nghttp2 && apt clean
 
 # setup timezone
 RUN echo 'Asia/Shanghai' > /etc/timezone && \
