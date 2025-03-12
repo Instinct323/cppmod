@@ -63,7 +63,7 @@ public:
     Matrix34f load_calib(std::string id = "P0") {
       std::string file = mPath + "sequences/" + mId + "/calib.txt";
       std::ifstream ifs(file);
-      ASSERT(ifs.is_open(), "fail to open file " << file)
+      assert(ifs.is_open());
       std::string line;
       while (std::getline(ifs, line)) {
         std::istringstream iss(line);

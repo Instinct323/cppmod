@@ -1,7 +1,7 @@
 #ifndef ZJCV__IMU_HPP
 #define ZJCV__IMU_HPP
 
-#include <Eigen/Core>
+#include <eigen3/Eigen/Core>
 #include <memory>
 #include <opencv4/opencv2/opencv.hpp>
 #include <sophus/se3.hpp>
@@ -22,24 +22,24 @@ public:
     Eigen::DiagonalMatrix<float, 6> cov, covWalk;
 
     Device(float acc_noise, float acc_walk, float gyro_noise, float gyro_walk, float frequency) {
-      float sf = sqrt(frequency);
-      float na2 = pow(acc_noise * sf, 2), ng2 = pow(gyro_noise * sf, 2),
-          wa2 = pow(acc_walk / sf, 2), wg2 = pow(gyro_walk / sf, 2);
-      cov.diagonal() << ng2, ng2, ng2, na2, na2, na2;
-      covWalk.diagonal() << wg2, wg2, wg2, wa2, wa2, wa2;
+        float sf = sqrt(frequency);
+        float na2 = pow(acc_noise * sf, 2), ng2 = pow(gyro_noise * sf, 2),
+              wa2 = pow(acc_walk / sf, 2), wg2 = pow(gyro_walk / sf, 2);
+        cov.diagonal() << ng2, ng2, ng2, na2, na2, na2;
+        covWalk.diagonal() << wg2, wg2, wg2, wa2, wa2, wa2;
     }
 
     Device(const Device &) = delete;
 
     static Ptr from_yaml(const YAML::Node &cfg) {
-      if (YAML::is_invalid(cfg)) return nullptr;
-      return std::make_shared<Device>(
-          cfg["acc_noise"].as<float>(),
-          cfg["acc_walk"].as<float>(),
-          cfg["gyro_noise"].as<float>(),
-          cfg["gyro_walk"].as<float>(),
-          cfg["frequency"].as<float>()
-      );
+        if (YAML::is_invalid(cfg)) return nullptr;
+        return std::make_shared<Device>(
+            cfg["acc_noise"].as<float>(),
+            cfg["acc_walk"].as<float>(),
+            cfg["gyro_noise"].as<float>(),
+            cfg["gyro_walk"].as<float>(),
+            cfg["frequency"].as<float>()
+        );
     }
 };
 
@@ -115,16 +115,16 @@ public:
     MovingPose() = default;
 
     void set_zero() {
-      B.a.setZero();
-      B.w.setZero();
-      T_imu_world = Sophus::SE3f();
-      T_world_imu = Sophus::SE3f();
-      v = Sophus::SE3f();
+        B.a.setZero();
+        B.w.setZero();
+        T_imu_world = Sophus::SE3f();
+        T_world_imu = Sophus::SE3f();
+        v = Sophus::SE3f();
     }
 
     void set_pose(const Sophus::SE3f &T) {
-      T_world_imu = T;
-      T_imu_world = T.inverse();
+        T_world_imu = T;
+        T_imu_world = T.inverse();
     }
 
     // T_last_cur

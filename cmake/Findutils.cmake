@@ -1,4 +1,4 @@
-if (NOT UTILS_FOUND)
+if (NOT utils_FOUND)
 
   # CMake module
   list(APPEND CMAKE_MODULE_PATH
@@ -15,7 +15,7 @@ if (NOT UTILS_FOUND)
   find_package(yaml-cpp REQUIRED)
 
   # all library
-  set(UTILS_LIBS
+  set(utils_LIBS
           glog::glog
           fmt::fmt
           ${OpenCV_LIBS}
@@ -36,7 +36,7 @@ if (NOT UTILS_FOUND)
   )
 
   # header
-  find_path(UTILS_INCLUDE_DIR
+  find_path(utils_INCLUDE_DIR
           NAMES utils/glog.hpp
           PATHS ${CMAKE_SOURCE_DIR}/utils/include
           /usr/local/include
@@ -45,17 +45,17 @@ if (NOT UTILS_FOUND)
   )
 
   # source
-  file(GLOB UTILS_SRC ${CMAKE_SOURCE_DIR}/utils/src/*.cpp)
+  file(GLOB utils_SRC ${CMAKE_SOURCE_DIR}/utils/src/*.cpp)
 
   # message
-  if (UTILS_INCLUDE_DIR AND UTILS_SRC)
-    message(STATUS "Found utils: ${UTILS_INCLUDE_DIR}")
-    include_directories(${UTILS_INCLUDE_DIR})
-    set(UTILS_SRC ${UTILS_SRC})
-    set(UTILS_FOUND TRUE)
+  if (utils_INCLUDE_DIR AND utils_SRC)
+    message(STATUS "Found utils: ${utils_INCLUDE_DIR}")
+    include_directories(${utils_INCLUDE_DIR})
+    set(utils_SRC ${utils_SRC})
+    set(utils_FOUND TRUE)
   else ()
     message(FATAL_ERROR "utils not found")
-    set(UTILS_FOUND FALSE)
+    set(utils_FOUND FALSE)
   endif ()
 
 endif ()

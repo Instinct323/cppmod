@@ -4,6 +4,7 @@ project(main)
 set(CMAKE_C_COMPILER "/usr/bin/gcc")
 set(CMAKE_CXX_COMPILER "/usr/bin/g++")
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 
@@ -18,21 +19,25 @@ include_directories(/opt/ros/noetic/include)
 file(GLOB ROS2_HEADER /opt/ros/humble/include/*)
 include_directories(${ROS2_HEADER})
 
+# My Libraries
 find_package(utils REQUIRED)
-find_package(zjcv REQUIRED)
+if (utils_FOUND)
+  add_library(utils STATIC ${utils_SRC})
+  target_link_libraries(utils ${utils_LIBS})
+endif ()
 
-# my library
-add_library(utils STATIC ${UTILS_SRC})
-add_library(zjcv STATIC ${ZJCV_SRC} ${UTILS_SRC})
-target_link_libraries(utils ${UTILS_LIBS})
-target_link_libraries(zjcv ${UT-ILS_LIBS})
+find_package(zjcv REQUIRED)
+if (zjcv_FOUND)
+  add_library(zjcv STATIC ${zjcv_SRC} ${utils_SRC})
+  target_link_libraries(zjcv ${utils_LIBS})
+endif ()
 
 # test
 add_executable(test main.cpp)
-target_link_libraries(test utils ${ZJCV_LIBS})
+target_link_libraries(test utils)
 
 # code insight
 option(CODE_INSIGHT "Code Insight" OFF)
 if (CODE_INSIGHT)
-  
+
 endif ()

@@ -21,20 +21,19 @@ Sophus::SE3f toSE3(const g2o::SE3Quat &pose);
 
 
 // g2o 优化器
-template<int p, int l,
-    template<typename> class LinearSolverTp,
-    typename AlgorithmT = OptimizationAlgorithmLevenberg
->
-class Optimizer : public SparseOptimizer {
+template <int p, int l,
+          template<typename> class LinearSolverTp,
+          typename AlgorithmT = OptimizationAlgorithmLevenberg>
+class Optimizer: public SparseOptimizer {
 
 public:
     typedef BlockSolverPL<p, l> BlockSolverType;
     typedef LinearSolverTp<typename BlockSolverType::PoseMatrixType> LinearSolverType;
 
     Optimizer() : SparseOptimizer() {
-      auto lin_solver = make_unique<LinearSolverType>();
-      std::unique_ptr<BlockSolverType> block_solver(new BlockSolverType(std::move(lin_solver)));
-      setAlgorithm(new AlgorithmT(std::move(block_solver)));
+        auto lin_solver = make_unique<LinearSolverType>();
+        std::unique_ptr<BlockSolverType> block_solver(new BlockSolverType(std::move(lin_solver)));
+        setAlgorithm(new AlgorithmT(std::move(block_solver)));
     }
 };
 

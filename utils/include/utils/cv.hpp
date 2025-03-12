@@ -1,7 +1,7 @@
 #ifndef UTILS__CV_HPP
 #define UTILS__CV_HPP
 
-#include <Eigen/Core>
+#include <eigen3/Eigen/Core>
 #include <opencv4/opencv2/opencv.hpp>
 
 #include "glog.hpp"
@@ -195,6 +195,8 @@ public:
               }
           });
     }
+
+};
 
 }
 

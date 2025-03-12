@@ -1,7 +1,7 @@
 #ifndef ZJCV__CAMERA__BASE_HPP
 #define ZJCV__CAMERA__BASE_HPP
 
-#include <Eigen/Core>
+#include <eigen3/Eigen/Core>
 #include <opencv4/opencv2/opencv.hpp>
 #include <sophus/se3.hpp>
 

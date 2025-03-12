@@ -1,25 +1,24 @@
+#include "utils/file.hpp"
 #include "utils/glog.hpp"
-#include "utils/rs2.hpp"
+#include "utils/sophus.hpp"
 
-int main(int argc, char **argv) {
+
+int main(int argc, char** argv) {
   glog::Logger logger(argv);
 
-  rs2::context ctx;
-  rs2::devices_profile();
+  static std::string file = "/media/tongzj/Data/Workbench/Lab/slambook2/ch5/rgbd/pose.txt";
+  std::vector<Sophus::SE3f> vPoses;
 
-  rs2::pipeline pipe(ctx);
-  pipe.start();
-  rs2::frames_profile(pipe.wait_for_frames());
-
-
-  while (true) {
-    rs2::frameset frames = pipe.wait_for_frames();
-
-    if (auto acc = frames.first_or_default(RS2_STREAM_ACCEL)) {
-      auto acc_data = acc.as<rs2::motion_frame>().get_motion_data();
-      LOG(INFO) << "Accel: " << acc_data.x << " " << acc_data.y << " " << acc_data.z;
+  TXT::row_mapping(
+    file, [&vPoses](const std::string& line) {
+      std::istringstream iss(line);
+      float tx, ty, tz, qx, qy, qz, qw;
+      // timestamp tx ty tz qx qy qz qw
+      iss >> tx >> ty >> tz >> qx >> qy >> qz >> qw;
+      vPoses.emplace_back(Eigen::Quaternionf(qw, qx, qy, qz), Eigen::Vector3f(tx, ty, tz));
+      LOG(INFO) << vPoses.back();
     }
-  }
+  );
 
   return 0;
 }

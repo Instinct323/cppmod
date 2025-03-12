@@ -1,15 +1,15 @@
-if (NOT ZJCV_FOUND)
+if (NOT zjcv_FOUND)
 
   # packages
   find_package(utils REQUIRED)
 
   # all library
-  set(ZJCV_LIBS
+  set(zjcv_LIBS
           ${UTILS_LIBS}
   )
 
   # header
-  find_path(ZJCV_INCLUDE_DIR
+  find_path(zjcv_INCLUDE_DIR
           NAMES zjcv/camera.hpp
           PATHS ${CMAKE_SOURCE_DIR}/zjcv/include
           /usr/local/include
@@ -18,17 +18,17 @@ if (NOT ZJCV_FOUND)
   )
 
   # source
-  file(GLOB ZJCV_SRC ${CMAKE_SOURCE_DIR}/zjcv/src/*.cpp)
+  file(GLOB zjcv_SRC ${CMAKE_SOURCE_DIR}/zjcv/src/*.cpp)
 
   # message
-  if (ZJCV_INCLUDE_DIR AND ZJCV_SRC)
-    message(STATUS "Found zjcv: ${ZJCV_INCLUDE_DIR}")
-    include_directories(${ZJCV_INCLUDE_DIR})
-    set(ZJCV_SRC ${ZJCV_SRC})
-    set(ZJCV_FOUND TRUE)
+  if (zjcv_INCLUDE_DIR AND zjcv_SRC)
+    message(STATUS "Found zjcv: ${zjcv_INCLUDE_DIR}")
+    include_directories(${zjcv_INCLUDE_DIR})
+    set(zjcv_SRC ${zjcv_SRC})
+    set(zjcv_FOUND TRUE)
   else ()
     message(FATAL_ERROR "zjcv not found")
-    set(ZJCV_FOUND FALSE)
+    set(zjcv_FOUND FALSE)
   endif ()
 
 endif ()
