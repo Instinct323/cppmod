@@ -30,18 +30,18 @@ double abs_trans_error(const std::vector<Eigen::Vector3f> &pts1,
 
 
 // 右雅可比矩阵
-template<typename T>
+template <typename T>
 Eigen::Matrix3<T> rightJacobian(const Eigen::Vector3<T> &omega) {
-  T theta2 = omega.squaredNorm(), eps = Sophus::Constants<T>::epsilon();
-  Eigen::Matrix3<T> rightJ = Eigen::Matrix3<T>::Identity();
+    T theta2 = omega.squaredNorm(), eps = Sophus::Constants<T>::epsilon();
+    Eigen::Matrix3<T> rightJ = Eigen::Matrix3<T>::Identity();
 
-  if (theta2 > eps * eps) {
-    T theta = std::sqrt(theta2);
-    Eigen::Matrix3<T> omega_hat = SO3<T>::hat(omega), omega_hat2 = omega_hat * omega_hat;
-    rightJ += -(1 - std::cos(theta)) * omega_hat / theta2
-              + (theta - std::sin(theta)) * omega_hat2 / (theta2 * theta);
-  }
-  return rightJ;
+    if (theta2 > eps * eps) {
+        T theta = std::sqrt(theta2);
+        Eigen::Matrix3<T> omega_hat = SO3<T>::hat(omega), omega_hat2 = omega_hat * omega_hat;
+        rightJ += -(1 - std::cos(theta)) * omega_hat / theta2
+            + (theta - std::sin(theta)) * omega_hat2 / (theta2 * theta);
+    }
+    return rightJ;
 }
 
 
@@ -62,12 +62,12 @@ public:
 
 
 // 重载输出
-template<typename T>
-std::ostream &operator<<(std::ostream &os, const Sophus::SE3<T> &se3) {
-  const Eigen::Quaternion<T> &q = se3.unit_quaternion();
-  const Eigen::Vector3<T> &t = se3.translation();
-  return (os << t[0] << " " << t[1] << " " << t[2] << " " <<
-             q.w() << " " << q.x() << " " << q.y() << " " << q.z());
+template <typename T>
+std::ostream& operator<<(std::ostream &os, const Sophus::SE3<T> &se3) {
+    const Eigen::Quaternion<T> &q = se3.unit_quaternion();
+    const Eigen::Vector3<T> &t = se3.translation();
+    return (os << t[0] << " " << t[1] << " " << t[2] << " " <<
+            q.x() << " " << q.y() << " " << q.z() << " " << q.w());
 }
 
 }

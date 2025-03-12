@@ -16,7 +16,6 @@ public:
       google::InitGoogleLogging(argv[0]);
       FLAGS_logtostderr = true;
       FLAGS_minloglevel = google::INFO;
-      LOG(INFO) << "CXX standard: " << __cplusplus;
     }
 
     ~Logger() { google::ShutdownGoogleLogging(); }
