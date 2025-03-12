@@ -32,9 +32,9 @@ if (zjcv_FOUND)
   target_link_libraries(zjcv ${utils_LIBS})
 endif ()
 
-# test
-add_executable(test main.cpp)
-target_link_libraries(test utils)
+# demo
+add_executable(demo demo.cpp)
+target_link_libraries(demo utils)
 
 # code insight
 option(CODE_INSIGHT "Code Insight" OFF)
