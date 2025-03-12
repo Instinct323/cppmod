@@ -1,4 +1,0 @@
-/media/tongzj/Data/Workbench/cppmod/build/CMakeFiles/rebuild_cache.dir
-/media/tongzj/Data/Workbench/cppmod/build/CMakeFiles/edit_cache.dir
-/media/tongzj/Data/Workbench/cppmod/build/CMakeFiles/test.dir
-/media/tongzj/Data/Workbench/cppmod/build/CMakeFiles/utils.dir
