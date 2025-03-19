@@ -23,7 +23,7 @@ class Base {
 
 protected:
     Vectorf mvParam;
-    cv::Mat mMap1, mMap2;   // 畸变矫正映射
+    cv::Mat mMap1, mMap2; // 畸变矫正映射
 
 public:
     const cv::Size img_size;
@@ -34,9 +34,9 @@ public:
     explicit Base(const cv::Size imgSize, const Vectorf &intrinsics, const Vectorf &distCoeffs,
                   const Sophus::SE3f &T_cam_imu = Sophus::SE3f()
     ) : img_size(imgSize), mvParam(intrinsics), T_cam_imu(T_cam_imu) {
-      // 内参: fx, fy, cx, cy
-      assert(intrinsics.size() == 4 && "Intrinsics size must be 4");
-      mvParam.insert(mvParam.end(), distCoeffs.begin(), distCoeffs.end());
+        // 内参: fx, fy, cx, cy
+        assert(intrinsics.size() == 4 && "Intrinsics size must be 4");
+        mvParam.insert(mvParam.end(), distCoeffs.begin(), distCoeffs.end());
     }
 
     Base(const Base &) = delete;
@@ -45,8 +45,9 @@ public:
 
     // 参数读写
     inline void set_param(int i, float value, bool safe = false) {
-      if (!safe) LOG(WARNING) << "Unsafe set_param: " << i << " = " << value;
-      mvParam[i] = value;
+        if (!safe)
+            LOG(WARNING) << "Unsafe set_param: " << i << " = " << value;
+        mvParam[i] = value;
     }
 
     inline float get_param(int i) const { return mvParam[i]; }
@@ -56,9 +57,9 @@ public:
     Vectorf get_distcoeffs() const { return {mvParam.begin() + 4, mvParam.end()}; }
 
     // 像素判定
-    template<typename T>
+    template <typename T>
     inline bool is_in(const T x, const T y) const {
-      return x >= 0 && x < img_size.width && y >= 0 && y < img_size.height;
+        return x >= 0 && x < img_size.width && y >= 0 && y < img_size.height;
     }
 
     inline bool is_in(const cv::Point2f &pt) const { return is_in(pt.x, pt.y); }
@@ -86,10 +87,10 @@ public:
     virtual void undistort(const VectorPt2f &src, VectorPt2f &dst) const = 0;
 
     virtual void undistort(const VectorKp &src, VectorKp &dst) const {
-      VectorPt2f pts;
-      for (const auto &kp: src) pts.push_back(kp.pt);
-      undistort(pts, pts);
-      for (size_t i = 0; i < src.size(); ++i) dst[i].pt = pts[i];
+        VectorPt2f pts;
+        for (const auto &kp: src) pts.push_back(kp.pt);
+        undistort(pts, pts);
+        for (size_t i = 0; i < src.size(); ++i) dst[i].pt = pts[i];
     }
 
     // 绘制归一化平面 (z=1)

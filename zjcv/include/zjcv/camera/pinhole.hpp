@@ -14,7 +14,7 @@ namespace camera {
   return {(x - vp[2]) / vp[0], (y - vp[3]) / vp[1], 1.f};
 
 
-class Pinhole : public Base {
+class Pinhole: public Base {
     cv::Mat mOrgK, mRectR;
 
 public:
@@ -25,9 +25,9 @@ public:
     explicit Pinhole(const cv::Size imgSize, const Vectorf &intrinsics, const Vectorf &distCoeffs,
                      const Sophus::SE3f &T_cam_imu = Sophus::SE3f()
     ) : Base(imgSize, intrinsics, distCoeffs, T_cam_imu), mOrgK(getK()) {
-      assert(distCoeffs.size() >= 4 && "Distortion coefficients size must be at least 4");
-      // 计算畸变矫正映射
-      cv::initUndistortRectifyMap(mOrgK, distCoeffs, cv::Mat(), mOrgK, img_size, CV_32FC1, mMap1, mMap2);
+        assert(distCoeffs.size() >= 4 && "Distortion coefficients size must be at least 4");
+        // 计算畸变矫正映射
+        cv::initUndistortRectifyMap(mOrgK, distCoeffs, cv::Mat(), mOrgK, img_size, CV_32FC1, mMap1, mMap2);
     }
 
     Pinhole(const Pinhole &) = delete;

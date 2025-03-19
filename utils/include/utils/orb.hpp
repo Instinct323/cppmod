@@ -24,8 +24,8 @@ public:
               int nlevels = 8,
               std::pair<int, int> lappingArea = {-1, -1}
     ) : mpExtractor(cv::ORB::create(nfeatures, scaleFactor, nlevels)), mLappingArea(std::move(lappingArea)) {
-      assert((mLappingArea.first == -1 && mLappingArea.second == -1) ||
-             (0 <= mLappingArea.first < mLappingArea.second) && "Invalid lapping area");
+        assert((mLappingArea.first == -1 && mLappingArea.second == -1) ||
+            (0 <= mLappingArea.first < mLappingArea.second) && "Invalid lapping area");
     }
 
     /**

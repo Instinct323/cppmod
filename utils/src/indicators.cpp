@@ -5,8 +5,8 @@ namespace indicators {
 IndeterminateProgressBar getIndeterminateProgressBar(int width) {
     return IndeterminateProgressBar{
         option::BarWidth{width},
-        indicators::option::Fill{"····"},
-        indicators::option::Lead{"<==>"},
+        option::Fill{"····"},
+        option::Lead{"<==>"},
         PROGRESS_STYLE
     };
 }

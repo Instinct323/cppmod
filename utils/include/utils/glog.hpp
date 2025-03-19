@@ -13,9 +13,9 @@ namespace glog {
 class Logger {
 public:
     explicit Logger(char **argv) {
-      google::InitGoogleLogging(argv[0]);
-      FLAGS_logtostderr = true;
-      FLAGS_minloglevel = google::INFO;
+        google::InitGoogleLogging(argv[0]);
+        FLAGS_logtostderr = true;
+        FLAGS_minloglevel = google::INFO;
     }
 
     ~Logger() { google::ShutdownGoogleLogging(); }
@@ -37,9 +37,9 @@ public:
     void reset() { t0 = Clock::now(); }
 
     double elapsed() const {
-      Timepoint t1 = Clock::now();
-      Duration time_used = std::chrono::duration_cast<Duration>(t1 - t0);
-      return time_used.count();
+        Timepoint t1 = Clock::now();
+        Duration time_used = std::chrono::duration_cast<Duration>(t1 - t0);
+        return time_used.count();
     }
 };
 

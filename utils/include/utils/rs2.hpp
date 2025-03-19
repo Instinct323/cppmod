@@ -18,7 +18,7 @@ extern std::map<rs2_format, int> cv_fmt_lut;
 cv::Mat toCvMat(const rs2::video_frame &vf);
 
 // rs2::frame -> Sophus
-Sophus::SE3f toSE3(const rs2::pose_frame &frame);
+Sophus::SE3f toSE3(const rs2::pose_frame &pf);
 
 // rs2::frame -> Vector3f
 Eigen::Vector3f toVec3f(const rs2::motion_frame &mf);

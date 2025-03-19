@@ -14,9 +14,9 @@ g2o::SE3Quat toG2O(const Sophus::SE3f &T);
 
 /** @brief 基于 SVD 的线性三角剖分
  *  @param vP_cam - 相机坐标系下的关键点 (z=1)
- *  @param vT_cam_ref - 相机位姿 (相对于参考坐标系) */
+ *  @param vT_ref_cam - 相机位姿 (相对于参考坐标系) */
 float triangulation(const std::vector<Eigen::Vector3f> &vP_cam,
-                    const std::vector<Sophus::SE3f> &vT_cam_ref,
+                    const std::vector<Sophus::SE3f> &vT_ref_cam,
                     Eigen::Vector3f &P_ref);
 
 /** @brief 基于单位四元数的轨迹对齐

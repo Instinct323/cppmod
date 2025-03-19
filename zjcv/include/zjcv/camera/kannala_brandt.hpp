@@ -23,7 +23,7 @@ namespace camera {
   return {wxy.at<float>(0), wxy.at<float>(1), 1};
 
 
-class KannalaBrandt : public Base {
+class KannalaBrandt: public Base {
 
 protected:
     cv::Mat mUnprojectCache;
@@ -38,8 +38,8 @@ public:
     explicit KannalaBrandt(const cv::Size imgSize, const Vectorf &intrinsics, const Vectorf &distCoeffs,
                            const Sophus::SE3f &T_cam_imu = Sophus::SE3f()
     ) : Base(imgSize, intrinsics, distCoeffs, T_cam_imu), mUnprojectCache(img_size, CV_32FC3) {
-      assert(distCoeffs.size() == 4 && "Distortion coefficients size must be 4");
-      make_unproject_cache();
+        assert(distCoeffs.size() == 4 && "Distortion coefficients size must be 4");
+        make_unproject_cache();
     }
 
     KannalaBrandt(const KannalaBrandt &) = delete;

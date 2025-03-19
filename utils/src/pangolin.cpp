@@ -7,84 +7,87 @@ namespace pangolin {
 
 
 void draw_imu(const OpenGlMatrix &Tcw, float w) {
-  float h = w * 0.75, z = w * 0.6;
-  float pts[4][3] = {{-w, -h, z},
-                     {w,  -h, z},
-                     {w,  -h, -z},
-                     {-w, -h, -z}};
+    float h = w * 0.75, z = w * 0.6;
+    float pts[4][3] = {
+        {-w, -h, z},
+        {w, -h, z},
+        {w, -h, -z},
+        {-w, -h, -z}
+    };
 
-  glPushMatrix();
+    glPushMatrix();
 #ifdef HAVE_GLES
   glMultMatrixf(Twc.m);
 #else
-  glMultMatrixd(Tcw.m);
+    glMultMatrixd(Tcw.m);
 #endif
 
-  glBegin(GL_LINES);
-  for (int i = 0; i < 4; ++i) {
-    glVertex3f(0, 0, 0);
-    glVertex3fv(pts[i]);
-  }
-  glVertex3fv(pts[0]);
-  for (int i = 1; i < 4; ++i) {
-    glVertex3fv(pts[i]);
-    glVertex3fv(pts[i]);
-  }
-  glVertex3fv(pts[0]);
+    glBegin(GL_LINES);
+    for (int i = 0; i < 4; ++i) {
+        glVertex3f(0, 0, 0);
+        glVertex3fv(pts[i]);
+    }
+    glVertex3fv(pts[0]);
+    for (int i = 1; i < 4; ++i) {
+        glVertex3fv(pts[i]);
+        glVertex3fv(pts[i]);
+    }
+    glVertex3fv(pts[0]);
 
-  glEnd();
-  glPopMatrix();
+    glEnd();
+    glPopMatrix();
 }
 
 
-void plot_trajectory(YAML::Node cfg,
-                     std::vector<double> &vTsImg, std::vector<std::string> &vImgFiles,
+void plot_trajectory(const YAML::Node cfg,
+                     const std::vector<double> &vTsImg,
+                     const std::vector<std::string> &vImgFiles,
                      Trajectory &trace) {
-  glog::Timer timer;
-  cv::GrayLoader grayloader;
-  int delay = 1000 / cfg["fps"].as<int>();
+    glog::Timer timer;
+    cv::GrayLoader grayloader;
+    int delay = 1000 / cfg["fps"].as<int>();
 
-  Figure::Ptr pgl_fig = Figure::from_yaml(cfg);
-  auto pbar = indicators::getProgressBar(vTsImg.size());
+    Figure::Ptr pgl_fig = Figure::from_yaml(cfg);
+    auto pbar = indicators::getProgressBar(vTsImg.size());
 
-  for (int i = 0; i < vTsImg.size() && pgl_fig->is_running(); ++i) {
-    timer.reset();
-    pgl_fig->clear();
+    for (int i = 0; i < vTsImg.size() && pgl_fig->is_running(); ++i) {
+        timer.reset();
+        pgl_fig->clear();
 
-    const OpenGlMatrix &T_world_imu(trace.plot(vTsImg[i]));
-    pgl_fig->follow(T_world_imu);
+        const OpenGlMatrix &T_world_imu(trace.plot(vTsImg[i]));
+        pgl_fig->follow(T_world_imu);
 
-    pgl_fig->draw();
-    pbar.tick();
-    cv::imshow("Trajectory", grayloader(vImgFiles[i]));
+        pgl_fig->draw();
+        pbar.tick();
+        cv::imshow("Trajectory", grayloader(vImgFiles[i]));
 
-    int cost = timer.elapsed() * 1e3;
-    indicators::set_desc(pbar, "FPS=" + std::to_string(1000 / std::max(delay, cost)), false);
-    cv::waitKey(std::max(1, delay - cost));
-  }
+        int cost = timer.elapsed() * 1e3;
+        indicators::set_desc(pbar, "FPS=" + std::to_string(1000 / std::max(delay, cost)), false);
+        cv::waitKey(std::max(1, delay - cost));
+    }
 }
 
 
 Figure::Figure(std::string window_title, int w, int h) : w(w), h(h), mRender() {
-  CreateWindowAndBind(window_title, w, h);
-  glEnable(GL_DEPTH_TEST);
-  glEnable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-  mDisplay = CreateDisplay().SetHandler(new Handler3D(mRender)).SetBounds(0.0, 1.0, 0.0, 1.0);
+    CreateWindowAndBind(window_title, w, h);
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+    mDisplay = CreateDisplay().SetHandler(new Handler3D(mRender)).SetBounds(0.0, 1.0, 0.0, 1.0);
 }
 
 
 Figure::Ptr Figure::from_yaml(const YAML::Node &cfg) {
-  auto size = YAML::toVec<int>(cfg["resolution"]);
-  auto view_point = YAML::toVec<float>(cfg["view_point"]);
+    auto size = YAML::toVec<int>(cfg["resolution"]);
+    auto view_point = YAML::toVec<float>(cfg["view_point"]);
 
-  auto pFig = std::make_shared<Figure>(cfg["title"].as<std::string>(), size[0], size[1]);
-  pFig->set_focal(cfg["camera_focal"].as<float>());
-  pFig->set_view_point(view_point[0], view_point[1], view_point[2],
-                       static_cast<pangolin::AxisDirection>(cfg["view_up_axis"].as<int>()));
-  pFig->set_panel(cfg["panel_ratio"].as<float>(0.f));
-  return pFig;
+    auto pFig = std::make_shared<Figure>(cfg["title"].as<std::string>(), size[0], size[1]);
+    pFig->set_focal(cfg["camera_focal"].as<float>());
+    pFig->set_view_point(view_point[0], view_point[1], view_point[2],
+                         static_cast<pangolin::AxisDirection>(cfg["view_up_axis"].as<int>()));
+    pFig->set_panel(cfg["panel_ratio"].as<float>(0.f));
+    return pFig;
 }
 
 }
