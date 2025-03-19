@@ -13,8 +13,8 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
 # ROS-noetic header
 include_directories(/opt/ros/noetic/include)
-# ROS-humble header
-file(GLOB ROS2_HEADER /opt/ros/humble/include/*)
+# ROS-foxy header
+file(GLOB ROS2_HEADER /opt/ros/foxy/include/*)
 include_directories(${ROS2_HEADER})
 
 # My Libraries
