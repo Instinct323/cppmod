@@ -9,9 +9,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 
 # CMake module
-list(APPEND CMAKE_MODULE_PATH
-        /media/tongzj/Data/Workbench/cppmod/cmake
-)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
 # ROS-noetic header
 include_directories(/opt/ros/noetic/include)
