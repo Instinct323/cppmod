@@ -34,7 +34,7 @@ float triangulation(const std::vector<Eigen::Vector3f> &vP_cam,
     for (int i = 0; i < n; ++i) {
         Eigen::Vector3f P_cam = vT_ref_cam[i] * P_ref;
         if (P_cam[2] < 1e-4) return -1;
-        reproj_error = std::max(reproj_error, ((P_cam.head(2) / P_cam[2]) - vP_cam[i].head(2)).squaredNorm());
+        reproj_error = std::max(reproj_error, (P_cam.head(2) / P_cam[2] - vP_cam[i].head(2)).squaredNorm());
     }
     return reproj_error;
 }

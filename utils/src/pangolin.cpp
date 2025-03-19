@@ -68,7 +68,7 @@ void plot_trajectory(const YAML::Node cfg,
 }
 
 
-Figure::Figure(std::string window_title, int w, int h) : w(w), h(h), mRender() {
+Figure::Figure(std::string window_title, int w, int h) : w(w), h(h) {
     CreateWindowAndBind(window_title, w, h);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);

@@ -96,7 +96,7 @@ float dy_filter(const std::vector<Eigen::Vector3f> &unprojs0,
     for (cv::DMatch &m: matches) {
         dy.push_back(unprojs0[m.queryIdx][1] - unprojs1[m.trainIdx][1]);
     }
-    math::PautaCriterion<float> is_inlier(dy, sigma_factor);
+    math::PautaCriterion is_inlier(dy, sigma_factor);
     if (mean) *mean = is_inlier.mMean;
 
     for (int i = matches.size() - 1; i >= 0; i--) {
