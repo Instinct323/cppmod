@@ -1,9 +1,28 @@
+# Byte-compiled / optimized / DLL files
+__pycache__
+__openvino_cache__
+.ipynb_checkpoints
 ~$*.*
 
-# ROS2
+# Environments
+desktop.ini
+.idea
+.vscode
+.clion.source.upload.marker
+
+# datasets and projects
+.DS_Store
+*test*
 *build*
+data
 log
+runs
 install
+
+# Neural Network weights
+*.pt
+*.onnx
+*.pkf
 
 # Prerequisites
 *.d
@@ -37,16 +56,3 @@ install
 *.exe
 *.out
 *.app
-
-# Byte-compiled / optimized / DLL files
-__pycache__
-__openvino_cache__
-*test*
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# Environments
-.idea
-desktop.ini
-.clion.source.upload.marker
