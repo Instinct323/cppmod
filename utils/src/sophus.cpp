@@ -29,10 +29,11 @@ float triangulation(const std::vector<Eigen::Vector3f> &vP_cam,
     if (std::abs(P_homo[3]) < 1e-4) return false;
     P_homo /= P_homo[3];
     P_ref = P_homo.head(3);
-    // 检验点在相机平面上的深度
+    // 计算重投影误差最大值
     float reproj_error = 0;
     for (int i = 0; i < n; ++i) {
         Eigen::Vector3f P_cam = vT_ref_cam[i] * P_ref;
+        // 检验点在相机平面上的深度 (限定为正, 但不适用于鱼眼相机)
         if (P_cam[2] < 1e-4) return -1;
         reproj_error = std::max(reproj_error, (P_cam.head(2) / P_cam[2] - vP_cam[i].head(2)).squaredNorm());
     }
