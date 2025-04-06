@@ -19,7 +19,9 @@ if [ $(id -u) -eq 0 ]; then
 
   # for Desktop
   apt install -y kazam
-  xhost +local:
+  
+  # bashrc
+  cp home/* ~/
 
 else
   echo "error: permission denied."
