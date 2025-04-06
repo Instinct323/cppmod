@@ -6,6 +6,7 @@ if (NOT utils_FOUND)
   )
 
   # packages
+  # find_package(Ceres REQUIRED)
   find_package(G2O REQUIRED)
   find_package(Glog REQUIRED)
   find_package(fmt REQUIRED)
@@ -16,6 +17,7 @@ if (NOT utils_FOUND)
 
   # all library
   set(utils_LIBS
+          # ${CERES_LIBRARIES}
           glog::glog
           fmt::fmt
           ${OpenCV_LIBS}
