@@ -15,4 +15,3 @@ apt install -y ros-foxy-desktop python3-argcomplete
 export TMP=/usr/local/share/ros-foxy-py38
 mkdir -p $TMP
 cp -r /opt/ros/foxy/lib/python3.8/site-packages/* $TMP
-rm -rf $TMP/*.egg-info

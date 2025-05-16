@@ -12,4 +12,3 @@ apt install -y ros-noetic-desktop-full
 export TMP=/usr/local/share/ros-noetic-py3
 mkdir -p $TMP
 cp -r /opt/ros/noetic/lib/python3/dist-packages/* $TMP
-rm -rf $TMP/*.egg-info

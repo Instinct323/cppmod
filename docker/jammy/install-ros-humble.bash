@@ -9,4 +9,3 @@ apt install -y libegl-mesa0 ros-humble-desktop python3-colcon-common-extensions
 export TMP=/usr/local/share/ros-humble-py310
 mkdir -p $TMP
 cp -r /opt/ros/humble/lib/python3.10/site-packages/* $TMP
-rm -rf $TMP/*.egg-info
