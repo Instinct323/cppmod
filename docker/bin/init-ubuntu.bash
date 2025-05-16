@@ -18,7 +18,7 @@ if [ $(id -u) -eq 0 ]; then
   pip install --upgrade pip
 
   # for Desktop
-  apt install -y kazam
+  apt install -y simplescreenrecorder
   
   # bashrc
   cp home/* ~/
