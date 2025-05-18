@@ -21,10 +21,6 @@ class UserCfg(dict):
             super().__init__(json.load(f))
 
     def generate(self):
-        # Linux
-        if os.name == "posix":
-            execute(f"useradd -m {self['name']}")
-            execute(f"echo {self['name']}:{self['passwd']} | chpasswd")
         # git
         execute("git config --global credential.helper store")
         execute(f"git config --global user.name {self['name']}")
@@ -35,8 +31,6 @@ class UserCfg(dict):
 
 
 if __name__ == '__main__':
-    print("\033[33m\033[1m" + "WARNING: This script should be executed in the container!" + "\033[0m")
-
     parser = argparse.ArgumentParser()
     parser.add_argument("json", type=str, help="Docker container configuration file")
     args = parser.parse_args()
