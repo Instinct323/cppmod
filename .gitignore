@@ -13,8 +13,8 @@ desktop.ini
 
 # datasets and projects
 .DS_Store
-*test*
-*build*
+cmake-build*
+build
 data
 log
 runs
